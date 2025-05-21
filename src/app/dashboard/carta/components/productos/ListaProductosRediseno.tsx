@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/shared/components/ui/Button';
 import { Eye, Loader2, Plus, Trash2, Edit, MoreVertical, Check, Coffee, Soup, Beef, Salad, Utensils } from 'lucide-react';
 import { VersionedProduct } from '@/app/dashboard/carta/types/product-versioning.types';
@@ -47,116 +47,114 @@ export default function ListaProductosRediseno({
   const [productosJSON, setProductosJSON] = useState<VersionedProduct[]>([]);
   const [cargandoProductos, setCargandoProductos] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Referencia para almacenar la categoría actual y detectar cambios reales
+  const categoriaIdRef = useRef<string | undefined>(categoriaId);
 
   // Cargar productos desde los archivos JSON o usar los hardcodeados
   useEffect(() => {
-    const cargarProductos = async () => {
-      console.log('Cargando productos para categoría:', categoriaId);
+    // Solo recargar productos si la categoría ha cambiado realmente
+    if (categoriaId !== categoriaIdRef.current) {
+      categoriaIdRef.current = categoriaId;
+      console.log(`CATEGORÍA CAMBIADA: Anterior=${categoriaIdRef.current}, Nueva=${categoriaId}`);
       
-      if (!categoriaId) {
-        console.log('No hay categoría seleccionada, no se cargarán productos');
-        return;
-      }
-      
-      setCargandoProductos(true);
-      try {
-        // Limpiar caché para forzar recarga
-        localStorage.removeItem('menu_productos');
-        console.log('Caché de productos eliminado para forzar recarga');
+      const cargarProductos = async () => {
+        console.log('╔════════════════════════════════════════════════════════╗');
+        console.log(`║ Cargando productos para categoría: ${categoriaId}      ║`);
+        console.log('╚════════════════════════════════════════════════════════╝');
         
-        // Cargar productos específicos de la categoría
-        console.log('Intentando cargar productos de categoría ' + categoriaId + '...');
-        const productos = await jsonDataService.getProductosByCategoria(categoriaId);
-        console.log('Productos cargados desde JSON:', productos);
-        console.log('Total de productos cargados:', productos.length);
-        
-        if (!productos || productos.length === 0) {
-          console.log('No se cargaron productos desde JSON, usando hardcodeados');
-          // Si no hay productos en JSON, usar los hardcodeados
-          console.log('No se pudieron cargar productos desde JSON, intentando de nuevo...');
-          // Intentar cargar productos nuevamente
-          jsonDataService.getProductos()
-            .then(productos => {
-              if (productos && productos.length > 0) {
-                const productosFiltrados = productos.filter(
-                  (p: any) => p.categoriaId === categoriaId
-                );
-                console.log(`Productos filtrados por categoría ${categoriaId}:`, productosFiltrados.length);
-                setProductosJSON(productosFiltrados);
-              } else {
-                setProductosJSON([]);
-              }
-            })
-            .catch(error => {
-              console.error('Error al cargar productos:', error);
-              setProductosJSON([]);
-            });
-        } else {
-          // Filtrar productos por categoría
-          console.log(`Filtrando productos por categoría: ${categoriaId}`);
-          console.log('Primer producto para inspección:', productos[0]);
-          
-          // Mostrar todos los productos de la categoría CAT_001 para depuración
-          if (categoriaId === 'CAT_001') {
-            console.log('Todos los productos de la categoría CAT_001:');
-            productos.forEach((p: any) => {
-              if (p.categoriaId === 'CAT_001' || p.id_categoria === 'CAT_001') {
-                console.log(`- ${p.id}: ${p.nombre} (categoriaId: ${p.categoriaId}, id_categoria: ${p.id_categoria})`);
-              }
-            });
-          }
-          
-          const productosFiltrados = productos.filter((p: any) => {
-            const matches = p.categoriaId === categoriaId || p.id_categoria === categoriaId;
-            console.log(`Producto ${p.id} - ${p.nombre} - categoriaId: ${p.categoriaId}, id_categoria: ${p.id_categoria}, matches: ${matches}`);
-            return matches;
-          });
-          
-          console.log(`Productos filtrados por categoría ${categoriaId}:`, productosFiltrados.length);
-          console.log('Lista de productos filtrados:', productosFiltrados.map((p: any) => p.nombre));
-          setProductosJSON(productosFiltrados);
+        if (!categoriaId) {
+          console.log('No hay categoría seleccionada, no se cargarán productos');
+          setProductosJSON([]);
+          return;
         }
-      } catch (error) {
-        console.error('Error al cargar productos:', error);
-        // En caso de error, usar los hardcodeados
-        console.log('No se pudieron cargar productos desde JSON, intentando de nuevo...');
-          // Intentar cargar productos nuevamente
-          jsonDataService.getProductos()
-            .then(productos => {
-              if (productos && productos.length > 0) {
-                const productosFiltrados = productos.filter(
-                  (p: any) => p.categoriaId === categoriaId
-                );
+        
+        // Limpiar productos actuales antes de cargar nuevos
+        setProductosJSON([]);
+        setCargandoProductos(true);
+        
+        try {
+          // Limpiar caché para forzar recarga
+          localStorage.removeItem('menu_productos');
+          console.log('Caché de productos eliminado para forzar recarga');
+          
+          // Cargar productos específicos de la categoría
+          console.log(`▶️ Intentando cargar productos de categoría ${categoriaId}...`);
+          const productos = await jsonDataService.getProductosByCategoria(categoriaId);
+          console.log(`✅ Productos cargados: ${productos.length}`);
+          
+          if (!productos || productos.length === 0) {
+            console.log('⚠️ No se cargaron productos desde JSON, intentando respaldo...');
+            // Intento secundario con getProductos()
+            try {
+              const todosProductos = await jsonDataService.getProductos();
+              if (todosProductos && todosProductos.length > 0) {
+                // IMPORTANTE: Filtrado estricto por categoría
+                const productosFiltrados = todosProductos.filter((p: any) => {
+                  // CORRECCIÓN: Eliminada referencia a id_categoria
+                  const coincide = p.categoriaId === categoriaId;
+                  console.log(`Producto ${p.id} (${p.nombre}) - categoría="${p.categoriaId}" - ¿coincide con ${categoriaId}? ${coincide ? 'SÍ' : 'NO'}`);
+                  return coincide;
+                });
+                
+                console.log(`🔍 Filtrado secundario: ${productosFiltrados.length} productos de categoría ${categoriaId}`);
+                if (productosFiltrados.length === 0) {
+                  console.log('⚠️ No se encontraron productos con esta categoría en el respaldo');
+                }
                 setProductosJSON(productosFiltrados);
               } else {
+                console.log('❌ Tampoco se encontraron productos en el respaldo');
                 setProductosJSON([]);
               }
-            })
-            .catch(error => {
-              console.error('Error al cargar productos:', error);
+            } catch (secondaryError) {
+              console.error('Error en carga secundaria:', secondaryError);
               setProductosJSON([]);
+            }
+          } else {
+            // Verificación extra para confirmar categorías
+            console.log('🔍 Verificando categorías de productos cargados:');
+            const productosFiltrados = productos.filter((p: any) => {
+              const coincide = p.categoriaId === categoriaId;
+              console.log(`Producto ${p.id} (${p.nombre}) - categoría="${p.categoriaId}" - ¿coincide con ${categoriaId}? ${coincide ? 'SÍ' : 'NO'}`);
+              return coincide;
             });
-      } finally {
-        setCargandoProductos(false);
-      }
-    };
-
-    cargarProductos();
+            
+            if (productosFiltrados.length !== productos.length) {
+              console.warn(`⚠️ ${productos.length - productosFiltrados.length} productos tienen categoría incorrecta`);
+            }
+            
+            console.log(`✅ Final: ${productosFiltrados.length} productos cargados correctamente para categoría ${categoriaId}`);
+            setProductosJSON(productosFiltrados);
+          }
+        } catch (error) {
+          console.error('❌ Error al cargar productos:', error);
+          setProductosJSON([]);
+        } finally {
+          setCargandoProductos(false);
+        }
+      };
+      
+      cargarProductos();
+    }
   }, [categoriaId]);
 
   // Verificar si se ha seleccionado categoría
   const seleccionCompleta = categoriaId !== undefined;
   
-  // Obtener productos para la categoría seleccionada
-  const productosCategoria = productosJSON.length > 0 
-    ? productosJSON 
-    : [];
-
-  // Filtrar productos por término de búsqueda
-  // Mostrar todos los productos sin filtrar
-  const productosFiltrados = productosCategoria;
-  console.log('Mostrando todos los productos sin filtrar:', productosFiltrados.length);
-  console.log('Lista de productos sin filtrar:', productosFiltrados.map(p => p.nombre));
+  // Obtener productos para la categoría seleccionada - SIN FILTRADO ADICIONAL
+  // Ya filtramos estrictamente en la carga de productos
+  const productosFiltrados = productosJSON;
+  
+  // Diagnóstico para verificar productos mostrados
+  useEffect(() => {
+    console.log(`⚡ Renderizando ${productosFiltrados.length} productos para categoría ${categoriaId}`);
+    if (productosFiltrados.length > 0) {
+      console.log('📋 Lista de productos mostrados:');
+      productosFiltrados.forEach((p, idx) => {
+        console.log(`  ${idx + 1}. ${p.nombre} (ID: ${p.id}, Cat: ${p.categoriaId})`);
+      });
+    }
+  }, [productosFiltrados, categoriaId]);
 
   // Manejar clic en un producto
   const handleProductClick = (producto: VersionedProduct) => {
@@ -215,6 +213,12 @@ export default function ListaProductosRediseno({
   // Renderizar la tabla de productos
   return (
     <div className="space-y-4">
+      {/* Diagnóstico visible */}
+      <div className="bg-gray-100 p-2 rounded text-xs mb-2">
+        <p>Categoría actual: <strong>{categoriaId || 'Ninguna'}</strong></p>
+        <p>Productos cargados: <strong>{productosFiltrados.length}</strong></p>
+      </div>
+
       {/* Tabla de productos */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden" style={{ maxHeight: '300px', overflowY: 'auto' }}>
         <table className="w-full">
@@ -245,7 +249,7 @@ export default function ListaProductosRediseno({
             ) : productosFiltrados.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-4 py-4 text-center text-sm text-gray-500">
-                  No hay productos disponibles
+                  No hay productos disponibles para esta categoría
                 </td>
               </tr>
             ) : (
@@ -268,7 +272,7 @@ export default function ListaProductosRediseno({
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center">
-                      {getIconForCategory(producto.categoriaId)}
+                      {getIconForCategory(producto.categoriaId || '')}
                       <div className="ml-2 flex flex-col">
                         <span className="text-sm font-medium text-gray-900">{producto.nombre}</span>
                         <span className="text-xs text-gray-500">{producto.descripcion}</span>

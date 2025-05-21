@@ -58,6 +58,129 @@ export const jsonDataService = {
   },
 
   /**
+   * Carga los productos para una categoría específica
+   * @param categoriaId ID de la categoría
+   * @returns Promesa con los productos filtrados por categoría
+   */
+async getProductosByCategoria(categoriaId: string) {
+  try {
+    console.log(`Intentando obtener productos para categoría ${categoriaId}`);
+    
+    // Definir tipos para el correcto manejo de datos
+    type StockStatus = 'in_stock' | 'out_of_stock' | 'low_stock';
+    type ProductStatus = 'active' | 'draft' | 'archived' | 'discontinued';
+    
+    // Primero intentamos cargar todos los productos
+    console.log(`Cargando todos los productos disponibles...`);
+    let allProducts = [];
+    
+    try {
+      const response = await fetch('/test-data/productos.json');
+      if (response.ok) {
+        allProducts = await response.json();
+        console.log(`Cargados ${allProducts.length} productos totales`);
+      } else {
+        console.error(`Error al cargar productos.json: ${response.status}`);
+      }
+    } catch (error) {
+      console.error(`Error al cargar productos.json:`, error);
+    }
+    
+    if (allProducts.length === 0) {
+      console.warn(`No se pudieron cargar los productos desde productos.json`);
+      return [];
+    }
+    
+    // Filtrar los productos por la categoría solicitada
+    console.log(`Filtrando productos para categoría ${categoriaId}...`);
+    
+    // Verificar diferentes formatos posibles de ID de categoría
+    const filteredProducts = allProducts.filter((prod: any) => {
+      // Registrar cada producto para depuración
+      console.log(`Evaluando producto: ${prod.nombre}, categoría: ${prod.id_categoria || prod.categoriaId}`);
+      
+      // Comprobar coincidencia con diferentes formatos de ID de categoría
+      return (
+        prod.id_categoria === categoriaId || 
+        prod.categoriaId === categoriaId ||
+        // Intentar otras variantes posibles
+        String(prod.id_categoria).toLowerCase() === String(categoriaId).toLowerCase()
+      );
+    });
+    
+    console.log(`Se encontraron ${filteredProducts.length} productos para categoría ${categoriaId}`);
+    
+    // Registrar los productos encontrados para depuración
+    if (filteredProducts.length > 0) {
+      console.log("Productos encontrados:");
+      filteredProducts.forEach((p: any, index: number) => {
+        console.log(`${index + 1}. ${p.nombre} (ID: ${p.id_producto}, Categoría: ${p.id_categoria || p.categoriaId})`);
+      });
+    } else {
+      console.warn(`No se encontraron productos para la categoría ${categoriaId}`);
+    }
+    
+    // Transformar los datos al formato esperado por la aplicación
+    const productosTransformados = filteredProducts.map((prod: any) => {
+      // Determinar el estado del stock
+      let stockStatus: StockStatus = 'out_of_stock';
+      if (prod.estado_disponible) {
+        stockStatus = (prod.stock_actual <= prod.stock_minimo) ? 'low_stock' : 'in_stock';
+      }
+      
+      // Determinar el estado del producto
+      const productStatus: ProductStatus = prod.estado_disponible ? 'active' : 'archived';
+      
+      return {
+        id: prod.id_producto,
+        nombre: prod.nombre,
+        descripcion: prod.descripcion,
+        descripcion_corta: prod.descripcion_corta || "",
+        categoriaId: prod.id_categoria || categoriaId, // Usar el ID de categoría correcto
+        subcategoriaId: prod.id_subcategoria || null,
+        imagen: prod.imagen_url || "/images/placeholder.jpg",
+        imagen_miniatura: prod.imagen_miniatura_url || "/images/placeholder.jpg",
+        estado_disponible: prod.estado_disponible,
+        currentVersion: 1,
+        currentPrice: 0,
+        priceHistory: [],
+        versions: [],
+        status: productStatus,
+        stock: {
+          currentQuantity: prod.stock_actual || 0,
+          minQuantity: prod.stock_minimo || 0,
+          maxQuantity: 100,
+          status: stockStatus,
+          lastUpdated: new Date(prod.fecha_actualizacion || new Date()),
+          alerts: {
+            lowStock: stockStatus === 'low_stock',
+            overStock: false,
+            thresholds: {
+              low: 10,
+              high: 90
+            }
+          }
+        },
+        metadata: {
+          createdAt: new Date(prod.fecha_creacion || new Date()),
+          createdBy: "system",
+          lastModified: new Date(prod.fecha_actualizacion || new Date()),
+          lastModifiedBy: "system"
+        },
+        restauranteId: 'test-restaurant'
+      };
+    });
+    
+    console.log(`Transformación completada. Retornando ${productosTransformados.length} productos.`);
+    return productosTransformados;
+    
+  } catch (error) {
+    console.error(`Error global en getProductosByCategoria:`, error);
+    return [];
+  }
+}
+,
+  /**
    * Carga los productos desde el archivo JSON
    * @returns Promesa con los productos
    */
