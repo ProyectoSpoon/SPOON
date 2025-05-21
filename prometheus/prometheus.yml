@@ -1,0 +1,80 @@
+global:
+  scrape_interval: 15s  # Por defecto, scrape targets cada 15 segundos
+  evaluation_interval: 15s  # Evaluar alertas cada 15 segundos
+
+  # Etiquetas agregadas a todas las series de tiempo
+  external_labels:
+      monitor: 'spoon-monitor'
+
+# Configuración de Alertmanager
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets: ['alertmanager:9093']
+
+# Reglas de alertas
+rule_files:
+  - 'alert.rules'
+
+# Configuración de targets (servicios a monitorear)
+scrape_configs:
+  # Prometheus mismo
+  - job_name: 'prometheus'
+    static_configs:
+    - targets: ['localhost:9090']
+
+  # Servicios del sistema
+  - job_name: 'nginx'
+    static_configs:
+    - targets: ['nginx:80']
+    metrics_path: /metrics
+
+  - job_name: 'nextjs'
+    static_configs:
+    - targets: ['nextjs:3000']
+    metrics_path: /metrics
+
+  - job_name: 'menu-service'
+    static_configs:
+    - targets: ['menu-service:3001']
+    metrics_path: /metrics
+
+  - job_name: 'inventario-service'
+    static_configs:
+    - targets: ['inventario-service:3002']
+    metrics_path: /metrics
+
+  - job_name: 'ventas-service'
+    static_configs:
+    - targets: ['ventas-service:3003']
+    metrics_path: /metrics
+
+  - job_name: 'estadisticas-service'
+    static_configs:
+    - targets: ['estadisticas-service:3004']
+    metrics_path: /metrics
+
+  - job_name: 'bi-service'
+    static_configs:
+    - targets: ['bi-service:3005']
+    metrics_path: /metrics
+
+  # Monitoreo de nodos (recursos del sistema)
+  - job_name: 'node-exporter'
+    static_configs:
+    - targets: ['node-exporter:9100']
+
+  # Base de datos PostgreSQL
+  - job_name: 'postgres-exporter'
+    static_configs:
+    - targets: ['postgres-exporter:9187']
+
+  # Redis
+  - job_name: 'redis-exporter'
+    static_configs:
+    - targets: ['redis-exporter:9121']
+
+  # cAdvisor para monitoreo de contenedores
+  - job_name: 'cadvisor'
+    static_configs:
+    - targets: ['cadvisor:8080']

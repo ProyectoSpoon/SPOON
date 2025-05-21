@@ -1,0 +1,23 @@
+[
+  {
+    "id": "COMB_FAV_001",
+    "combinacion_id": "COMB_3",
+    "nombre": "Combinación 3",
+    "descripcion": "Sopa de Verduras, Frijoles, Pechuga de Pollo a la Plancha, Ensalada Mixta, Patacones, Jugo de Naranja",
+    "fecha_agregado": "2025-05-10T00:00:00.000Z"
+  },
+  {
+    "id": "COMB_FAV_002",
+    "combinacion_id": "COMB_7",
+    "nombre": "Combinación 7",
+    "descripcion": "Crema de Champiñones, Frijoles, Lomo de Res, Ensalada Mixta, Patacones, Jugo de Naranja",
+    "fecha_agregado": "2025-05-11T00:00:00.000Z"
+  },
+  {
+    "id": "COMB_FAV_003",
+    "combinacion_id": "COMB_12",
+    "nombre": "Combinación 12",
+    "descripcion": "Crema de Champiñones, Lentejas, Pechuga de Pollo a la Plancha, Ensalada Mixta, Patacones, Jugo de Naranja",
+    "fecha_agregado": "2025-05-12T00:00:00.000Z"
+  }
+]

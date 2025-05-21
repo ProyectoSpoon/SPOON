@@ -1,0 +1,50 @@
+[
+  {
+    "id": "COMB_ESP_1",
+    "id_combinacion": "COMB_3",
+    "nombre": "Combinación Especial - Pollo",
+    "descripcion": "Sopa de Verduras, Frijoles, Pechuga de Pollo a la Plancha, Ensalada Mixta, Patacones, Jugo de Naranja",
+    "es_especial": true,
+    "precio_especial": 25000,
+    "precio_regular": 30000,
+    "disponible_desde": "2025-05-15T00:00:00.000Z",
+    "disponible_hasta": "2025-05-30T00:00:00.000Z",
+    "fecha_creacion": "2025-05-15T00:00:00.000Z"
+  },
+  {
+    "id": "COMB_ESP_2",
+    "id_combinacion": "COMB_7",
+    "nombre": "Combinación Especial - Res",
+    "descripcion": "Crema de Champiñones, Frijoles, Lomo de Res, Ensalada Mixta, Patacones, Jugo de Naranja",
+    "es_especial": true,
+    "precio_especial": 28000,
+    "precio_regular": 35000,
+    "disponible_desde": "2025-05-15T00:00:00.000Z",
+    "disponible_hasta": "2025-05-30T00:00:00.000Z",
+    "fecha_creacion": "2025-05-15T00:00:00.000Z"
+  },
+  {
+    "id": "COMB_ESP_3",
+    "id_combinacion": "COMB_9",
+    "nombre": "Combinación Especial - Pollo Champiñones",
+    "descripcion": "Crema de Champiñones, Frijoles, Pechuga de Pollo a la Plancha, Ensalada Mixta, Patacones, Jugo de Naranja",
+    "es_especial": true,
+    "precio_especial": 26000,
+    "precio_regular": 32000,
+    "disponible_desde": "2025-05-15T00:00:00.000Z",
+    "disponible_hasta": "2025-05-30T00:00:00.000Z",
+    "fecha_creacion": "2025-05-15T00:00:00.000Z"
+  },
+  {
+    "id": "COMB_ESP_4",
+    "id_combinacion": "COMB_14",
+    "nombre": "Combinación Especial - Pescado",
+    "descripcion": "Ensalada César, Frijoles, Filete de Pescado, Ensalada Mixta, Patacones, Jugo de Naranja",
+    "es_especial": true,
+    "precio_especial": 27000,
+    "precio_regular": 33000,
+    "disponible_desde": "2025-05-15T00:00:00.000Z",
+    "disponible_hasta": "2025-05-30T00:00:00.000Z",
+    "fecha_creacion": "2025-05-15T00:00:00.000Z"
+  }
+]

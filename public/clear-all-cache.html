@@ -1,0 +1,57 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Limpiando Caché</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      color: #333;
+    }
+    .message {
+      margin: 20px 0;
+      padding: 10px;
+      background-color: #f0f0f0;
+      border-radius: 5px;
+    }
+    .success {
+      color: green;
+    }
+    .button {
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Limpiando Caché</h1>
+  <div class="message">Eliminando todos los datos del caché...</div>
+  <div id="status" class="message"></div>
+  
+  <script>
+    // Limpiar todo el localStorage
+    localStorage.clear();
+    
+    // Mostrar mensaje de éxito
+    document.getElementById('status').innerHTML = 'Caché limpiado correctamente. <span class="success">Redirigiendo en 2 segundos...</span>';
+    
+    // Redirigir después de 2 segundos
+    setTimeout(() => {
+      window.location.href = '/dashboard/carta/menu-dia?nocache=' + Date.now();
+    }, 2000);
+  </script>
+  
+  <a href="/dashboard/carta/menu-dia?nocache=1747719478577" class="button">Ir al Menú del Día</a>
+</body>
+</html>

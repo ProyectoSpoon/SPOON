@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Usuario de Prueba - Spoon Restaurant</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #FF9933;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #FF9933;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #F4821F;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>Crear Usuario de Prueba</h1>
+    
+    <div class="form-group">
+        <label for="email">Correo electrónico</label>
+        <input type="email" id="email" value="test@spoonrestaurant.com" />
+    </div>
+    
+    <div class="form-group">
+        <label for="password">Contraseña</label>
+        <input type="password" id="password" value="Test2025!" />
+    </div>
+    
+    <div class="form-group">
+        <label for="nombre">Nombre</label>
+        <input type="text" id="nombre" value="Usuario" />
+    </div>
+    
+    <div class="form-group">
+        <label for="apellido">Apellido</label>
+        <input type="text" id="apellido" value="Prueba" />
+    </div>
+    
+    <button id="createButton">Crear Usuario</button>
+    
+    <div id="result" class="result"></div>
+
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <!-- Firebase Auth -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <!-- Firebase Firestore -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
+    <script>
+        // Configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDummyApiKey",
+            authDomain: "spoon-restaurant.firebaseapp.com",
+            projectId: "spoon-restaurant",
+            storageBucket: "spoon-restaurant.appspot.com",
+            messagingSenderId: "123456789012",
+            appId: "1:123456789012:web:abcdef1234567890"
+        };
+        
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        
+        // Referencias a elementos del DOM
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const nombreInput = document.getElementById('nombre');
+        const apellidoInput = document.getElementById('apellido');
+        const createButton = document.getElementById('createButton');
+        const resultDiv = document.getElementById('result');
+        
+        // Función para crear usuario
+        async function createUser() {
+            const email = emailInput.value.trim();
+            const password = passwordInput.value.trim();
+            const nombre = nombreInput.value.trim();
+            const apellido = apellidoInput.value.trim();
+            
+            if (!email || !password || !nombre || !apellido) {
+                showError('Todos los campos son obligatorios');
+                return;
+            }
+            
+            try {
+                // Crear usuario en Firebase Auth
+                const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                
+                // Guardar información adicional en Firestore
+                const userData = {
+                    uid: user.uid,
+                    nombre: nombre,
+                    apellido: apellido,
+                    email: email,
+                    telefono: '',
+                    fechaRegistro: firebase.firestore.FieldValue.serverTimestamp(),
+                    RestauranteID: 'test-restaurant-id',
+                    is2FAEnabled: false,
+                    failedAttempts: 0,
+                    lastFailedAttempt: null,
+                    requiresAdditionalInfo: false,
+                    emailVerified: true,
+                    role: 'OWNER',
+                    permissions: ['READ_MENU', 'WRITE_MENU', 'READ_ORDERS', 'WRITE_ORDERS', 'READ_INVENTORY', 'WRITE_INVENTORY'],
+                    activo: true,
+                    ultimoAcceso: firebase.firestore.FieldValue.serverTimestamp(),
+                    metodosAuth: ['email'],
+                    sesionesTotal: 0
+                };
+                
+                await firebase.firestore().collection('dueno_restaurante').doc(email).set(userData);
+                
+                // Cerrar sesión para no quedar autenticado
+                await firebase.auth().signOut();
+                
+                showSuccess(`
+                    <h3>Usuario creado exitosamente</h3>
+                    <p><strong>Email:</strong> ${email}</p>
+                    <p><strong>Contraseña:</strong> ${password}</p>
+                    <p>Puedes usar estas credenciales para iniciar sesión en la aplicación.</p>
+                `);
+                
+            } catch (error) {
+                console.error('Error al crear usuario:', error);
+                
+                if (error.code === 'auth/email-already-in-use') {
+                    showSuccess(`
+                        <h3>El usuario ya existe</h3>
+                        <p><strong>Email:</strong> ${email}</p>
+                        <p><strong>Contraseña:</strong> ${password}</p>
+                        <p>Puedes usar estas credenciales para iniciar sesión en la aplicación.</p>
+                    `);
+                } else {
+                    showError(`Error: ${error.message}`);
+                }
+            }
+        }
+        
+        // Mostrar mensaje de éxito
+        function showSuccess(message) {
+            resultDiv.innerHTML = message;
+            resultDiv.className = 'result success';
+            resultDiv.style.display = 'block';
+        }
+        
+        // Mostrar mensaje de error
+        function showError(message) {
+            resultDiv.innerHTML = `<p>${message}</p>`;
+            resultDiv.className = 'result error';
+            resultDiv.style.display = 'block';
+        }
+        
+        // Evento click del botón
+        createButton.addEventListener('click', createUser);
+    </script>
+</body>
+</html>

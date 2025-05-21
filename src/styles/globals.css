@@ -1,0 +1,16 @@
+/* globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #FFFFFF;
+  --spoon-primary: #F4821F;
+  --spoon-secondary: #8B4513;
+  --spoon-light: #FFF9F2;
+  --spoon-dark: #2C3E50;
+}
+
+body {
+  @apply bg-white text-gray-900;
+}

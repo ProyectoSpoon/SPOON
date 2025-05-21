@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spoon - Demostración de Funcionalidad</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .spoon-orange {
+            color: #F4821F;
+        }
+        .spoon-orange-bg {
+            background-color: #F4821F;
+        }
+        .spoon-orange-border {
+            border-color: #F4821F;
+        }
+        .spoon-orange-hover:hover {
+            background-color: #CC6A10;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <header class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-xl font-medium">Spoon - Gestor de Menú</h1>
+            <div class="flex items-center space-x-4">
+                <button class="spoon-orange-bg text-white px-4 py-2 rounded-md spoon-orange-hover">
+                    Generar Combinaciones
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-6">
+        <div class="grid grid-cols-12 gap-6">
+            <!-- Columna Categorías -->
+            <div class="col-span-2 bg-white rounded-lg shadow-sm">
+                <div class="p-4 border-b">
+                    <h2 class="font-medium text-center">Categorías</h2>
+                </div>
+                <div class="p-4">
+                    <ul class="space-y-2">
+                        <li class="font-medium spoon-orange">MENÚ DEL DÍA</li>
+                        <li class="pl-4 py-1 hover:bg-gray-100 cursor-pointer flex justify-between items-center">
+                            <span>Proteína</span>
+                            <button class="text-red-500 hover:bg-red-50 p-1 rounded-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 6h18"></path>
+                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        </li>
+                        <li class="pl-4 py-1 bg-gray-100 cursor-pointer flex justify-between items-center">
+                            <span>Entrada</span>
+                            <button class="text-red-500 hover:bg-red-50 p-1 rounded-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 6h18"></path>
+                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        </li>
+                        <li class="pl-4 py-1 hover:bg-gray-100 cursor-pointer flex justify-between items-center">
+                            <span>Principio</span>
+                            <button class="text-red-500 hover:bg-red-50 p-1 rounded-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 6h18"></path>
+                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Columna Productos -->
+            <div class="col-span-4 bg-white rounded-lg shadow-sm">
+                <div class="p-4 border-b">
+                    <h2 class="font-medium text-center">Productos</h2>
+                </div>
+                <div class="p-4">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-medium text-gray-900">Productos seleccionados</h3>
+                            <button class="text-[#F4821F] border border-[#F4821F] hover:bg-[#F4821F]/10 px-3 py-1 rounded-md text-sm flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">
+                                    <path d="M12 5v14"></path>
+                                    <path d="M5 12h14"></path>
+                                </svg>
+                                Agregar más
+                            </button>
+                        </div>
+
+                        <div class="space-y-2">
+                            <!-- Producto 1 -->
+                            <div class="flex items-center p-3 border rounded-lg bg-white">
+                                <div class="flex-1">
+                                    <h4 class="font-medium">Sopa de Guineo</h4>
+                                    <p class="text-sm text-gray-600">Sopa tradicional con plátano verde</p>
+                                    <p class="text-sm font-medium text-[#F4821F]">$8,000</p>
+                                </div>
+                                
+                                <div class="flex space-x-2">
+                                    <button class="text-green-600 hover:bg-green-50 p-1 rounded-full" title="Agregar al menú del día">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 5v14"></path>
+                                            <path d="M5 12h14"></path>
+                                        </svg>
+                                    </button>
+                                    
+                                    <button class="text-red-500 hover:bg-red-50 p-1 rounded-full">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M3 6h18"></path>
+                                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Producto 2 -->
+                            <div class="flex items-center p-3 border rounded-lg bg-white">
+                                <div class="flex-1">
+                                    <h4 class="font-medium">Ajiaco</h4>
+                                    <p class="text-sm text-gray-600">Sopa típica con tres tipos de papa, pollo y guascas</p>
+                                    <p class="text-sm font-medium text-[#F4821F]">$12,000</p>
+                                </div>
+                                
+                                <div class="flex space-x-2">
+                                    <button class="text-green-600 hover:bg-green-50 p-1 rounded-full" title="Agregar al menú del día">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 5v14"></path>
+                                            <path d="M5 12h14"></path>
+                                        </svg>
+                                    </button>
+                                    
+                                    <button class="text-red-500 hover:bg-red-50 p-1 rounded-full">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M3 6h18"></path>
+                                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna Menú del Día -->
+            <div class="col-span-6 bg-white rounded-lg shadow-sm">
+                <div class="p-4 border-b">
+                    <h2 class="font-medium text-center">Menú del Día</h2>
+                </div>
+                <div class="p-4">
+                    <div class="grid grid-cols-[250px_1fr_50px] border-b border-gray-200 mb-4">
+                        <div class="text-sm text-gray-600 font-medium p-2 bg-[#FFF4E6]">Producto</div>
+                        <div class="text-sm text-gray-600 font-medium p-2 bg-gray-100">Descripción</div>
+                        <div class="text-sm text-gray-600 font-medium p-2 bg-gray-100">Acción</div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <!-- Categoría: Entradas -->
+                        <div class="relative pl-4 border-l-2 border-[#F4821F]">
+                            <h3 class="font-medium text-gray-900 mb-3 pl-2">Entradas</h3>
+                            <div class="bg-white rounded-lg border border-gray-100 overflow-hidden">
+                                <div class="divide-y divide-gray-100">
+                                    <!-- Producto en el menú 1 -->
+                                    <div class="grid grid-cols-[250px_1fr_50px] hover:bg-gray-50">
+                                        <div class="p-3 border-r border-gray-100">
+                                            <span class="text-gray-900">Sopa de Guineo</span>
+                                        </div>
+                                        <div class="p-3">
+                                            <span class="text-gray-600">Sopa tradicional con plátano verde</span>
+                                        </div>
+                                        <div class="p-3 flex items-center justify-center">
+                                            <button class="text-red-500 hover:bg-red-50 p-1 rounded-full" title="Eliminar del menú">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M3 6h18"></path>
+                                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Categoría: Proteínas -->
+                        <div class="relative pl-4 border-l-2 border-[#F4821F]">
+                            <h3 class="font-medium text-gray-900 mb-3 pl-2">Proteínas</h3>
+                            <div class="bg-white rounded-lg border border-gray-100 overflow-hidden">
+                                <div class="divide-y divide-gray-100">
+                                    <!-- Producto en el menú 2 -->
+                                    <div class="grid grid-cols-[250px_1fr_50px] hover:bg-gray-50">
+                                        <div class="p-3 border-r border-gray-100">
+                                            <span class="text-gray-900">Pechuga a la Plancha</span>
+                                        </div>
+                                        <div class="p-3">
+                                            <span class="text-gray-600">Pechuga de pollo a la plancha con especias</span>
+                                        </div>
+                                        <div class="p-3 flex items-center justify-center">
+                                            <button class="text-red-500 hover:bg-red-50 p-1 rounded-full" title="Eliminar del menú">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M3 6h18"></path>
+                                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Simulación de la funcionalidad
+        document.addEventListener('DOMContentLoaded', function() {
+            // Botones de agregar al menú
+            const addToMenuButtons = document.querySelectorAll('.text-green-600');
+            
+            addToMenuButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    alert('Producto agregado al menú del día');
+                });
+            });
+            
+            // Botones de eliminar
+            const deleteButtons = document.querySelectorAll('.text-red-500');
+            
+            deleteButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    alert('Producto eliminado');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

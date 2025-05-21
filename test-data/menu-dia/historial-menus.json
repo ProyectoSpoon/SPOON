@@ -1,0 +1,102 @@
+[
+  {
+    "id": "MENU_DIA_HIST_001",
+    "fecha": "2025-05-18T00:00:00.000Z",
+    "nombre": "Menú del Día - Anterior",
+    "estado": "inactivo",
+    "productos": [
+      {
+        "id": "PROD_002",
+        "nombre": "Crema de Champiñones",
+        "descripcion": "Cremosa sopa de champiñones frescos con un toque de ajo y cebolla",
+        "categoriaId": "CAT_001",
+        "imagen": "/images/placeholder.jpg",
+        "cantidad": 45
+      },
+      {
+        "id": "PROD_006",
+        "nombre": "Lentejas",
+        "descripcion": "Lentejas cocinadas con verduras y especias",
+        "categoriaId": "CAT_002",
+        "imagen": "/images/placeholder.jpg",
+        "cantidad": 55
+      },
+      {
+        "id": "PROD_008",
+        "nombre": "Pechuga de Pollo a la Plancha",
+        "descripcion": "Pechuga de pollo a la plancha con hierbas y limón",
+        "categoriaId": "CAT_003",
+        "imagen": "/images/placeholder.jpg",
+        "cantidad": 35
+      },
+      {
+        "id": "PROD_011",
+        "nombre": "Patacones",
+        "descripcion": "Plátano verde frito y aplastado",
+        "categoriaId": "CAT_004",
+        "imagen": "/images/placeholder.jpg",
+        "cantidad": 60
+      },
+      {
+        "id": "PROD_013",
+        "nombre": "Limonada",
+        "descripcion": "Limonada fresca con un toque de menta",
+        "categoriaId": "CAT_005",
+        "imagen": "/images/placeholder.jpg",
+        "cantidad": 75
+      }
+    ],
+    "fecha_creacion": "2025-05-18T00:00:00.000Z",
+    "fecha_actualizacion": "2025-05-18T00:00:00.000Z"
+  },
+  {
+    "id": "MENU_DIA_HIST_002",
+    "fecha": "2025-05-17T00:00:00.000Z",
+    "nombre": "Menú del Día - Anterior",
+    "estado": "inactivo",
+    "productos": [
+      {
+        "id": "PROD_003",
+        "nombre": "Ensalada César",
+        "descripcion": "Ensalada fresca con lechuga romana, crutones, queso parmesano y aderezo César",
+        "categoriaId": "CAT_001",
+        "imagen": "/images/placeholder.jpg",
+        "cantidad": 40
+      },
+      {
+        "id": "PROD_004",
+        "nombre": "Arroz Blanco",
+        "descripcion": "Arroz blanco perfectamente cocido, ideal como acompañamiento",
+        "categoriaId": "CAT_002",
+        "imagen": "/images/placeholder.jpg",
+        "cantidad": 65
+      },
+      {
+        "id": "PROD_009",
+        "nombre": "Filete de Pescado",
+        "descripcion": "Filete de pescado fresco a la parrilla con limón y especias",
+        "categoriaId": "CAT_003",
+        "imagen": "/images/placeholder.jpg",
+        "cantidad": 30
+      },
+      {
+        "id": "PROD_010",
+        "nombre": "Ensalada Mixta",
+        "descripcion": "Ensalada de vegetales frescos con vinagreta",
+        "categoriaId": "CAT_004",
+        "imagen": "/images/placeholder.jpg",
+        "cantidad": 55
+      },
+      {
+        "id": "PROD_012",
+        "nombre": "Jugo de Naranja",
+        "descripcion": "Jugo de naranja natural recién exprimido",
+        "categoriaId": "CAT_005",
+        "imagen": "/images/placeholder.jpg",
+        "cantidad": 70
+      }
+    ],
+    "fecha_creacion": "2025-05-17T00:00:00.000Z",
+    "fecha_actualizacion": "2025-05-17T00:00:00.000Z"
+  }
+]

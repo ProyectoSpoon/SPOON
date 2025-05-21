@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Usuario de Prueba - Spoon Restaurant</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #FF9933;
+            text-align: center;
+        }
+        .container {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            background-color: #f9f9f9;
+        }
+        .step {
+            margin-bottom: 15px;
+            padding-left: 20px;
+            position: relative;
+        }
+        .step:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #FF9933;
+        }
+        code {
+            background-color: #f0f0f0;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .credentials {
+            background-color: #e8f5e9;
+            border: 1px solid #c8e6c9;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .warning {
+            background-color: #fff8e1;
+            border: 1px solid #ffecb3;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .button {
+            background-color: #FF9933;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            display: inline-block;
+            margin-top: 10px;
+            text-decoration: none;
+        }
+        .button:hover {
+            background-color: #F4821F;
+        }
+    </style>
+</head>
+<body>
+    <h1>Crear Usuario de Prueba para Spoon Restaurant</h1>
+    
+    <div class="container">
+        <h2>Instrucciones</h2>
+        
+        <div class="warning">
+            <strong>Nota:</strong> Este método es para desarrollo y pruebas. No debe usarse en producción.
+        </div>
+        
+        <div class="step">
+            <strong>Paso 1:</strong> Abre la página de login de Spoon Restaurant en <a href="http://localhost:3000/login" target="_blank">http://localhost:3000/login</a>
+        </div>
+        
+        <div class="step">
+            <strong>Paso 2:</strong> Abre la consola del navegador:
+            <ul>
+                <li>Chrome/Edge: Presiona F12 o Ctrl+Shift+J (Windows/Linux) o Cmd+Option+J (Mac)</li>
+                <li>Firefox: Presiona F12 o Ctrl+Shift+K (Windows/Linux) o Cmd+Option+K (Mac)</li>
+                <li>Safari: Activa el menú Desarrollador y selecciona "Mostrar Consola JavaScript"</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <strong>Paso 3:</strong> Copia y pega el siguiente código en la consola:
+            <pre><code>fetch('/test-user-script.js')
+  .then(response => response.text())
+  .then(script => {
+    eval(script);
+  })
+  .catch(error => console.error('Error cargando el script:', error));</code></pre>
+        </div>
+        
+        <div class="step">
+            <strong>Paso 4:</strong> Ejecuta la función para crear el usuario de prueba escribiendo en la consola:
+            <pre><code>createTestUser()</code></pre>
+        </div>
+        
+        <div class="step">
+            <strong>Paso 5:</strong> Espera a que el proceso termine. Verás un mensaje de confirmación en la consola.
+        </div>
+        
+        <div class="step">
+            <strong>Paso 6:</strong> Usa las siguientes credenciales para iniciar sesión:
+            <div class="credentials">
+                <p><strong>Email:</strong> test@spoonrestaurant.com</p>
+                <p><strong>Contraseña:</strong> Test2025!</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h2>Solución de problemas</h2>
+        
+        <p><strong>Si recibes un error "auth/email-already-in-use":</strong> El usuario ya existe. Puedes usar las credenciales proporcionadas para iniciar sesión.</p>
+        
+        <p><strong>Si recibes otros errores:</strong> Verifica que la aplicación esté correctamente configurada con Firebase y que estés en la página de login.</p>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px;">
+        <a href="http://localhost:3000/login" class="button">Ir a la página de login</a>
+    </div>
+    
+    <script>
+        // Este script simplemente carga las instrucciones
+        console.log('Página de creación de usuario de prueba cargada. Sigue las instrucciones en la página.');
+    </script>
+</body>
+</html>

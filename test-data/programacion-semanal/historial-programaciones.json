@@ -1,0 +1,118 @@
+[
+  {
+    "id": "PROG_SEM_HIST_001",
+    "semana_inicio": "2025-05-12T00:00:00.000Z",
+    "semana_fin": "2025-05-18T00:00:00.000Z",
+    "dias": [
+      {
+        "dia": "lunes",
+        "fecha": "2025-05-12T00:00:00.000Z",
+        "menu_id": "MENU_HIST_001",
+        "combinaciones": ["COMB_16", "COMB_17", "COMB_18"],
+        "estado": "completado"
+      },
+      {
+        "dia": "martes",
+        "fecha": "2025-05-13T00:00:00.000Z",
+        "menu_id": "MENU_HIST_002",
+        "combinaciones": ["COMB_1", "COMB_2", "COMB_3"],
+        "estado": "completado"
+      },
+      {
+        "dia": "miércoles",
+        "fecha": "2025-05-14T00:00:00.000Z",
+        "menu_id": "MENU_HIST_003",
+        "combinaciones": ["COMB_4", "COMB_5", "COMB_6"],
+        "estado": "completado"
+      },
+      {
+        "dia": "jueves",
+        "fecha": "2025-05-15T00:00:00.000Z",
+        "menu_id": "MENU_HIST_004",
+        "combinaciones": ["COMB_7", "COMB_8", "COMB_9"],
+        "estado": "completado"
+      },
+      {
+        "dia": "viernes",
+        "fecha": "2025-05-16T00:00:00.000Z",
+        "menu_id": "MENU_HIST_005",
+        "combinaciones": ["COMB_10", "COMB_11", "COMB_12"],
+        "estado": "completado"
+      },
+      {
+        "dia": "sábado",
+        "fecha": "2025-05-17T00:00:00.000Z",
+        "menu_id": null,
+        "combinaciones": [],
+        "estado": "no_disponible"
+      },
+      {
+        "dia": "domingo",
+        "fecha": "2025-05-18T00:00:00.000Z",
+        "menu_id": null,
+        "combinaciones": [],
+        "estado": "no_disponible"
+      }
+    ],
+    "fecha_creacion": "2025-05-08T00:00:00.000Z",
+    "fecha_actualizacion": "2025-05-16T00:00:00.000Z"
+  },
+  {
+    "id": "PROG_SEM_HIST_002",
+    "semana_inicio": "2025-05-05T00:00:00.000Z",
+    "semana_fin": "2025-05-11T00:00:00.000Z",
+    "dias": [
+      {
+        "dia": "lunes",
+        "fecha": "2025-05-05T00:00:00.000Z",
+        "menu_id": "MENU_HIST_006",
+        "combinaciones": ["COMB_13", "COMB_14", "COMB_15"],
+        "estado": "completado"
+      },
+      {
+        "dia": "martes",
+        "fecha": "2025-05-06T00:00:00.000Z",
+        "menu_id": "MENU_HIST_007",
+        "combinaciones": ["COMB_16", "COMB_17", "COMB_18"],
+        "estado": "completado"
+      },
+      {
+        "dia": "miércoles",
+        "fecha": "2025-05-07T00:00:00.000Z",
+        "menu_id": "MENU_HIST_008",
+        "combinaciones": ["COMB_1", "COMB_2", "COMB_3"],
+        "estado": "completado"
+      },
+      {
+        "dia": "jueves",
+        "fecha": "2025-05-08T00:00:00.000Z",
+        "menu_id": "MENU_HIST_009",
+        "combinaciones": ["COMB_4", "COMB_5", "COMB_6"],
+        "estado": "completado"
+      },
+      {
+        "dia": "viernes",
+        "fecha": "2025-05-09T00:00:00.000Z",
+        "menu_id": "MENU_HIST_010",
+        "combinaciones": ["COMB_7", "COMB_8", "COMB_9"],
+        "estado": "completado"
+      },
+      {
+        "dia": "sábado",
+        "fecha": "2025-05-10T00:00:00.000Z",
+        "menu_id": null,
+        "combinaciones": [],
+        "estado": "no_disponible"
+      },
+      {
+        "dia": "domingo",
+        "fecha": "2025-05-11T00:00:00.000Z",
+        "menu_id": null,
+        "combinaciones": [],
+        "estado": "no_disponible"
+      }
+    ],
+    "fecha_creacion": "2025-05-01T00:00:00.000Z",
+    "fecha_actualizacion": "2025-05-09T00:00:00.000Z"
+  }
+]

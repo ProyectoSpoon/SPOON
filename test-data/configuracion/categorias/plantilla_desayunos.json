@@ -1,0 +1,201 @@
+{
+  "plantilla": {
+    "id": "plantilla_desayunos",
+    "nombre": "Plantilla para Restaurante de Desayunos",
+    "descripcion": "Categorías predefinidas para un restaurante especializado en desayunos",
+    "categorias": [
+      {
+        "id": "cat_huevos",
+        "nombre": "Huevos",
+        "descripcion": "Platos a base de huevos",
+        "icono": "egg",
+        "color": "#F39C12",
+        "orden": 1,
+        "activo": true,
+        "subcategorias": [
+          {
+            "id": "subcat_revueltos",
+            "nombre": "Revueltos",
+            "descripcion": "Huevos revueltos con diferentes ingredientes",
+            "icono": "egg",
+            "color": "#F39C12",
+            "orden": 1,
+            "activo": true
+          },
+          {
+            "id": "subcat_fritos",
+            "nombre": "Fritos",
+            "descripcion": "Huevos fritos",
+            "icono": "egg",
+            "color": "#F39C12",
+            "orden": 2,
+            "activo": true
+          },
+          {
+            "id": "subcat_omelettes",
+            "nombre": "Omelettes",
+            "descripcion": "Tortillas de huevo con relleno",
+            "icono": "egg",
+            "color": "#F39C12",
+            "orden": 3,
+            "activo": true
+          }
+        ]
+      },
+      {
+        "id": "cat_pancakes",
+        "nombre": "Pancakes",
+        "descripcion": "Pancakes y waffles",
+        "icono": "cake",
+        "color": "#E67E22",
+        "orden": 2,
+        "activo": true,
+        "subcategorias": [
+          {
+            "id": "subcat_pancakes_clasicos",
+            "nombre": "Pancakes Clásicos",
+            "descripcion": "Pancakes tradicionales",
+            "icono": "cake",
+            "color": "#E67E22",
+            "orden": 1,
+            "activo": true
+          },
+          {
+            "id": "subcat_waffles",
+            "nombre": "Waffles",
+            "descripcion": "Waffles con diferentes toppings",
+            "icono": "cake",
+            "color": "#E67E22",
+            "orden": 2,
+            "activo": true
+          }
+        ]
+      },
+      {
+        "id": "cat_panes",
+        "nombre": "Panes",
+        "descripcion": "Panes y tostadas",
+        "icono": "bread",
+        "color": "#D35400",
+        "orden": 3,
+        "activo": true,
+        "subcategorias": [
+          {
+            "id": "subcat_tostadas",
+            "nombre": "Tostadas",
+            "descripcion": "Tostadas con diferentes toppings",
+            "icono": "bread",
+            "color": "#D35400",
+            "orden": 1,
+            "activo": true
+          },
+          {
+            "id": "subcat_sandwiches",
+            "nombre": "Sándwiches",
+            "descripcion": "Sándwiches de desayuno",
+            "icono": "sandwich",
+            "color": "#D35400",
+            "orden": 2,
+            "activo": true
+          }
+        ]
+      },
+      {
+        "id": "cat_frutas",
+        "nombre": "Frutas",
+        "descripcion": "Frutas y ensaladas de frutas",
+        "icono": "fruit",
+        "color": "#2ECC71",
+        "orden": 4,
+        "activo": true,
+        "subcategorias": [
+          {
+            "id": "subcat_ensaladas_frutas",
+            "nombre": "Ensaladas de Frutas",
+            "descripcion": "Ensaladas de frutas frescas",
+            "icono": "fruit",
+            "color": "#2ECC71",
+            "orden": 1,
+            "activo": true
+          },
+          {
+            "id": "subcat_smoothies",
+            "nombre": "Smoothies",
+            "descripcion": "Batidos de frutas",
+            "icono": "fruit",
+            "color": "#2ECC71",
+            "orden": 2,
+            "activo": true
+          }
+        ]
+      },
+      {
+        "id": "cat_bebidas_calientes",
+        "nombre": "Bebidas Calientes",
+        "descripcion": "Café, té y otras bebidas calientes",
+        "icono": "coffee",
+        "color": "#3498DB",
+        "orden": 5,
+        "activo": true,
+        "subcategorias": [
+          {
+            "id": "subcat_cafe",
+            "nombre": "Café",
+            "descripcion": "Diferentes tipos de café",
+            "icono": "coffee",
+            "color": "#3498DB",
+            "orden": 1,
+            "activo": true
+          },
+          {
+            "id": "subcat_te",
+            "nombre": "Té",
+            "descripcion": "Diferentes tipos de té",
+            "icono": "coffee",
+            "color": "#3498DB",
+            "orden": 2,
+            "activo": true
+          },
+          {
+            "id": "subcat_chocolate",
+            "nombre": "Chocolate",
+            "descripcion": "Chocolate caliente",
+            "icono": "coffee",
+            "color": "#3498DB",
+            "orden": 3,
+            "activo": true
+          }
+        ]
+      },
+      {
+        "id": "cat_bebidas_frias",
+        "nombre": "Bebidas Frías",
+        "descripcion": "Jugos, batidos y otras bebidas frías",
+        "icono": "droplet",
+        "color": "#9B59B6",
+        "orden": 6,
+        "activo": true,
+        "subcategorias": [
+          {
+            "id": "subcat_jugos",
+            "nombre": "Jugos",
+            "descripcion": "Jugos naturales",
+            "icono": "droplet",
+            "color": "#9B59B6",
+            "orden": 1,
+            "activo": true
+          },
+          {
+            "id": "subcat_batidos",
+            "nombre": "Batidos",
+            "descripcion": "Batidos de frutas",
+            "icono": "droplet",
+            "color": "#9B59B6",
+            "orden": 2,
+            "activo": true
+          }
+        ]
+      }
+    ]
+  }
+}

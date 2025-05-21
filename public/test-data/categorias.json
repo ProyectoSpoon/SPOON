@@ -1,0 +1,34 @@
+[
+  {
+    "id_categoria": "CAT_001",
+    "nombre": "Desayuno",
+    "orden": 1,
+    "estado": true,
+    "fecha_creacion": "2025-01-01T00:00:00.000Z",
+    "fecha_actualizacion": "2025-01-01T00:00:00.000Z"
+  },
+  {
+    "id_categoria": "CAT_002",
+    "nombre": "Almuerzos",
+    "orden": 2,
+    "estado": true,
+    "fecha_creacion": "2025-01-01T00:00:00.000Z",
+    "fecha_actualizacion": "2025-01-01T00:00:00.000Z"
+  },
+  {
+    "id_categoria": "CAT_003",
+    "nombre": "Cena",
+    "orden": 3,
+    "estado": true,
+    "fecha_creacion": "2025-01-01T00:00:00.000Z",
+    "fecha_actualizacion": "2025-01-01T00:00:00.000Z"
+  },
+  {
+    "id_categoria": "CAT_004",
+    "nombre": "Comidas Rápidas",
+    "orden": 4,
+    "estado": true,
+    "fecha_creacion": "2025-01-01T00:00:00.000Z",
+    "fecha_actualizacion": "2025-01-01T00:00:00.000Z"
+  }
+]

@@ -1,0 +1,100 @@
+groups:
+- name: targets
+  rules:
+  - alert: ServicioInactivo
+    expr: up == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Servicio inactivo: {{ $labels.instance }}"
+      description: "El servicio {{ $labels.job }} está inactivo hace más de 1 minuto."
+
+- name: recursos
+  rules:
+  - alert: CargaCPUAlta
+    expr: (sum by (instance) (rate(node_cpu_seconds_total{mode!="idle"}[1m])) / sum by (instance) (rate(node_cpu_seconds_total[1m]))) * 100 > 90
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Uso elevado de CPU: {{ $labels.instance }}"
+      description: "Carga de CPU superior al 90% por más de 5 minutos."
+
+  - alert: MemoriaAlta
+    expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 90
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Memoria crítica: {{ $labels.instance }}"
+      description: "Uso de memoria superior al 90% por más de 5 minutos."
+
+  - alert: AlmacenamientoCritico
+    expr: node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} * 100 < 10
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Espacio de disco crítico: {{ $labels.instance }}"
+      description: "Menos del 10% de espacio libre en el sistema de archivos."
+
+- name: postgres
+  rules:
+  - alert: PostgresInactivo
+    expr: pg_up == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "PostgreSQL inactivo: {{ $labels.instance }}"
+      description: "El servidor PostgreSQL está inactivo hace más de 1 minuto."
+
+  - alert: ConexionesPostgresAltas
+    expr: sum by (datname) (pg_stat_activity_count) > 100
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Conexiones PostgreSQL elevadas: {{ $labels.datname }}"
+      description: "Más de 100 conexiones activas a la base de datos {{ $labels.datname }} por más de 5 minutos."
+
+- name: redis
+  rules:
+  - alert: RedisInactivo
+    expr: redis_up == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Redis inactivo: {{ $labels.instance }}"
+      description: "El servidor Redis está inactivo hace más de 1 minuto."
+
+  - alert: RedisMemoriaCritica
+    expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 90
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Memoria Redis crítica: {{ $labels.instance }}"
+      description: "Redis está utilizando más del 90% de su memoria máxima configurada."
+
+- name: http
+  rules:
+  - alert: LatenciaHTTPAlta
+    expr: http_request_duration_seconds{quantile="0.99"} > 1
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Latencia HTTP alta: {{ $labels.instance }}"
+      description: "El p99 de latencia HTTP supera 1 segundo en {{ $labels.instance }}."
+
+  - alert: ErroresHTTP
+    expr: sum(rate(http_requests_total{status=~"5.."}[1m])) / sum(rate(http_requests_total[1m])) * 100 > 5
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Tasa de errores HTTP elevada"
+      description: "Más del 5% de las solicitudes HTTP resultan en error 5xx."

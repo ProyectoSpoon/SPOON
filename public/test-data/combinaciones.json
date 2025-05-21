@@ -1,0 +1,42 @@
+[
+  {
+    "id_combinacion": "COMB_001",
+    "nombre": "Combinación Clásica 1",
+    "es_favorito": true,
+    "es_especial": false,
+    "fecha_creacion": "2025-01-01T00:00:00.000Z",
+    "fecha_actualizacion": "2025-01-01T00:00:00.000Z"
+  },
+  {
+    "id_combinacion": "COMB_002",
+    "nombre": "Combinación Clásica 2",
+    "es_favorito": false,
+    "es_especial": true,
+    "fecha_creacion": "2025-01-01T00:00:00.000Z",
+    "fecha_actualizacion": "2025-01-01T00:00:00.000Z"
+  },
+  {
+    "id_combinacion": "COMB_003",
+    "nombre": "Combinación Vegetariana",
+    "es_favorito": true,
+    "es_especial": true,
+    "fecha_creacion": "2025-01-01T00:00:00.000Z",
+    "fecha_actualizacion": "2025-01-01T00:00:00.000Z"
+  },
+  {
+    "id_combinacion": "COMB_004",
+    "nombre": "Combinación Ejecutiva",
+    "es_favorito": false,
+    "es_especial": false,
+    "fecha_creacion": "2025-01-01T00:00:00.000Z",
+    "fecha_actualizacion": "2025-01-01T00:00:00.000Z"
+  },
+  {
+    "id_combinacion": "COMB_005",
+    "nombre": "Combinación Especial del Chef",
+    "es_favorito": true,
+    "es_especial": true,
+    "fecha_creacion": "2025-01-01T00:00:00.000Z",
+    "fecha_actualizacion": "2025-01-01T00:00:00.000Z"
+  }
+]

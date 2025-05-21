@@ -1,0 +1,32 @@
+[
+  {
+    "id_producto": "PROD_005",
+    "nombre": "Frijoles",
+    "descripcion": "Frijoles cocinados con cebolla, ajo y especias",
+    "descripcion_corta": "Frijoles",
+    "id_categoria": "CAT_002",
+    "id_subcategoria": "SUBCAT_002",
+    "imagen_url": "/images/placeholder.jpg",
+    "imagen_miniatura_url": "/images/placeholder.jpg",
+    "estado_disponible": true,
+    "stock_actual": 80,
+    "stock_minimo": 15,
+    "fecha_creacion": "2025-01-01T00:00:00.000Z",
+    "fecha_actualizacion": "2025-01-01T00:00:00.000Z"
+  },
+  {
+    "id_producto": "PROD_006",
+    "nombre": "Lentejas",
+    "descripcion": "Lentejas cocinadas con verduras y especias",
+    "descripcion_corta": "Lentejas",
+    "id_categoria": "CAT_002",
+    "id_subcategoria": "SUBCAT_002",
+    "imagen_url": "/images/placeholder.jpg",
+    "imagen_miniatura_url": "/images/placeholder.jpg",
+    "estado_disponible": true,
+    "stock_actual": 60,
+    "stock_minimo": 15,
+    "fecha_creacion": "2025-01-01T00:00:00.000Z",
+    "fecha_actualizacion": "2025-01-01T00:00:00.000Z"
+  }
+]

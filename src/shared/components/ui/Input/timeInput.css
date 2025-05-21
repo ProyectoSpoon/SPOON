@@ -1,0 +1,22 @@
+// src/shared/components/ui/TimeInput/timeInput.css
+.custom-time-input::-webkit-datetime-edit-fields-wrapper {
+  visibility: hidden;
+}
+
+.custom-time-input[value=""]::-webkit-datetime-edit-fields-wrapper {
+  visibility: visible;
+}
+
+.custom-time-input::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+.custom-time-input::before {
+  content: attr(placeholder);
+  position: absolute;
+  color: #9CA3AF;  /* text-neutral-400 */
+}
+
+.custom-time-input:not([value=""]):before {
+  display: none;
+}

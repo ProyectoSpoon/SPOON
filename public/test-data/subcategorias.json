@@ -1,0 +1,47 @@
+[
+  {
+    "id_subcategoria": "SUBCAT_001",
+    "id_categoria_padre": "CAT_002",
+    "nombre": "Entrada",
+    "orden": 1,
+    "estado": true,
+    "fecha_creacion": "2025-01-01T00:00:00.000Z",
+    "fecha_actualizacion": "2025-01-01T00:00:00.000Z"
+  },
+  {
+    "id_subcategoria": "SUBCAT_002",
+    "id_categoria_padre": "CAT_002",
+    "nombre": "Principio",
+    "orden": 2,
+    "estado": true,
+    "fecha_creacion": "2025-01-01T00:00:00.000Z",
+    "fecha_actualizacion": "2025-01-01T00:00:00.000Z"
+  },
+  {
+    "id_subcategoria": "SUBCAT_003",
+    "id_categoria_padre": "CAT_002",
+    "nombre": "Proteina",
+    "orden": 3,
+    "estado": true,
+    "fecha_creacion": "2025-01-01T00:00:00.000Z",
+    "fecha_actualizacion": "2025-01-01T00:00:00.000Z"
+  },
+  {
+    "id_subcategoria": "SUBCAT_004",
+    "id_categoria_padre": "CAT_002",
+    "nombre": "Acompañamientos",
+    "orden": 4,
+    "estado": true,
+    "fecha_creacion": "2025-01-01T00:00:00.000Z",
+    "fecha_actualizacion": "2025-01-01T00:00:00.000Z"
+  },
+  {
+    "id_subcategoria": "SUBCAT_005",
+    "id_categoria_padre": "CAT_002",
+    "nombre": "Bebidas",
+    "orden": 5,
+    "estado": true,
+    "fecha_creacion": "2025-01-01T00:00:00.000Z",
+    "fecha_actualizacion": "2025-01-01T00:00:00.000Z"
+  }
+]

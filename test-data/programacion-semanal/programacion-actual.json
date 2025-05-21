@@ -1,0 +1,58 @@
+{
+  "id": "PROG_SEM_001",
+  "semana_inicio": "2025-05-19T00:00:00.000Z",
+  "semana_fin": "2025-05-25T00:00:00.000Z",
+  "dias": [
+    {
+      "dia": "lunes",
+      "fecha": "2025-05-19T00:00:00.000Z",
+      "menu_id": "MENU_001",
+      "combinaciones": ["COMB_1", "COMB_2", "COMB_3"],
+      "estado": "activo"
+    },
+    {
+      "dia": "martes",
+      "fecha": "2025-05-20T00:00:00.000Z",
+      "menu_id": "MENU_002",
+      "combinaciones": ["COMB_4", "COMB_5", "COMB_6"],
+      "estado": "pendiente"
+    },
+    {
+      "dia": "miércoles",
+      "fecha": "2025-05-21T00:00:00.000Z",
+      "menu_id": "MENU_003",
+      "combinaciones": ["COMB_7", "COMB_8", "COMB_9"],
+      "estado": "pendiente"
+    },
+    {
+      "dia": "jueves",
+      "fecha": "2025-05-22T00:00:00.000Z",
+      "menu_id": "MENU_004",
+      "combinaciones": ["COMB_10", "COMB_11", "COMB_12"],
+      "estado": "pendiente"
+    },
+    {
+      "dia": "viernes",
+      "fecha": "2025-05-23T00:00:00.000Z",
+      "menu_id": "MENU_005",
+      "combinaciones": ["COMB_13", "COMB_14", "COMB_15"],
+      "estado": "pendiente"
+    },
+    {
+      "dia": "sábado",
+      "fecha": "2025-05-24T00:00:00.000Z",
+      "menu_id": null,
+      "combinaciones": [],
+      "estado": "no_disponible"
+    },
+    {
+      "dia": "domingo",
+      "fecha": "2025-05-25T00:00:00.000Z",
+      "menu_id": null,
+      "combinaciones": [],
+      "estado": "no_disponible"
+    }
+  ],
+  "fecha_creacion": "2025-05-15T00:00:00.000Z",
+  "fecha_actualizacion": "2025-05-15T00:00:00.000Z"
+}

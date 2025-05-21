@@ -1,0 +1,50 @@
+[
+  {
+    "fecha": "2025-05-19T00:00:00.000Z",
+    "total_ventas": 1250000,
+    "productos_vendidos": [
+      {"producto_id": "PROD_001", "nombre": "Sopa de Verduras", "cantidad": 25, "total": 125000},
+      {"producto_id": "PROD_005", "nombre": "Frijoles", "cantidad": 30, "total": 150000},
+      {"producto_id": "PROD_007", "nombre": "Lomo de Res", "cantidad": 35, "total": 350000},
+      {"producto_id": "PROD_010", "nombre": "Ensalada Mixta", "cantidad": 40, "total": 200000},
+      {"producto_id": "PROD_012", "nombre": "Jugo de Naranja", "cantidad": 85, "total": 425000}
+    ],
+    "combinaciones_vendidas": [
+      {"combinacion_id": "COMB_1", "nombre": "Combinación 1", "cantidad": 15, "total": 225000},
+      {"combinacion_id": "COMB_2", "nombre": "Combinación 2", "cantidad": 10, "total": 150000},
+      {"combinacion_id": "COMB_3", "nombre": "Combinación 3", "cantidad": 20, "total": 300000}
+    ]
+  },
+  {
+    "fecha": "2025-05-18T00:00:00.000Z",
+    "total_ventas": 1150000,
+    "productos_vendidos": [
+      {"producto_id": "PROD_002", "nombre": "Crema de Champiñones", "cantidad": 20, "total": 100000},
+      {"producto_id": "PROD_006", "nombre": "Lentejas", "cantidad": 25, "total": 125000},
+      {"producto_id": "PROD_008", "nombre": "Pechuga de Pollo a la Plancha", "cantidad": 30, "total": 300000},
+      {"producto_id": "PROD_011", "nombre": "Patacones", "cantidad": 35, "total": 175000},
+      {"producto_id": "PROD_013", "nombre": "Limonada", "cantidad": 90, "total": 450000}
+    ],
+    "combinaciones_vendidas": [
+      {"combinacion_id": "COMB_16", "nombre": "Combinación 16", "cantidad": 12, "total": 180000},
+      {"combinacion_id": "COMB_17", "nombre": "Combinación 17", "cantidad": 8, "total": 120000},
+      {"combinacion_id": "COMB_18", "nombre": "Combinación 18", "cantidad": 18, "total": 270000}
+    ]
+  },
+  {
+    "fecha": "2025-05-17T00:00:00.000Z",
+    "total_ventas": 1350000,
+    "productos_vendidos": [
+      {"producto_id": "PROD_003", "nombre": "Ensalada César", "cantidad": 30, "total": 150000},
+      {"producto_id": "PROD_004", "nombre": "Arroz Blanco", "cantidad": 35, "total": 175000},
+      {"producto_id": "PROD_009", "nombre": "Filete de Pescado", "cantidad": 40, "total": 400000},
+      {"producto_id": "PROD_010", "nombre": "Ensalada Mixta", "cantidad": 45, "total": 225000},
+      {"producto_id": "PROD_012", "nombre": "Jugo de Naranja", "cantidad": 80, "total": 400000}
+    ],
+    "combinaciones_vendidas": [
+      {"combinacion_id": "COMB_13", "nombre": "Combinación 13", "cantidad": 14, "total": 210000},
+      {"combinacion_id": "COMB_14", "nombre": "Combinación 14", "cantidad": 12, "total": 180000},
+      {"combinacion_id": "COMB_15", "nombre": "Combinación 15", "cantidad": 22, "total": 330000}
+    ]
+  }
+]

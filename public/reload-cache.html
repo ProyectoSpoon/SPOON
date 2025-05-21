@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recargar Caché de Menú</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #f4821f;
+            padding-bottom: 10px;
+        }
+        button {
+            background-color: #f4821f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #e67812;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .log {
+            background-color: #f5f5f5;
+            border: 1px solid #e3e3e3;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>Recargar Caché de Menú</h1>
+    
+    <div class="container">
+        <p>Esta herramienta limpia el caché del navegador y recarga los datos de los productos, categorías y menús desde los archivos JSON.</p>
+        <p>Utilice esta herramienta después de actualizar los archivos JSON para que los cambios se vean reflejados en la aplicación.</p>
+        
+        <button id="reloadButton">Recargar Caché</button>
+        
+        <div id="result" class="result"></div>
+        
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        // Función para mostrar mensajes en el log
+        function log(message) {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.innerHTML += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        // Función para mostrar el resultado
+        function showResult(message, isSuccess) {
+            const resultElement = document.getElementById('result');
+            resultElement.textContent = message;
+            resultElement.className = isSuccess ? 'result success' : 'result error';
+            resultElement.style.display = 'block';
+        }
+
+        // Función para limpiar el caché y recargar los datos
+        async function reloadCache() {
+            try {
+                log('Iniciando limpieza del caché...');
+                
+                // Limpiar el caché de localStorage
+                const cacheKeys = [
+                    'menu_productos',
+                    'menu_categorias',
+                    'menu_subcategorias',
+                    'menu_dia',
+                    'menu_combinaciones',
+                    'menu_especiales',
+                    'menu_favoritos',
+                    'menu_programacion'
+                ];
+                
+                cacheKeys.forEach(key => {
+                    localStorage.removeItem(key);
+                    log(`Caché '${key}' eliminado`);
+                });
+                
+                log('Caché limpiado correctamente');
+                
+                // Cargar los datos desde los archivos JSON
+                log('Cargando datos desde archivos JSON...');
+                
+                // Cargar categorías
+                await loadData('/test-data/categorias.json', 'menu_categorias', 'Categorías');
+                
+                // Cargar subcategorías
+                await loadData('/test-data/subcategorias.json', 'menu_subcategorias', 'Subcategorías');
+                
+                // Cargar productos
+                await loadProductos('/test-data/productos.json', 'menu_productos', 'Productos');
+                
+                // Cargar menú del día
+                try {
+                    await loadData('/test-data/menu-dia/menu-dia.json', 'menu_dia', 'Menú del día');
+                } catch (error) {
+                    log(`Advertencia: ${error.message}. Continuando con la carga...`);
+                }
+                
+                // Cargar combinaciones
+                try {
+                    await loadData('/test-data/combinaciones.json', 'menu_combinaciones', 'Combinaciones');
+                } catch (error) {
+                    log(`Advertencia: ${error.message}. Continuando con la carga...`);
+                }
+                
+                // Cargar especiales
+                try {
+                    await loadData('/test-data/especiales/especiales.json', 'menu_especiales', 'Especiales');
+                } catch (error) {
+                    log(`Advertencia: ${error.message}. Continuando con la carga...`);
+                }
+                
+                // Cargar favoritos
+                try {
+                    await loadData('/test-data/favoritos/favoritos.json', 'menu_favoritos', 'Favoritos');
+                } catch (error) {
+                    log(`Advertencia: ${error.message}. Continuando con la carga...`);
+                }
+                
+                // Cargar programación
+                try {
+                    await loadData('/test-data/programacion-semanal/programacion-actual.json', 'menu_programacion', 'Programación');
+                } catch (error) {
+                    log(`Advertencia: ${error.message}. Continuando con la carga...`);
+                }
+                
+                log('Todos los datos han sido recargados correctamente');
+                showResult('Caché recargado correctamente. Ahora puede volver a la aplicación para ver los cambios.', true);
+                
+            } catch (error) {
+                log(`Error: ${error.message}`);
+                showResult(`Error al recargar el caché: ${error.message}`, false);
+            }
+        }
+        
+        // Función para cargar datos desde un archivo JSON
+        async function loadData(url, cacheKey, label) {
+            try {
+                log(`Cargando ${label}...`);
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`Error al cargar ${label}: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                localStorage.setItem(cacheKey, JSON.stringify(data));
+                log(`${label} cargados: ${Array.isArray(data) ? data.length : 1} elementos`);
+                
+                return data;
+            } catch (error) {
+                log(`Error al cargar ${label}: ${error.message}`);
+                throw error;
+            }
+        }
+        
+        // Función para cargar y formatear productos
+        async function loadProductos(url, cacheKey, label) {
+            try {
+                log(`Cargando ${label}...`);
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`Error al cargar ${label}: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Transformar los datos al formato esperado por la aplicación
+                const productosFormateados = data.map((prod) => ({
+                    id: prod.id_producto,
+                    nombre: prod.nombre,
+                    descripcion: prod.descripcion,
+                    descripcion_corta: prod.descripcion_corta,
+                    categoriaId: prod.id_categoria,
+                    subcategoriaId: prod.id_subcategoria,
+                    imagen: prod.imagen_url,
+                    imagen_miniatura: prod.imagen_miniatura_url,
+                    estado_disponible: prod.estado_disponible,
+                    cantidad: prod.stock_actual || 50, // Asignar un valor por defecto si no existe
+                    precio: Math.floor(Math.random() * 10000) + 5000, // Precio aleatorio entre 5000 y 15000
+                    currentVersion: 1,
+                    status: prod.estado_disponible ? 'active' : 'archived'
+                }));
+                
+                localStorage.setItem(cacheKey, JSON.stringify(productosFormateados));
+                log(`${label} cargados: ${productosFormateados.length} elementos`);
+                
+                return productosFormateados;
+            } catch (error) {
+                log(`Error al cargar ${label}: ${error.message}`);
+                throw error;
+            }
+        }
+
+        // Evento click para el botón de recarga
+        document.getElementById('reloadButton').addEventListener('click', reloadCache);
+    </script>
+</body>
+</html>

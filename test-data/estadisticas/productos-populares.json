@@ -1,0 +1,106 @@
+{
+  "periodo": "mayo-2025",
+  "fecha_generacion": "2025-05-19T00:00:00.000Z",
+  "productos_mas_vendidos": [
+    {
+      "producto_id": "PROD_012",
+      "nombre": "Jugo de Naranja",
+      "categoriaId": "CAT_005",
+      "total_vendido": 255,
+      "total_ingresos": 1275000,
+      "porcentaje_ventas": 15.8
+    },
+    {
+      "producto_id": "PROD_013",
+      "nombre": "Limonada",
+      "categoriaId": "CAT_005",
+      "total_vendido": 210,
+      "total_ingresos": 1050000,
+      "porcentaje_ventas": 13.1
+    },
+    {
+      "producto_id": "PROD_010",
+      "nombre": "Ensalada Mixta",
+      "categoriaId": "CAT_004",
+      "total_vendido": 125,
+      "total_ingresos": 625000,
+      "porcentaje_ventas": 7.8
+    },
+    {
+      "producto_id": "PROD_007",
+      "nombre": "Lomo de Res",
+      "categoriaId": "CAT_003",
+      "total_vendido": 95,
+      "total_ingresos": 950000,
+      "porcentaje_ventas": 5.9
+    },
+    {
+      "producto_id": "PROD_008",
+      "nombre": "Pechuga de Pollo a la Plancha",
+      "categoriaId": "CAT_003",
+      "total_vendido": 90,
+      "total_ingresos": 900000,
+      "porcentaje_ventas": 5.6
+    }
+  ],
+  "categorias_mas_vendidas": [
+    {
+      "categoriaId": "CAT_005",
+      "nombre": "Bebidas",
+      "total_vendido": 465,
+      "total_ingresos": 2325000,
+      "porcentaje_ventas": 28.9
+    },
+    {
+      "categoriaId": "CAT_003",
+      "nombre": "Proteínas",
+      "total_vendido": 255,
+      "total_ingresos": 2550000,
+      "porcentaje_ventas": 15.9
+    },
+    {
+      "categoriaId": "CAT_004",
+      "nombre": "Acompañamientos",
+      "total_vendido": 245,
+      "total_ingresos": 1225000,
+      "porcentaje_ventas": 15.2
+    },
+    {
+      "categoriaId": "CAT_002",
+      "nombre": "Principios",
+      "total_vendido": 210,
+      "total_ingresos": 1050000,
+      "porcentaje_ventas": 13.1
+    },
+    {
+      "categoriaId": "CAT_001",
+      "nombre": "Entradas",
+      "total_vendido": 185,
+      "total_ingresos": 925000,
+      "porcentaje_ventas": 11.5
+    }
+  ],
+  "combinaciones_mas_vendidas": [
+    {
+      "combinacion_id": "COMB_3",
+      "nombre": "Combinación 3",
+      "total_vendido": 42,
+      "total_ingresos": 630000,
+      "porcentaje_ventas": 2.6
+    },
+    {
+      "combinacion_id": "COMB_15",
+      "nombre": "Combinación 15",
+      "total_vendido": 38,
+      "total_ingresos": 570000,
+      "porcentaje_ventas": 2.4
+    },
+    {
+      "combinacion_id": "COMB_18",
+      "nombre": "Combinación 18",
+      "total_vendido": 35,
+      "total_ingresos": 525000,
+      "porcentaje_ventas": 2.2
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "id_producto": "PROD_012",
+    "nombre": "Jugo de Naranja",
+    "descripcion": "Jugo de naranja natural recién exprimido",
+    "descripcion_corta": "Jugo de naranja natural",
+    "id_categoria": "CAT_005",
+    "id_subcategoria": "SUBCAT_005",
+    "imagen_url": "/images/placeholder.jpg",
+    "imagen_miniatura_url": "/images/placeholder.jpg",
+    "estado_disponible": true,
+    "stock_actual": 80,
+    "stock_minimo": 20,
+    "fecha_creacion": "2025-01-01T00:00:00.000Z",
+    "fecha_actualizacion": "2025-01-01T00:00:00.000Z"
+  },
+  {
+    "id_producto": "PROD_013",
+    "nombre": "Limonada",
+    "descripcion": "Limonada fresca con un toque de menta",
+    "descripcion_corta": "Limonada",
+    "id_categoria": "CAT_005",
+    "id_subcategoria": "SUBCAT_005",
+    "imagen_url": "/images/placeholder.jpg",
+    "imagen_miniatura_url": "/images/placeholder.jpg",
+    "estado_disponible": true,
+    "stock_actual": 100,
+    "stock_minimo": 20,
+    "fecha_creacion": "2025-01-01T00:00:00.000Z",
+    "fecha_actualizacion": "2025-01-01T00:00:00.000Z"
+  }
+]

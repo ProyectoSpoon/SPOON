@@ -1,0 +1,38 @@
+[
+  {
+    "id": "FAV_001",
+    "producto_id": "PROD_007",
+    "nombre": "Lomo de Res",
+    "descripcion": "Jugoso lomo de res a la parrilla con especias",
+    "categoriaId": "CAT_003",
+    "imagen": "/images/placeholder.jpg",
+    "fecha_agregado": "2025-05-01T00:00:00.000Z"
+  },
+  {
+    "id": "FAV_002",
+    "producto_id": "PROD_008",
+    "nombre": "Pechuga de Pollo a la Plancha",
+    "descripcion": "Pechuga de pollo a la plancha con hierbas y limón",
+    "categoriaId": "CAT_003",
+    "imagen": "/images/placeholder.jpg",
+    "fecha_agregado": "2025-05-02T00:00:00.000Z"
+  },
+  {
+    "id": "FAV_003",
+    "producto_id": "PROD_012",
+    "nombre": "Jugo de Naranja",
+    "descripcion": "Jugo de naranja natural recién exprimido",
+    "categoriaId": "CAT_005",
+    "imagen": "/images/placeholder.jpg",
+    "fecha_agregado": "2025-05-03T00:00:00.000Z"
+  },
+  {
+    "id": "FAV_004",
+    "producto_id": "PROD_001",
+    "nombre": "Sopa de Verduras",
+    "descripcion": "Deliciosa sopa de verduras frescas con un toque de hierbas aromáticas",
+    "categoriaId": "CAT_001",
+    "imagen": "/images/placeholder.jpg",
+    "fecha_agregado": "2025-05-04T00:00:00.000Z"
+  }
+]

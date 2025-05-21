@@ -1,0 +1,159 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "Platos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "`nombre de plato`", "order": "ASCENDING" },
+        { "fieldPath": "`tipo de comida referencia`", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "Platos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "`calificación comida`", "order": "DESCENDING" },
+        { "fieldPath": "`Valor Nutricional`", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "Bebida",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "`Tipo de Bebida`", "order": "ASCENDING" },
+        { "fieldPath": "`Descripción`", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "Proteina",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "`Tipo de Proteína`", "order": "ASCENDING" },
+        { "fieldPath": "`Descripción`", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "Menús",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "restauranteId", "order": "ASCENDING" },
+        { "fieldPath": "fecha", "order": "DESCENDING" },
+        { "fieldPath": "activo", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "Menús",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "`Descripción de Plato`", "order": "ASCENDING" },
+        { "fieldPath": "`Especial del Día`", "order": "DESCENDING" },
+        { "fieldPath": "`Recomendado del Día`", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "dueno_restaurante",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "email", "order": "ASCENDING" },
+        { "fieldPath": "RestauranteID", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "Comensal",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "`Fotos de Usuario`", "order": "ASCENDING" },
+        { "fieldPath": "`Códigos Promocionales`", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "Comensal",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "`Puntos Fidelidad`", "order": "DESCENDING" },
+        { "fieldPath": "`Datos Personales`", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "Centro de Ayuda",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "Usuario", "order": "ASCENDING" },
+        { "fieldPath": "Estado", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "Ciudades y Regiones",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "`País`", "order": "ASCENDING" },
+        { "fieldPath": "`Nombre-Región`", "order": "ASCENDING" },
+        { "fieldPath": "`Nombre-Ciudad`", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "Tipos de Comida",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "`Tipo de Comida`", "order": "ASCENDING" },
+        { "fieldPath": "`Descripción`", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "dueno_restaurante",
+      "fieldPath": "email",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "Platos",
+      "fieldPath": "ID",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "Menús",
+      "fieldPath": "fecha",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "DESCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "Proteina",
+      "fieldPath": "`Tipo de Proteína`",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "Bebida",
+      "fieldPath": "`Tipo de Bebida`",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
+    }
+  ]
+}

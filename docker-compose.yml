@@ -1,0 +1,296 @@
+version: '3.8'
+
+services:
+  # API Gateway con Nginx
+  nginx:
+    image: nginx:1.21-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/error:/usr/share/nginx/html:ro
+    depends_on:
+      - nextjs
+      - menu-service
+      - inventario-service
+      - ventas-service
+      - estadisticas-service
+      - bi-service
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+  # Aplicación Next.js principal
+  nextjs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DB_USER=${DB_USER:-spoon_admin}
+      - DB_PASSWORD=${DB_PASSWORD:-Carlos0412*}
+      - DB_HOST=postgres
+      - DB_NAME=${DB_NAME:-spoon}
+      - DB_PORT=5432
+      - NEXT_PUBLIC_APP_URL=http://localhost:3000
+      - JWT_SECRET=${JWT_SECRET:-b68e4d3c7f9a2e1d5b0c8a7d6e3f2b1a9c8d7e6f5a4b3c2d1e0f}
+    volumes:
+      - ./public:/app/public
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # Servicio de menú
+  menu-service:
+    build:
+      context: ./menu-service
+      dockerfile: Dockerfile.menu
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - DB_USER=${DB_USER:-spoon_admin}
+      - DB_PASSWORD=${DB_PASSWORD:-Carlos0412*}
+      - DB_HOST=postgres
+      - DB_NAME=${DB_NAME:-spoon}
+      - DB_PORT=5432
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-spoon-restaurant}
+    volumes:
+      - ./menu-service:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  # Servicio de inventario
+  inventario-service:
+    build:
+      context: ./inventario-service
+      dockerfile: Dockerfile.inventario
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - DB_USER=${DB_USER:-spoon_admin}
+      - DB_PASSWORD=${DB_PASSWORD:-Carlos0412*}
+      - DB_HOST=postgres
+      - DB_NAME=${DB_NAME:-spoon}
+      - DB_PORT=5432
+    volumes:
+      - ./inventario-service:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  # Servicio de ventas
+  ventas-service:
+    build:
+      context: ./ventas-service
+      dockerfile: Dockerfile.ventas
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+      - DB_USER=${DB_USER:-spoon_admin}
+      - DB_PASSWORD=${DB_PASSWORD:-Carlos0412*}
+      - DB_HOST=postgres
+      - DB_NAME=${DB_NAME:-spoon}
+      - DB_PORT=5432
+    volumes:
+      - ./ventas-service:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  # Servicio de estadísticas
+  estadisticas-service:
+    build:
+      context: ./estadisticas-service
+      dockerfile: Dockerfile.estadisticas
+    ports:
+      - "3004:3004"
+    environment:
+      - PORT=3004
+      - DB_USER=${DB_USER:-spoon_admin}
+      - DB_PASSWORD=${DB_PASSWORD:-Carlos0412*}
+      - DB_HOST=postgres
+      - DB_NAME=${DB_NAME:-spoon}
+      - DB_PORT=5432
+    volumes:
+      - ./estadisticas-service:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  # Servicio BI
+  bi-service:
+    build:
+      context: ./bi-service
+      dockerfile: Dockerfile.bi
+    ports:
+      - "3005:3005"
+    environment:
+      - PORT=3005
+      - DB_USER=${DB_USER:-spoon_admin}
+      - DB_PASSWORD=${DB_PASSWORD:-Carlos0412*}
+      - DB_HOST=postgres
+      - DB_NAME=${DB_NAME:-spoon}
+      - DB_PORT=5432
+    volumes:
+      - ./bi-service:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  # Base de datos PostgreSQL
+  postgres:
+    image: postgres:14-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=${DB_USER:-spoon_admin}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-Carlos0412*}
+      - POSTGRES_DB=${DB_NAME:-spoon}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-spoon_admin} -d ${DB_NAME:-spoon}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Servicio de caché con Redis
+  redis:
+    image: redis:6-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      
+  # Prometheus - Monitoreo de métricas
+  prometheus:
+    image: prom/prometheus:v2.42.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/alert.rules:/etc/prometheus/alert.rules
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # Grafana - Visualización de métricas
+  grafana:
+    image: grafana/grafana:9.5.2
+    ports:
+      - "3100:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=spoon123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # Node Exporter - Métricas del sistema
+  node-exporter:
+    image: prom/node-exporter:v1.5.0
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    restart: unless-stopped
+    
+  # PostgreSQL Exporter - Métricas de PostgreSQL
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter
+    ports:
+      - "9187:9187"
+    environment:
+      - DATA_SOURCE_NAME=postgresql://${DB_USER:-spoon_admin}:${DB_PASSWORD:-Carlos0412*}@postgres:5432/${DB_NAME:-spoon}?sslmode=disable
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  # Redis Exporter - Métricas de Redis
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.45.0
+    ports:
+      - "9121:9121"
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # cAdvisor - Métricas de contenedores
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.45.0
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    depends_on:
+      - redis
+      - postgres
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:

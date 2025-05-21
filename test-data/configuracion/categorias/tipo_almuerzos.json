@@ -1,0 +1,158 @@
+{
+  "categorias": [
+    {
+      "id": "cat_entradas",
+      "nombre": "Entradas",
+      "descripcion": "Platos para iniciar la comida",
+      "icono": "soup",
+      "color": "#F39C12",
+      "orden": 1,
+      "activo": true,
+      "subcategorias": [
+        {
+          "id": "subcat_sopas",
+          "nombre": "Sopas",
+          "descripcion": "Sopas y cremas",
+          "icono": "soup",
+          "color": "#F39C12",
+          "orden": 1,
+          "activo": true
+        },
+        {
+          "id": "subcat_ensaladas",
+          "nombre": "Ensaladas",
+          "descripcion": "Ensaladas frescas",
+          "icono": "salad",
+          "color": "#F39C12",
+          "orden": 2,
+          "activo": true
+        }
+      ]
+    },
+    {
+      "id": "cat_principios",
+      "nombre": "Principios",
+      "descripcion": "Platos principales con base en granos",
+      "icono": "utensils",
+      "color": "#E67E22",
+      "orden": 2,
+      "activo": true,
+      "subcategorias": [
+        {
+          "id": "subcat_arroces",
+          "nombre": "Arroces",
+          "descripcion": "Platos a base de arroz",
+          "icono": "circle",
+          "color": "#E67E22",
+          "orden": 1,
+          "activo": true
+        },
+        {
+          "id": "subcat_granos",
+          "nombre": "Granos",
+          "descripcion": "Frijoles, lentejas y otros granos",
+          "icono": "circle",
+          "color": "#E67E22",
+          "orden": 2,
+          "activo": true
+        }
+      ]
+    },
+    {
+      "id": "cat_proteinas",
+      "nombre": "Proteínas",
+      "descripcion": "Platos principales con base en proteínas",
+      "icono": "beef",
+      "color": "#E74C3C",
+      "orden": 3,
+      "activo": true,
+      "subcategorias": [
+        {
+          "id": "subcat_carnes",
+          "nombre": "Carnes",
+          "descripcion": "Platos a base de carne de res",
+          "icono": "beef",
+          "color": "#E74C3C",
+          "orden": 1,
+          "activo": true
+        },
+        {
+          "id": "subcat_pollo",
+          "nombre": "Pollo",
+          "descripcion": "Platos a base de pollo",
+          "icono": "drumstick",
+          "color": "#E74C3C",
+          "orden": 2,
+          "activo": true
+        },
+        {
+          "id": "subcat_pescado",
+          "nombre": "Pescado",
+          "descripcion": "Platos a base de pescado",
+          "icono": "fish",
+          "color": "#E74C3C",
+          "orden": 3,
+          "activo": true
+        }
+      ]
+    },
+    {
+      "id": "cat_acompanantes",
+      "nombre": "Acompañantes",
+      "descripcion": "Guarniciones y acompañantes",
+      "icono": "salad",
+      "color": "#2ECC71",
+      "orden": 4,
+      "activo": true,
+      "subcategorias": [
+        {
+          "id": "subcat_vegetales",
+          "nombre": "Vegetales",
+          "descripcion": "Acompañantes a base de vegetales",
+          "icono": "leaf",
+          "color": "#2ECC71",
+          "orden": 1,
+          "activo": true
+        },
+        {
+          "id": "subcat_tuberculos",
+          "nombre": "Tubérculos",
+          "descripcion": "Papas, yucas y otros tubérculos",
+          "icono": "circle",
+          "color": "#2ECC71",
+          "orden": 2,
+          "activo": true
+        }
+      ]
+    },
+    {
+      "id": "cat_bebidas",
+      "nombre": "Bebidas",
+      "descripcion": "Bebidas para acompañar la comida",
+      "icono": "coffee",
+      "color": "#3498DB",
+      "orden": 5,
+      "activo": true,
+      "subcategorias": [
+        {
+          "id": "subcat_jugos",
+          "nombre": "Jugos",
+          "descripcion": "Jugos naturales",
+          "icono": "droplet",
+          "color": "#3498DB",
+          "orden": 1,
+          "activo": true
+        },
+        {
+          "id": "subcat_gaseosas",
+          "nombre": "Gaseosas",
+          "descripcion": "Bebidas carbonatadas",
+          "icono": "coffee",
+          "color": "#3498DB",
+          "orden": 2,
+          "activo": true
+        }
+      ]
+    }
+  ]
+}
