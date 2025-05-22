@@ -238,7 +238,7 @@ export default function MenuDiaPage() {
     );
   }, []);
 
-  // Usar el callback memoizado para filtrar productos
+  // Usar el callback memoizado para filtrar productos con debounce corto
   useEffect(() => {
     if (searchTerm.trim() === '') {
       setSearchSuggestions([]);
@@ -246,19 +246,51 @@ export default function MenuDiaPage() {
       return;
     }
     
-    const sugerencias = filtrarProductosPorTermino(searchTerm, todosLosProductos);
-    setSearchSuggestions(sugerencias);
-    setShowSuggestions(sugerencias.length > 0);
+    // Debounce corto (150ms) para dar sensación de inmediatez pero evitar demasiadas actualizaciones
+    const debounceTimeout = setTimeout(() => {
+      const sugerencias = filtrarProductosPorTermino(searchTerm, todosLosProductos);
+      setSearchSuggestions(sugerencias);
+      setShowSuggestions(sugerencias.length > 0);
+    }, 150);
+    
+    return () => clearTimeout(debounceTimeout);
   }, [searchTerm, todosLosProductos, filtrarProductosPorTermino]); // Dependencias estables
   
-  const handleSelectSuggestion = (producto: VersionedProduct) => {
-    setSearchTerm(producto.nombre);
-    setShowSuggestions(false);
-    if (producto.categoriaId) {
-      setExpandedCategory(producto.categoriaId);
-      setSelectedTab(producto.categoriaId);
-    }
-  };
+  const handleSelectSuggestion = (producto: VersionedProduct) => {
+    // Actualizar el término de búsqueda y ocultar sugerencias
+    setSearchTerm(producto.nombre);
+    setShowSuggestions(false);
+    
+    // Determinar el tipo de comida basado en la categoría
+    let tipoComida = 'almuerzo'; // Valor por defecto
+    
+    // Mapeo de categorías a tipos de comida
+    if (['CAT_001', 'CAT_005'].includes(producto.categoriaId)) {
+      tipoComida = 'desayuno';
+    } else if (['CAT_001', 'CAT_002', 'CAT_003', 'CAT_004', 'CAT_005'].includes(producto.categoriaId)) {
+      tipoComida = 'almuerzo';
+    } else if (['CAT_002', 'CAT_003', 'CAT_004'].includes(producto.categoriaId)) {
+      tipoComida = 'cena';
+    } else if (['CAT_003', 'CAT_004'].includes(producto.categoriaId)) {
+      tipoComida = 'rapidas';
+    }
+    
+    // Actualizar la UI para mostrar la categoría correcta
+    setSelectedTab(tipoComida);
+    setSelectedCategoryTab(producto.categoriaId);
+    setExpandedCategory(producto.categoriaId);
+    
+    // Actualizar la selección en el contexto del menú
+    updateSeleccion(producto.categoriaId, null);
+    
+    // Hacer scroll hacia la categoría del producto (opcional)
+    setTimeout(() => {
+      const categoriaElement = document.getElementById(`categoria-${producto.categoriaId}`);
+      if (categoriaElement) {
+        categoriaElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+  };
 
   // Usar las categorías del menuData si están disponibles, sino usar la lista harcoded como fallback
   const categoriasList = (menuData && Array.isArray(menuData.categorias) && menuData.categorias.length > 0)
@@ -301,38 +333,94 @@ export default function MenuDiaPage() {
       {/* Encabezado principal */}
       <div className="flex justify-between items-center bg-gray-50 p-4">
         <h1 className="text-2xl font-bold text-gray-700">Menu - Almuerzos</h1>
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Buscar producto"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-3 pr-10 py-2 border border-gray-200 rounded-md w-64 text-sm"
-          />
-          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          
-          {showSuggestions && (
-            <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
-              {searchSuggestions.map((producto) => (
-                <div
-                  key={producto.id}
-                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center"
-                  onClick={() => handleSelectSuggestion(producto)}
-                >
-                  {producto.categoriaId === 'CAT_001' && <Soup className="h-4 w-4 text-orange-500 mr-2" />}
-                  {producto.categoriaId === 'CAT_002' && <Utensils className="h-4 w-4 text-yellow-500 mr-2" />}
-                  {producto.categoriaId === 'CAT_003' && <Beef className="h-4 w-4 text-red-500 mr-2" />}
-                  {producto.categoriaId === 'CAT_004' && <Salad className="h-4 w-4 text-green-500 mr-2" />}
-                  {producto.categoriaId === 'CAT_005' && <Coffee className="h-4 w-4 text-blue-500 mr-2" />}
-                  <div>
-                    <div className="text-sm font-medium">{producto.nombre}</div>
-                    <div className="text-xs text-gray-500">{producto.descripcion}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Buscar producto"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-3 pr-10 py-2 border border-gray-200 rounded-md w-64 text-sm"
+            />
+            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            
+            {showSuggestions && (
+              <div className="absolute z-10 mt-1 w-96 bg-white border border-gray-200 rounded-md shadow-lg max-h-80 overflow-auto">
+                {searchSuggestions.length > 0 ? (
+                  searchSuggestions.map((producto) => (
+                    <div
+                      key={producto.id}
+                      id={`sugerencia-${producto.id}`}
+                      className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                      onClick={() => handleSelectSuggestion(producto)}
+                    >
+                      <div className="flex items-start space-x-3">
+                        {/* Imagen del producto */}
+                        <div className="flex-shrink-0 w-16 h-16 rounded-md overflow-hidden bg-gray-100">
+                          {producto.imagen ? (
+                            <img 
+                              src={producto.imagen} 
+                              alt={producto.nombre} 
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              {producto.categoriaId === 'CAT_001' && <Soup className="h-8 w-8 text-orange-500" />}
+                              {producto.categoriaId === 'CAT_002' && <Utensils className="h-8 w-8 text-yellow-500" />}
+                              {producto.categoriaId === 'CAT_003' && <Beef className="h-8 w-8 text-red-500" />}
+                              {producto.categoriaId === 'CAT_004' && <Salad className="h-8 w-8 text-green-500" />}
+                              {producto.categoriaId === 'CAT_005' && <Coffee className="h-8 w-8 text-blue-500" />}
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Información del producto */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {producto.nombre}
+                            </p>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                              {categoriasList.find(c => c.id === producto.categoriaId)?.nombre || 'Categoría'}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs text-gray-500 line-clamp-2">
+                            {producto.descripcion}
+                          </p>
+                          
+                          {/* Acciones rápidas */}
+                          <div className="mt-2 flex justify-between items-center">
+                            <div className="text-xs text-gray-500">
+                              {producto.stock.status === 'in_stock' ? (
+                                <span className="text-green-600">Disponible</span>
+                              ) : producto.stock.status === 'low_stock' ? (
+                                <span className="text-yellow-600">Stock bajo</span>
+                              ) : (
+                                <span className="text-red-600">No disponible</span>
+                              )}
+                            </div>
+                            <button
+                              className="text-xs bg-[#F4821F] hover:bg-[#E67812] text-white px-2 py-1 rounded"
+                              onClick={(e) => {
+                                e.stopPropagation(); // Evitar que se active el onClick del div padre
+                                handleAgregarAlMenu(producto);
+                                setShowSuggestions(false);
+                              }}
+                            >
+                              Agregar al menú
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-4 text-center text-gray-500">
+                    No se encontraron productos
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
       </div>
 
       {/* Navegación principal - Tipo de comida */}
@@ -462,7 +550,7 @@ export default function MenuDiaPage() {
             return false;
           })
           .map((categoria) => (
-            <div key={categoria.id} className="border-b border-gray-200 bg-white">
+            <div key={categoria.id} id={`categoria-${categoria.id}`} className="border-b border-gray-200 bg-white">
               <div 
                 className="flex items-center justify-between py-3 px-4 cursor-pointer"
                 onClick={() => toggleCategory(categoria.id)}
