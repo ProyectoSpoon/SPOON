@@ -143,39 +143,7 @@ const elementosMenu: ElementoMenuProps[] = [
     icono: Settings,
     etiqueta: 'Configuración',
     ruta: '/dashboard/configuracion',
-    descripcion: 'Configuración general',
-    subElementos: [
-      {
-        etiqueta: 'General',
-        ruta: '/dashboard/configuracion',
-        descripcion: 'Configuración general del sistema'
-      },
-      {
-        etiqueta: 'Horarios',
-        ruta: '/dashboard/horario-comercial',
-        descripcion: 'Configuración de horarios'
-      },
-      {
-        etiqueta: 'Información básica',
-        ruta: '/dashboard/restaurante/info',
-        descripcion: 'Información básica del restaurante'
-      },
-      {
-        etiqueta: 'Usuarios',
-        ruta: '/dashboard/usuarios',
-        descripcion: 'Gestión de usuarios y permisos'
-      },
-      {
-        etiqueta: 'Preferencias',
-        ruta: '/dashboard/configuracion/preferencias',
-        descripcion: 'Preferencias del sistema'
-      },
-      {
-        etiqueta: 'Categorías',
-        ruta: '/dashboard/configuracion/categorias',
-        descripcion: 'Configuración de categorías y subcategorías'
-      }
-    ]
+    descripcion: 'Configuración de horarios comerciales'
   },
   {
     icono: HelpCircle,

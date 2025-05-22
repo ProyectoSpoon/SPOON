@@ -1,16 +1,12 @@
-import { db } from '@/firebase/config';  // Actualizado el import
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { HorariosSemanales } from '@/app/dashboard/horario-comercial/types/horarios.types';
+import fs from 'fs';
+import path from 'path';
+import { 
+  HorariosSemanales, 
+  ConfiguracionHorarios 
+} from '@/services/horarios.service';
 
-interface ConfiguracionHorarios {
-  horarioRegular: HorariosSemanales;
-  festivos: Array<{
-    fecha: Date;
-    descripcion: string;
-    tipo: 'festivo' | 'personalizado';
-  }>;
-  ultimaActualizacion: Date;
-}
+// Simulación de almacenamiento local
+const HORARIOS_FILE = path.join(process.cwd(), 'public', 'test-data', 'horarios.json');
 
 /**
  * Guarda la configuración inicial de horarios cuando se configura por primera vez
@@ -20,12 +16,24 @@ export const guardarHorarioInicial = async (
   horarios: HorariosSemanales
 ): Promise<boolean> => {
   try {
-    const horarioRef = doc(db, 'restaurantes', idRestaurante, 'configuracion', 'horario');
-    await setDoc(horarioRef, {
+    // Verificar si el archivo existe
+    let horariosData: Record<string, ConfiguracionHorarios> = {};
+    if (fs.existsSync(HORARIOS_FILE)) {
+      // Si existe, leer el contenido actual
+      const data = await fs.promises.readFile(HORARIOS_FILE, 'utf8');
+      horariosData = JSON.parse(data);
+    }
+    
+    // Crear la configuración inicial
+    horariosData[idRestaurante] = {
       horarioRegular: horarios,
       festivos: [],
-      ultimaActualizacion: new Date(),
-    });
+      ultimaActualizacion: new Date()
+    };
+    
+    // Guardar el archivo
+    await fs.promises.writeFile(HORARIOS_FILE, JSON.stringify(horariosData, null, 2), 'utf8');
+    
     return true;
   } catch (error) {
     console.error('Error al guardar horario inicial:', error);
@@ -40,13 +48,17 @@ export const obtenerHorarios = async (
   idRestaurante: string
 ): Promise<ConfiguracionHorarios | null> => {
   try {
-    const horarioRef = doc(db, 'restaurantes', idRestaurante, 'configuracion', 'horario');
-    const snapshot = await getDoc(horarioRef);
-
-    if (snapshot.exists()) {
-      return snapshot.data() as ConfiguracionHorarios;
+    // Verificar si el archivo existe
+    if (!fs.existsSync(HORARIOS_FILE)) {
+      return null;
     }
-    return null;
+    
+    // Leer el archivo
+    const data = await fs.promises.readFile(HORARIOS_FILE, 'utf8');
+    const horariosData: Record<string, ConfiguracionHorarios> = JSON.parse(data);
+    
+    // Buscar los horarios del restaurante
+    return horariosData[idRestaurante] || null;
   } catch (error) {
     console.error('Error al obtener horarios:', error);
     return null;
@@ -61,11 +73,36 @@ export const actualizarHorarios = async (
   horarios: Partial<ConfiguracionHorarios>
 ): Promise<boolean> => {
   try {
-    const horarioRef = doc(db, 'restaurantes', idRestaurante, 'configuracion', 'horario');
-    await updateDoc(horarioRef, {
+    // Verificar si el archivo existe
+    if (!fs.existsSync(HORARIOS_FILE)) {
+      // Si no existe, crear un objeto vacío
+      if (horarios.horarioRegular) {
+        return await guardarHorarioInicial(idRestaurante, horarios.horarioRegular);
+      }
+      return false;
+    }
+    
+    // Leer el archivo
+    const data = await fs.promises.readFile(HORARIOS_FILE, 'utf8');
+    const horariosData: Record<string, ConfiguracionHorarios> = JSON.parse(data);
+    
+    // Actualizar los horarios del restaurante
+    if (!horariosData[idRestaurante]) {
+      if (horarios.horarioRegular) {
+        return await guardarHorarioInicial(idRestaurante, horarios.horarioRegular);
+      }
+      return false;
+    }
+    
+    horariosData[idRestaurante] = {
+      ...horariosData[idRestaurante],
       ...horarios,
       ultimaActualizacion: new Date()
-    });
+    };
+    
+    // Guardar el archivo
+    await fs.promises.writeFile(HORARIOS_FILE, JSON.stringify(horariosData, null, 2), 'utf8');
+    
     return true;
   } catch (error) {
     console.error('Error al actualizar horarios:', error);

@@ -1,20 +1,4 @@
-import { db } from "@/firebase/config";
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  query, 
-  where, 
-  updateDoc, 
-  addDoc, 
-  serverTimestamp,
-  Timestamp,
-  DocumentReference,
-  orderBy,
-  limit,
-  startAfter,
-  FieldPath
-} from "firebase/firestore";
+// Eliminamos las importaciones de Firebase
 import { ItemCarrito } from "@/app/dashboard/registro-ventas/hooks/useMenuVentas";
 
 /**
@@ -41,6 +25,7 @@ export interface Venta {
 
 /**
  * Servicio para el registro y consulta de ventas
+ * Implementación temporal usando JSON local
  */
 export const ventasService = {
   /**
@@ -49,15 +34,15 @@ export const ventasService = {
    */
   async registrarVenta(venta: Venta): Promise<string> {
     try {
-      const ventasRef = collection(db, 'ventas');
+      console.log('Simulando registro de venta:', venta);
       
-      const docRef = await addDoc(ventasRef, {
-        ...venta,
-        createdAt: serverTimestamp(),
-        fecha: Timestamp.fromDate(venta.fecha || new Date())
-      });
+      // Generar un ID único para la venta
+      const ventaId = `venta_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
       
-      return docRef.id;
+      // En una implementación real, aquí guardaríamos en un archivo JSON
+      // o en una base de datos local
+      
+      return ventaId;
     } catch (error) {
       console.error('Error al registrar venta:', error);
       throw error;
@@ -127,41 +112,16 @@ export const ventasService = {
     limite?: number
   ): Promise<Venta[]> {
     try {
-      const ventasRef = collection(db, 'ventas');
-      let q = query(
-        ventasRef,
-        where('restauranteId', '==', restauranteId),
-        orderBy('fecha', 'desc')
-      );
-      
-      if (fechaInicio) {
-        q = query(q, where('fecha', '>=', Timestamp.fromDate(fechaInicio)));
-      }
-      
-      if (fechaFin) {
-        q = query(q, where('fecha', '<=', Timestamp.fromDate(fechaFin)));
-      }
-      
-      if (limite) {
-        q = query(q, limit(limite));
-      }
-      
-      const snapshot = await getDocs(q);
-      
-      return snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          restauranteId: data.restauranteId,
-          fecha: data.fecha?.toDate() || new Date(),
-          productos: data.productos || [],
-          total: data.total || 0,
-          metodoPago: data.metodoPago,
-          usuario: data.usuario,
-          notas: data.notas,
-          createdAt: data.createdAt?.toDate()
-        };
+      console.log('Simulando obtención de ventas:', {
+        restauranteId,
+        fechaInicio,
+        fechaFin,
+        limite
       });
+      
+      // En una implementación real, aquí cargaríamos datos desde un archivo JSON
+      // Devolvemos un array vacío por ahora
+      return [];
     } catch (error) {
       console.error('Error al obtener ventas:', error);
       throw error;

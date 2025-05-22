@@ -1,17 +1,8 @@
 // src/lib/firebase/init.ts
-'use client';
-
-import { initializeApp, getApps } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { firebaseConfig } from './config';
+// Este archivo se mantiene para compatibilidad con código existente
+// pero ya no inicializa Firebase, ya que hemos migrado a JSON local
 
 export function initFirebase() {
-  if (!getApps().length) {
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    return { app, auth, db };
-  }
+  console.log('Firebase ha sido reemplazado por almacenamiento JSON local');
   return null;
 }
