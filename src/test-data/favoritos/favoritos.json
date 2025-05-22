@@ -1,0 +1,50 @@
+[
+  {
+    "id": "PROD_001",
+    "nombre": "Sopa de Tomate",
+    "descripcion": "Sopa de tomate casera",
+    "categoriaId": "CAT_001",
+    "currentVersion": 1,
+    "priceHistory": [],
+    "versions": [],
+    "stock": {
+      "currentQuantity": 10,
+      "minQuantity": 5,
+      "maxQuantity": 100,
+      "status": "in_stock",
+      "lastUpdated": "2025-05-21T14:00:00.000Z"
+    },
+    "status": "active",
+    "metadata": {
+      "createdAt": "2025-05-21T14:00:00.000Z",
+      "createdBy": "system",
+      "lastModified": "2025-05-21T14:00:00.000Z",
+      "lastModifiedBy": "system"
+    },
+    "esFavorito": true
+  },
+  {
+    "id": "PROD_003",
+    "nombre": "Pollo a la Plancha",
+    "descripcion": "Pechuga de pollo a la plancha",
+    "categoriaId": "CAT_003",
+    "currentVersion": 1,
+    "priceHistory": [],
+    "versions": [],
+    "stock": {
+      "currentQuantity": 15,
+      "minQuantity": 5,
+      "maxQuantity": 100,
+      "status": "in_stock",
+      "lastUpdated": "2025-05-21T14:00:00.000Z"
+    },
+    "status": "active",
+    "metadata": {
+      "createdAt": "2025-05-21T14:00:00.000Z",
+      "createdBy": "system",
+      "lastModified": "2025-05-21T14:00:00.000Z",
+      "lastModifiedBy": "system"
+    },
+    "esFavorito": true
+  }
+]

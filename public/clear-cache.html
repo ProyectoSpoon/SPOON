@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Limpiar Caché</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            background-color: #F4821F;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #E67812;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .log {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Utilidad para Limpiar Caché</h1>
+    
+    <div class="container">
+        <h2>Limpiar Caché del Menú</h2>
+        <p>Esta herramienta te permite limpiar diferentes tipos de caché utilizados por la aplicación.</p>
+        
+        <div>
+            <button id="clearMenuCache">Limpiar Caché del Menú</button>
+            <button id="clearAllCache">Limpiar Todo el LocalStorage</button>
+            <button id="showCacheKeys">Mostrar Claves en LocalStorage</button>
+        </div>
+        
+        <div class="log" id="log"></div>
+    </div>
+    
+    <script>
+        // Función para agregar entradas al log
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logElement.appendChild(entry);
+            console.log(`[${type}] ${message}`);
+        }
+        
+        // Limpiar solo el caché del menú
+        document.getElementById('clearMenuCache').addEventListener('click', () => {
+            try {
+                // Claves relacionadas con el menú
+                const menuKeys = [
+                    'menu_crear_menu',
+                    'menu_productos',
+                    'menu_categorias',
+                    'menu_subcategorias',
+                    'menu_dia_productos',
+                    'menu_combinaciones',
+                    'menu_especiales_productos',
+                    'menu_favoritos_productos',
+                    'menu_programacion'
+                ];
+                
+                let removedCount = 0;
+                menuKeys.forEach(key => {
+                    if (localStorage.getItem(key) !== null) {
+                        localStorage.removeItem(key);
+                        log(`Eliminado: ${key}`, 'success');
+                        removedCount++;
+                    }
+                });
+                
+                if (removedCount === 0) {
+                    log('No se encontraron claves de caché del menú para eliminar.', 'info');
+                } else {
+                    log(`Se eliminaron ${removedCount} claves de caché del menú.`, 'success');
+                }
+            } catch (error) {
+                log(`Error al limpiar caché del menú: ${error.message}`, 'error');
+            }
+        });
+        
+        // Limpiar todo el localStorage
+        document.getElementById('clearAllCache').addEventListener('click', () => {
+            try {
+                const itemCount = localStorage.length;
+                localStorage.clear();
+                log(`Se eliminaron todas las claves de localStorage (${itemCount} elementos).`, 'success');
+            } catch (error) {
+                log(`Error al limpiar localStorage: ${error.message}`, 'error');
+            }
+        });
+        
+        // Mostrar claves en localStorage
+        document.getElementById('showCacheKeys').addEventListener('click', () => {
+            try {
+                const keys = Object.keys(localStorage);
+                
+                if (keys.length === 0) {
+                    log('No hay claves en localStorage.', 'info');
+                    return;
+                }
+                
+                log(`Claves encontradas en localStorage (${keys.length}):`, 'info');
+                
+                keys.forEach(key => {
+                    const value = localStorage.getItem(key);
+                    const size = (value ? value.length : 0) / 1024; // Tamaño en KB
+                    log(`- ${key} (${size.toFixed(2)} KB)`, 'info');
+                });
+            } catch (error) {
+                log(`Error al mostrar claves: ${error.message}`, 'error');
+            }
+        });
+        
+        // Mostrar mensaje inicial
+        log('Herramienta de limpieza de caché cargada. Selecciona una opción para continuar.', 'info');
+    </script>
+</body>
+</html>

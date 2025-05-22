@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { reloadProductos } from '@/utils/init-cache';
+import { forceInitializeCache } from '@/utils/init-cache';
 import { toast } from 'sonner';
 
 export function ReloadProductsButton() {
@@ -10,7 +10,7 @@ export function ReloadProductsButton() {
   const handleReload = async () => {
     setIsLoading(true);
     try {
-      // Limpiar todo el caché de localStorage
+      // Limpiar todo el caché de localStorage relacionado con el menú
       Object.keys(localStorage).forEach(key => {
         if (key.startsWith('menu_')) {
           localStorage.removeItem(key);
@@ -18,18 +18,18 @@ export function ReloadProductsButton() {
         }
       });
       
-      // Recargar productos
-      await reloadProductos();
+      // Forzar la inicialización del caché
+      await forceInitializeCache();
       
-      toast.success('Caché limpiado y productos recargados correctamente. Recargando página...');
+      toast.success('Caché limpiado y reinicializado correctamente. Recargando página...');
       
       // Esperar un momento para que el usuario vea el mensaje
       setTimeout(() => {
         window.location.reload();
       }, 1500);
     } catch (error) {
-      console.error('Error al recargar productos:', error);
-      toast.error('Error al recargar productos');
+      console.error('Error al reinicializar caché:', error);
+      toast.error('Error al reinicializar caché');
     } finally {
       setIsLoading(false);
     }

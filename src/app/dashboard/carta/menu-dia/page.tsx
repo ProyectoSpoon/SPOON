@@ -1,6 +1,7 @@
+// src/app/dashboard/carta/menu-dia/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useMenuCache } from '@/hooks/useMenuCache';
 import { Producto } from '@/utils/menuCache.utils';
 import { toast } from 'sonner';
@@ -14,166 +15,230 @@ import ListaProductosRediseno from '@/app/dashboard/carta/components/productos/L
 import { ListaCategoriasRediseno } from '@/app/dashboard/carta/components/categorias/ListaCategoriasRediseno';
 
 /**
- * Función para convertir un Producto a VersionedProduct
- */
+ * Función para convertir un Producto a VersionedProduct
+ */
 const convertToVersionedProduct = (producto: Producto): VersionedProduct => {
-  return {
-    id: producto.id,
-    nombre: producto.nombre,
-    descripcion: producto.descripcion,
-    categoriaId: producto.categoriaId,
-    currentVersion: producto.currentVersion,
-    priceHistory: producto.priceHistory,
-    versions: producto.versions,
-    stock: {
-      ...producto.stock,
-      status: producto.stock.status as 'in_stock' | 'low_stock' | 'out_of_stock',
-    },
-    status: producto.status as 'active' | 'draft' | 'archived' | 'discontinued',
-    metadata: producto.metadata,
-    imagen: producto.imagen,
-    esFavorito: producto.esFavorito,
-    esEspecial: producto.esEspecial
-  };
+  // Asegurarse de que producto.stock no es undefined antes de acceder a sus propiedades
+  const stockStatus = producto.stock?.status as 'in_stock' | 'low_stock' | 'out_of_stock' | undefined || 'out_of_stock';
+  const stockData = producto.stock || { currentQuantity: 0, minQuantity: 0, maxQuantity: 0, status: 'out_of_stock', lastUpdated: new Date() };
+
+  return {
+    id: producto.id,
+    nombre: producto.nombre,
+    descripcion: producto.descripcion,
+    categoriaId: producto.categoriaId,
+    currentVersion: producto.currentVersion,
+    priceHistory: Array.isArray(producto.priceHistory) ? producto.priceHistory : [], // Asegurar array
+    versions: Array.isArray(producto.versions) ? producto.versions : [], // Asegurar array
+    stock: {
+      ...stockData,
+      status: stockStatus,
+    },
+    status: producto.status as 'active' | 'draft' | 'archived' | 'discontinued' || 'archived',
+    metadata: producto.metadata || { createdAt: new Date(), createdBy: 'unknown', lastModified: new Date(), lastModifiedBy: 'unknown' }, // Asegurar metadata
+    imagen: producto.imagen,
+    esFavorito: producto.esFavorito,
+    esEspecial: producto.esEspecial
+  };
 };
 
 /**
- * Función para convertir un VersionedProduct a Producto
- */
+ * Función para convertir un VersionedProduct a Producto
+ */
 const convertToProducto = (versionedProduct: VersionedProduct): Producto => {
-  return {
-    id: versionedProduct.id,
-    nombre: versionedProduct.nombre,
-    descripcion: versionedProduct.descripcion,
-    categoriaId: versionedProduct.categoriaId,
-    currentVersion: versionedProduct.currentVersion,
-    priceHistory: versionedProduct.priceHistory,
-    versions: versionedProduct.versions,
-    stock: versionedProduct.stock,
-    status: versionedProduct.status,
-    metadata: versionedProduct.metadata,
-    imagen: versionedProduct.imagen,
-    esFavorito: versionedProduct.esFavorito,
-    esEspecial: versionedProduct.esEspecial
-  };
+  return {
+    id: versionedProduct.id,
+    nombre: versionedProduct.nombre,
+    descripcion: versionedProduct.descripcion,
+    categoriaId: versionedProduct.categoriaId,
+    currentVersion: versionedProduct.currentVersion,
+    priceHistory: versionedProduct.priceHistory,
+    versions: versionedProduct.versions,
+    stock: versionedProduct.stock,
+    status: versionedProduct.status,
+    metadata: versionedProduct.metadata,
+    imagen: versionedProduct.imagen,
+    esFavorito: versionedProduct.esFavorito,
+    esEspecial: versionedProduct.esEspecial
+  };
 };
 
 export default function MenuDiaPage() {
-  // Usar el hook de caché del menú
   const {
     menuData,
     isLoaded,
-    updateCategorias,
-    updateProductosSeleccionados,
+    updateCategorias, // Asegúrate de estar usando estas funciones si modificas localmente
+    updateProductosSeleccionados, // y quieres persistir los cambios.
     updateProductosMenu,
     addProductoToMenu,
     removeProductoFromMenu,
+    addProductoToFavoritos,
+    removeProductoFromFavoritos,
     updateSeleccion,
     updateSubmenuActivo,
     hasCache,
     getCacheRemainingTime
   } = useMenuCache();
 
-  // Estado para mostrar indicador de caché
-  const [showCacheIndicator, setShowCacheIndicator] = useState(true);
-  // Estado para el tiempo restante de caché
-  const [cacheTimeRemaining, setCacheTimeRemaining] = useState<number>(60); // 60 minutos inicialmente
-  // Estado para controlar qué categoría está expandida
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
-  // Estado para la búsqueda
-  const [searchTerm, setSearchTerm] = useState('');
-  // Estado para las sugerencias de búsqueda
-  const [searchSuggestions, setSearchSuggestions] = useState<VersionedProduct[]>([]);
-  // Estado para mostrar/ocultar las sugerencias
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  // Estado para la pestaña de filtro seleccionada
-  const [selectedTab, setSelectedTab] = useState<string>('todas');
-
-  // Efecto para actualizar el tiempo de caché cada minuto
+  // Log para inspeccionar menuData - solo una vez al cargar
   useEffect(() => {
-    // Inicializar el tiempo de caché
-    setCacheTimeRemaining(60); // 1 hora = 60 minutos
-    
-    // Actualizar el tiempo cada minuto
-    const interval = setInterval(() => {
-      setCacheTimeRemaining(prevTime => {
-        if (prevTime <= 1) {
-          // Si el tiempo llega a 0, reiniciar los datos
-          toast.error('El tiempo de caché ha expirado. Se reiniciarán los datos del menú.');
-          // Limpiar el menú
-          updateProductosMenu([]);
-          return 60; // Reiniciar el contador a 60 minutos
-        }
-        return prevTime - 1;
-      });
-    }, 60000); // 60000 ms = 1 minuto
-    
-    return () => clearInterval(interval);
-  }, []);
-  
-  // Efecto para mostrar notificación si hay datos en caché
-  useEffect(() => {
-    if (isLoaded && hasCache()) {
-      toast.success(
-        `Datos cargados desde caché (expira en ${getCacheRemainingTime()} minutos)`,
-        { duration: 4000 }
-      );
+    if (isLoaded) {
+      console.log("MenuDiaPage - menuData RECIBIDO:", JSON.parse(JSON.stringify(menuData))); // Usar JSON.stringify para una copia profunda
+      if (menuData) {
+        console.log("MenuDiaPage - typeof menuData.productosMenu:", typeof menuData.productosMenu, ", isArray:", Array.isArray(menuData.productosMenu));
+        console.log("MenuDiaPage - typeof menuData.productosSeleccionados:", typeof menuData.productosSeleccionados, ", isArray:", Array.isArray(menuData.productosSeleccionados));
+      }
     }
-  }, [isLoaded]);
+  }, [isLoaded]); // Solo depende de isLoaded para evitar bucles infinitos
 
-  // Efecto para actualizar el submenú activo
+  // ... (otros estados como showCacheIndicator, cacheTimeRemaining, etc.)
+  const [showCacheIndicator, setShowCacheIndicator] = useState(true);
+  const [cacheTimeRemaining, setCacheTimeRemaining] = useState<number>(60); 
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchSuggestions, setSearchSuggestions] = useState<VersionedProduct[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedTab, setSelectedTab] = useState<string>('almuerzo'); // Iniciar con almuerzo seleccionado
+  const [selectedCategoryTab, setSelectedCategoryTab] = useState<string>('todas');
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<VersionedProduct | null>(null);
+  const [showFavorites, setShowFavorites] = useState(false);
+
+  // useEffect para el tiempo de caché y notificación - con dependencias memoizadas
+  useEffect(() => {
+    if (!isLoaded) return; // No hacer nada si los datos no están cargados
+    
+    // Establecer el tiempo inicial
+    setCacheTimeRemaining(getCacheRemainingTime()); 
+    
+    // Configurar el intervalo para actualizar cada minuto
+    const interval = setInterval(() => {
+      const remainingTime = getCacheRemainingTime();
+      setCacheTimeRemaining(remainingTime);
+      
+      // Verificar si el caché ha expirado
+      if (remainingTime <= 0) {
+        toast.error('El tiempo de caché ha expirado.');
+      }
+    }, 60000);
+    
+    // Limpiar el intervalo al desmontar
+    return () => clearInterval(interval);
+  }, [isLoaded, getCacheRemainingTime]); // getCacheRemainingTime está memoizado, es seguro usarlo como dependencia
+
+  // Usar una referencia para evitar múltiples notificaciones toast - con dependencias memoizadas
+  const toastShownRef = useRef(false);
+  
+  useEffect(() => {
+    if (isLoaded && !toastShownRef.current) {
+      toastShownRef.current = true;
+      
+      if (hasCache()) {
+        toast.success(
+          `Datos cargados desde caché (expira en ${getCacheRemainingTime()} minutos)`,
+          { duration: 4000 }
+        );
+      } else {
+        toast.info(
+          `No se encontraron datos en caché. Se usará el estado inicial o datos frescos.`,
+          { duration: 4000 }
+        );
+      }
+    }
+  }, [isLoaded, hasCache, getCacheRemainingTime]); // hasCache y getCacheRemainingTime están memoizados
+
+  // Establecer el submenú activo solo una vez al montar el componente
   useEffect(() => {
     updateSubmenuActivo('menu-dia');
-  }, []);
+  }, [updateSubmenuActivo]); // updateSubmenuActivo está memoizado, es seguro usarlo como dependencia
 
-  // Manejador para cuando se selecciona una categoría
-  const handleCategoriaSeleccionada = (categoriaId: string) => {
-    updateSeleccion(categoriaId, null);
-    
-    // Aquí normalmente cargarías los productos de esta categoría desde la API
-    // Pero para este ejemplo, simularemos que ya tenemos los datos
-    console.log(`Categoría seleccionada: ${categoriaId}`);
-  };
+  const handleCategoriaSeleccionada = (categoriaId: string) => {
+    updateSeleccion(categoriaId, null);
+    console.log(`Categoría seleccionada: ${categoriaId}`);
+  };
 
-  // Manejador para agregar un producto al menú
   const handleAgregarAlMenu = (versionedProduct: VersionedProduct) => {
     const producto = convertToProducto(versionedProduct);
     addProductoToMenu(producto);
     toast.success(`${producto.nombre} agregado al menú del día`);
   };
 
-  // Manejador para eliminar un producto del menú
   const handleRemoveFromMenu = (productoId: string) => {
-    const producto = menuData.productosMenu.find(p => p.id === productoId);
+    const producto = menuData?.productosMenu?.find(p => p.id === productoId);
     if (producto) {
       removeProductoFromMenu(productoId);
       toast.success(`${producto.nombre} eliminado del menú del día`);
     }
   };
 
-  // Manejador para expandir/colapsar una categoría
-  const toggleCategory = (categoryId: string) => {
-    if (expandedCategory === categoryId) {
-      setExpandedCategory(null);
+  const handleToggleFavorite = (versionedProduct: VersionedProduct) => {
+    const producto = convertToProducto(versionedProduct);
+    
+    // Verificar si ya está en favoritos
+    const isFavorite = menuData?.productosFavoritos?.some(p => p.id === producto.id);
+    
+    if (isFavorite) {
+      // Si ya es favorito, quitarlo
+      removeProductoFromFavoritos(producto.id);
+      toast.success(`${producto.nombre} eliminado de favoritos`);
     } else {
-      setExpandedCategory(categoryId);
+      // Si no es favorito, agregarlo
+      addProductoToFavoritos(producto);
+      toast.success(`${producto.nombre} agregado a favoritos`);
     }
   };
 
-  // Convertir productos del menú a VersionedProduct para el componente MenuDiario
-  const versionedProductosMenu = menuData.productosMenu.map(convertToVersionedProduct);
+  const handleViewProductDetails = (producto: VersionedProduct) => {
+    setSelectedProduct(producto);
+    setShowProductModal(true);
+  };
 
-  // Convertir productos seleccionados a VersionedProduct para el componente ListaProductos
-  const versionedProductosSeleccionados = menuData.productosSeleccionados.map(convertToVersionedProduct);
-  
-  // Productos se cargan dinámicamente desde los archivos JSON separados por categoría
-  const PRODUCTOS_HARDCODED: Record<string, VersionedProduct[]> = {};
-  
-  // Obtener todos los productos disponibles para la búsqueda
-  // Los productos se cargan dinámicamente desde los archivos JSON
-  const todosLosProductos: VersionedProduct[] = [];
-  
-  // Efecto para actualizar las sugerencias de búsqueda cuando cambia el término de búsqueda
+  const toggleCategory = (categoryId: string) => {
+    setExpandedCategory(prev => (prev === categoryId ? null : categoryId));
+  };
+
+  // --- INICIO DE CORRECCIÓN Y VERIFICACIÓN ---
+  // Verificar y corregir si menuData.productosMenu no es un array
+  useEffect(() => {
+    if (menuData && !Array.isArray(menuData.productosMenu)) {
+      console.warn("menuData.productosMenu no es un array. Corrigiendo...");
+      updateProductosMenu([]);
+    }
+    if (menuData && !Array.isArray(menuData.productosSeleccionados)) {
+      console.warn("menuData.productosSeleccionados no es un array. Corrigiendo...");
+      updateProductosSeleccionados([]);
+    }
+  }, [menuData, updateProductosMenu, updateProductosSeleccionados]);
+
+  // Usar useMemo para evitar recreaciones innecesarias de estos arrays
+  const versionedProductosMenu = useMemo(() => 
+    menuData && Array.isArray(menuData.productosMenu) 
+      ? menuData.productosMenu.map(convertToVersionedProduct) 
+      : []
+  , [menuData?.productosMenu]);
+
+  const versionedProductosSeleccionados = useMemo(() => 
+    menuData && Array.isArray(menuData.productosSeleccionados)
+      ? menuData.productosSeleccionados.map(convertToVersionedProduct)
+      : []
+  , [menuData?.productosSeleccionados]);
+  // --- FIN DE CORRECCIÓN Y VERIFICACIÓN ---
+
+  // Usar useMemo para evitar recreaciones innecesarias
+  const todosLosProductos = useMemo(() => versionedProductosSeleccionados, [versionedProductosSeleccionados]);
+
+  // Memoizar la función de filtrado para evitar recreaciones innecesarias
+  const filtrarProductosPorTermino = useCallback((term: string, productos: VersionedProduct[]) => {
+    if (!term.trim()) return [];
+    
+    const termLower = term.toLowerCase();
+    return productos.filter(producto => 
+      producto.nombre.toLowerCase().includes(termLower) || 
+      (producto.descripcion && producto.descripcion.toLowerCase().includes(termLower))
+    );
+  }, []);
+
+  // Usar el callback memoizado para filtrar productos
   useEffect(() => {
     if (searchTerm.trim() === '') {
       setSearchSuggestions([]);
@@ -181,101 +246,96 @@ export default function MenuDiaPage() {
       return;
     }
     
-    const term = searchTerm.toLowerCase();
-    // Filtrar productos que coincidan con el término de búsqueda
-    // Como todosLosProductos está vacío, esto no mostrará sugerencias
-    const sugerencias = todosLosProductos.filter(producto => 
-      producto.nombre.toLowerCase().includes(term) || 
-      producto.descripcion.toLowerCase().includes(term)
-    );
-    
+    const sugerencias = filtrarProductosPorTermino(searchTerm, todosLosProductos);
     setSearchSuggestions(sugerencias);
     setShowSuggestions(sugerencias.length > 0);
-  }, [searchTerm]);
-  
-  // Manejador para seleccionar una sugerencia
-  const handleSelectSuggestion = (producto: VersionedProduct) => {
-    setSearchTerm(producto.nombre);
-    setShowSuggestions(false);
-    
-    // Expandir la categoría del producto seleccionado
-    if (producto.categoriaId) {
-      setExpandedCategory(producto.categoriaId);
-      setSelectedTab(producto.categoriaId);
-    }
-  };
+  }, [searchTerm, todosLosProductos, filtrarProductosPorTermino]); // Dependencias estables
+  
+  const handleSelectSuggestion = (producto: VersionedProduct) => {
+    setSearchTerm(producto.nombre);
+    setShowSuggestions(false);
+    if (producto.categoriaId) {
+      setExpandedCategory(producto.categoriaId);
+      setSelectedTab(producto.categoriaId);
+    }
+  };
 
-  // Categorías para el menú (definición inicial)
-  const categoriasList = [
-    { id: 'CAT_001', nombre: 'Entradas' },
-    { id: 'CAT_002', nombre: 'Principio' },
-    { id: 'CAT_003', nombre: 'Proteína' },
-    { id: 'CAT_004', nombre: 'Acompañamientos' },
-    { id: 'CAT_005', nombre: 'Bebida' }
-  ];
+  // Usar las categorías del menuData si están disponibles, sino usar la lista harcoded como fallback
+  const categoriasList = (menuData && Array.isArray(menuData.categorias) && menuData.categorias.length > 0)
+    ? menuData.categorias
+    : [
+        { id: 'CAT_001', nombre: 'Entradas', tipo: 'principal' as const },
+        { id: 'CAT_002', nombre: 'Principio', tipo: 'principal' as const },
+        { id: 'CAT_003', nombre: 'Proteína', tipo: 'principal' as const },
+        { id: 'CAT_004', nombre: 'Acompañamientos', tipo: 'principal' as const },
+        { id: 'CAT_005', nombre: 'Bebida', tipo: 'principal' as const }
+      ];
 
-  // Función para contar productos por categoría
-  const contarProductosPorCategoria = () => {
-    // Los conteos se obtienen dinámicamente desde los archivos JSON
-    return {
-      'CAT_001': 22,
-      'CAT_002': 11,
-      'CAT_003': 14,
-      'CAT_004': 7,
-      'CAT_005': 10
-    } as Record<string, number>;
-  };
+  const contarProductosPorCategoria = () => {
+      const conteos: Record<string, number> = {};
+      if (menuData && Array.isArray(menuData.productosSeleccionados)) {
+        menuData.productosSeleccionados.forEach(producto => {
+          if (producto.categoriaId) {
+            conteos[producto.categoriaId] = (conteos[producto.categoriaId] || 0) + 1;
+          }
+        });
+      }
+      // Si quieres usar los conteos hardcodeados como fallback:
+      // else { return { 'CAT_001': 22, ... } }
+      return conteos;
+  };
+  const conteoProductos = contarProductosPorCategoria();
+  const categorias = categoriasList.map(cat => ({
+    ...cat,
+    count: conteoProductos[cat.id] || 0
+  }));
 
-  // Obtener conteo de productos por categoría
-  const conteoProductos = contarProductosPorCategoria();
+  // Si isLoaded es false, podrías mostrar un indicador de carga.
+  if (!isLoaded) {
+    return <div>Cargando datos del menú...</div>; // O un spinner/skeleton
+  }
 
-  // Categorías para el menú con conteo
-  const categorias = categoriasList.map(cat => ({
-    ...cat,
-    count: conteoProductos[cat.id] || 0
-  }));
+  return (
+    // ... (resto de tu JSX sin cambios) ...
+    <div className="flex flex-col space-y-4 h-screen bg-gray-50">
+      {/* Encabezado principal */}
+      <div className="flex justify-between items-center bg-gray-50 p-4">
+        <h1 className="text-2xl font-bold text-gray-700">Menu - Almuerzos</h1>
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Buscar producto"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-3 pr-10 py-2 border border-gray-200 rounded-md w-64 text-sm"
+          />
+          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          
+          {showSuggestions && (
+            <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
+              {searchSuggestions.map((producto) => (
+                <div
+                  key={producto.id}
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center"
+                  onClick={() => handleSelectSuggestion(producto)}
+                >
+                  {producto.categoriaId === 'CAT_001' && <Soup className="h-4 w-4 text-orange-500 mr-2" />}
+                  {producto.categoriaId === 'CAT_002' && <Utensils className="h-4 w-4 text-yellow-500 mr-2" />}
+                  {producto.categoriaId === 'CAT_003' && <Beef className="h-4 w-4 text-red-500 mr-2" />}
+                  {producto.categoriaId === 'CAT_004' && <Salad className="h-4 w-4 text-green-500 mr-2" />}
+                  {producto.categoriaId === 'CAT_005' && <Coffee className="h-4 w-4 text-blue-500 mr-2" />}
+                  <div>
+                    <div className="text-sm font-medium">{producto.nombre}</div>
+                    <div className="text-xs text-gray-500">{producto.descripcion}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
-  return (
-    <div className="flex flex-col space-y-4 h-screen bg-gray-50">
-      {/* Encabezado principal */}
-      <div className="flex justify-between items-center bg-gray-50 p-4">
-        <h1 className="text-2xl font-bold text-gray-700">Menu - Almuerzos</h1>
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Buscar producto"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-3 pr-10 py-2 border border-gray-200 rounded-md w-64 text-sm"
-          />
-          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          
-          {/* Sugerencias de búsqueda */}
-          {showSuggestions && (
-            <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
-              {searchSuggestions.map((producto) => (
-                <div
-                  key={producto.id}
-                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center"
-                  onClick={() => handleSelectSuggestion(producto)}
-                >
-                  {producto.categoriaId === 'CAT_001' && <Soup className="h-4 w-4 text-orange-500 mr-2" />}
-                  {producto.categoriaId === 'CAT_002' && <Utensils className="h-4 w-4 text-yellow-500 mr-2" />}
-                  {producto.categoriaId === 'CAT_003' && <Beef className="h-4 w-4 text-red-500 mr-2" />}
-                  {producto.categoriaId === 'CAT_004' && <Salad className="h-4 w-4 text-green-500 mr-2" />}
-                  {producto.categoriaId === 'CAT_005' && <Coffee className="h-4 w-4 text-blue-500 mr-2" />}
-                  <div>
-                    <div className="text-sm font-medium">{producto.nombre}</div>
-                    <div className="text-xs text-gray-500">{producto.descripcion}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Barra de pestañas de filtro/categorías */}
+      {/* Navegación principal - Tipo de comida */}
       <div className="flex items-center border-b border-gray-200 bg-white shadow-sm">
         <button className="p-2 rounded-full border border-gray-200 mx-2">
           <ChevronLeft className="h-4 w-4 text-gray-500" />
@@ -283,38 +343,124 @@ export default function MenuDiaPage() {
         
         <div className="flex space-x-4 overflow-x-auto py-2 px-4">
           <button 
-            className={`px-3 py-1 font-medium text-sm ${selectedTab === 'todas' 
+            className={`px-3 py-1 font-medium text-sm ${selectedTab === 'desayuno' 
               ? 'text-[#F4821F] border-b-2 border-[#F4821F]' 
               : 'text-gray-700 hover:text-[#F4821F]'}`}
-            onClick={() => setSelectedTab('todas')}
+            onClick={() => {
+              setSelectedTab('desayuno');
+              setExpandedCategory(null);
+              setSelectedCategoryTab('todas');
+            }}
           >
-            Todas
+            Desayuno
           </button>
-          {categorias.map((cat) => (
-            <button 
-              key={cat.id}
-              className={`px-3 py-1 text-sm ${selectedTab === cat.id 
-                ? 'text-[#F4821F] border-b-2 border-[#F4821F]' 
-                : 'text-gray-700 hover:text-[#F4821F]'}`}
-              onClick={() => {
-                setSelectedTab(cat.id);
-                setExpandedCategory(cat.id);
-              }}
-            >
-              {cat.nombre}
-            </button>
-          ))}
+          <button 
+            className={`px-3 py-1 font-medium text-sm ${selectedTab === 'almuerzo' 
+              ? 'text-[#F4821F] border-b-2 border-[#F4821F]' 
+              : 'text-gray-700 hover:text-[#F4821F]'}`}
+            onClick={() => {
+              setSelectedTab('almuerzo');
+              setExpandedCategory(null);
+              setSelectedCategoryTab('todas');
+            }}
+          >
+            Almuerzo
+          </button>
+          <button 
+            className={`px-3 py-1 font-medium text-sm ${selectedTab === 'cena' 
+              ? 'text-[#F4821F] border-b-2 border-[#F4821F]' 
+              : 'text-gray-700 hover:text-[#F4821F]'}`}
+            onClick={() => {
+              setSelectedTab('cena');
+              setExpandedCategory(null);
+              setSelectedCategoryTab('todas');
+            }}
+          >
+            Cena
+          </button>
+          <button 
+            className={`px-3 py-1 font-medium text-sm ${selectedTab === 'rapidas' 
+              ? 'text-[#F4821F] border-b-2 border-[#F4821F]' 
+              : 'text-gray-700 hover:text-[#F4821F]'}`}
+            onClick={() => {
+              setSelectedTab('rapidas');
+              setExpandedCategory(null);
+              setSelectedCategoryTab('todas');
+            }}
+          >
+            Comidas Rápidas
+          </button>
         </div>
-        
         <button className="p-2 rounded-full border border-gray-200 mx-2">
           <ChevronRight className="h-4 w-4 text-gray-500" />
         </button>
       </div>
+      
+      {/* Barra de pestañas de subcategorías */}
+      <div className="flex items-center border-b border-gray-200 bg-white shadow-sm">
+        <div className="flex space-x-4 overflow-x-auto py-2 px-4 w-full">
+          {/* Mostrar subcategorías para Almuerzo */}
+          {selectedTab === 'almuerzo' && (
+            <>
+              <button 
+                className={`px-3 py-1 text-sm ${selectedCategoryTab === 'todas' 
+                  ? 'text-[#F4821F] border-b-2 border-[#F4821F]' 
+                  : 'text-gray-700 hover:text-[#F4821F]'}`}
+                onClick={() => {
+                  setSelectedCategoryTab('todas');
+                  // No necesitamos expandir categorías aquí, lo haremos en el renderizado
+                }}
+              >
+                Todas
+              </button>
+              
+              {categorias
+                .filter(categoria => ['CAT_001', 'CAT_002', 'CAT_003', 'CAT_004', 'CAT_005'].includes(categoria.id))
+                .map((cat) => (
+                  <button 
+                    key={cat.id}
+                    className={`px-3 py-1 text-sm ${selectedCategoryTab === cat.id 
+                      ? 'text-[#F4821F] border-b-2 border-[#F4821F]' 
+                      : 'text-gray-700 hover:text-[#F4821F]'}`}
+                    onClick={() => {
+                      setSelectedCategoryTab(cat.id);
+                      setExpandedCategory(cat.id);
+                      handleCategoriaSeleccionada(cat.id);
+                    }}
+                  >
+                    {cat.nombre}
+                  </button>
+                ))}
+            </>
+          )}
+        </div>
+      </div>
 
       {/* Sección de acordeón/lista de categorías */}
-      <div className="space-y-1">
+      <div className="space-y-1 overflow-y-auto" style={{maxHeight: 'calc(100vh - 300px)' /* Ajusta según necesidad */}}>
         {categorias
-          .filter(categoria => selectedTab === 'todas' || selectedTab === categoria.id)
+          .filter(categoria => {
+            // Si se ha seleccionado una subcategoría específica, mostrar solo esa subcategoría
+            if (selectedCategoryTab !== 'todas' && selectedCategoryTab !== null) {
+              return categoria.id === selectedCategoryTab;
+            }
+            
+            // Filtrar por tipo de comida
+            if (selectedTab === 'desayuno') {
+              return ['CAT_001', 'CAT_005'].includes(categoria.id);
+            }
+            if (selectedTab === 'almuerzo') {
+              return ['CAT_001', 'CAT_002', 'CAT_003', 'CAT_004', 'CAT_005'].includes(categoria.id);
+            }
+            if (selectedTab === 'cena') {
+              return ['CAT_002', 'CAT_003', 'CAT_004'].includes(categoria.id);
+            }
+            if (selectedTab === 'rapidas') {
+              return ['CAT_003', 'CAT_004'].includes(categoria.id);
+            }
+            
+            return false;
+          })
           .map((categoria) => (
             <div key={categoria.id} className="border-b border-gray-200 bg-white">
               <div 
@@ -325,11 +471,10 @@ export default function MenuDiaPage() {
                   <Menu className="h-4 w-4 text-gray-500" />
                   <span className="font-medium text-sm">{categoria.nombre}</span>
                 </div>
-                
                 <div className="flex items-center space-x-3">
                   <GripVertical className="h-4 w-4 text-gray-400" />
                   <span className="text-sm text-gray-500">{categoria.count}</span>
-                  {expandedCategory === categoria.id ? (
+                  {expandedCategory === categoria.id || (selectedCategoryTab === 'todas') ? (
                     <ChevronUp className="h-4 w-4 text-gray-500" />
                   ) : (
                     <ChevronDown className="h-4 w-4 text-gray-500" />
@@ -337,28 +482,202 @@ export default function MenuDiaPage() {
                 </div>
               </div>
               
-              {expandedCategory === categoria.id && (
+              {(expandedCategory === categoria.id) && (
                 <div className="px-4 py-3 bg-gray-50">
-                  <ListaProductosRediseno 
-                    restauranteId="default"
-                    categoriaId={categoria.id}
-                    subcategoriaId={null}
-                    productosSeleccionados={versionedProductosSeleccionados.filter(p => p.categoriaId === categoria.id)}
-                    productosMenu={versionedProductosMenu}
-                    onAddToMenu={handleAgregarAlMenu}
-                    onRemoveFromMenu={handleRemoveFromMenu}
-                    onProductSelect={(producto: VersionedProduct) => {
-                      console.log('Producto seleccionado:', producto);
-                    }}
-                  />
+                  {/* Tabla de productos con encabezados claros */}
+                  <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+                    {/* Encabezados de la tabla */}
+                    <div className="grid grid-cols-12 bg-gray-50 text-xs font-medium text-gray-500 border-b border-gray-200">
+                      <div className="col-span-2 p-3 text-center">IMAGEN</div>
+                      <div className="col-span-5 p-3">PRODUCTO</div>
+                      <div className="col-span-3 p-3 text-center">AGREGAR A MENU DÍA</div>
+                      <div className="col-span-2 p-3 text-center">ACCIONES</div>
+                    </div>
+                    
+                    {/* Contenido de la tabla - Productos */}
+                    <div className="divide-y divide-gray-200">
+                            {versionedProductosSeleccionados
+                        .filter((producto: VersionedProduct) => producto.categoriaId === categoria.id)
+                        .map((producto: VersionedProduct) => (
+                          <div key={producto.id} className="grid grid-cols-12 items-center py-2 hover:bg-gray-50">
+                            {/* Imagen */}
+                            <div className="col-span-2 flex justify-center">
+                              <div className="h-12 w-12 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden">
+                                {producto.imagen ? (
+                                  <img 
+                                    src={producto.imagen} 
+                                    alt={producto.nombre} 
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="text-gray-400">
+                                    {producto.categoriaId === 'CAT_001' && <Soup className="h-6 w-6" />}
+                                    {producto.categoriaId === 'CAT_002' && <Utensils className="h-6 w-6" />}
+                                    {producto.categoriaId === 'CAT_003' && <Beef className="h-6 w-6" />}
+                                    {producto.categoriaId === 'CAT_004' && <Salad className="h-6 w-6" />}
+                                    {producto.categoriaId === 'CAT_005' && <Coffee className="h-6 w-6" />}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Información del producto */}
+                            <div className="col-span-5 px-3">
+                              <div className="font-medium text-sm text-gray-800">{producto.nombre}</div>
+                              <div className="text-xs text-gray-500 mt-1 line-clamp-2">{producto.descripcion}</div>
+                            </div>
+                            
+                            {/* Botón de agregar al menú */}
+                            <div className="col-span-3 flex justify-center">
+                              <button 
+                                className="px-3 py-1 bg-[#F4821F] hover:bg-[#E67812] text-white text-xs rounded-md"
+                                onClick={() => handleAgregarAlMenu(producto)}
+                              >
+                                Agregar
+                              </button>
+                            </div>
+                            
+                            {/* Acciones adicionales */}
+                            <div className="col-span-2 flex justify-center space-x-2">
+                              <button 
+                                className="p-1 rounded-md hover:bg-gray-100"
+                                onClick={() => handleViewProductDetails(producto)}
+                                title="Ver detalles"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                              </button>
+                              <button 
+                                className={`p-1 rounded-md hover:bg-gray-100 ${
+                                  menuData?.productosFavoritos?.some(p => p.id === producto.id) 
+                                    ? 'text-red-500' 
+                                    : 'text-gray-500'
+                                }`}
+                                onClick={() => handleToggleFavorite(producto)}
+                                title="Agregar/quitar de favoritos"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill={
+                                  menuData?.productosFavoritos?.some(p => p.id === producto.id) 
+                                    ? 'currentColor' 
+                                    : 'none'
+                                } viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
           ))}
       </div>
 
-      {/* Sección "Menu del Día" - Asegurando que ocupe al menos el 35% de la altura */}
-      <div className="bg-white rounded-lg shadow-sm p-4 flex-grow min-h-[35%]">
+      {/* Modal para detalles del producto */}
+      {showProductModal && selectedProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">{selectedProduct.nombre}</h2>
+              <button 
+                onClick={() => setShowProductModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex justify-center items-center">
+                {selectedProduct.imagen ? (
+                  <img 
+                    src={selectedProduct.imagen} 
+                    alt={selectedProduct.nombre} 
+                    className="max-h-64 object-contain rounded-lg"
+                  />
+                ) : (
+                  <div className="h-64 w-64 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <div className="text-gray-400">
+                      {selectedProduct.categoriaId === 'CAT_001' && <Soup className="h-16 w-16" />}
+                      {selectedProduct.categoriaId === 'CAT_002' && <Utensils className="h-16 w-16" />}
+                      {selectedProduct.categoriaId === 'CAT_003' && <Beef className="h-16 w-16" />}
+                      {selectedProduct.categoriaId === 'CAT_004' && <Salad className="h-16 w-16" />}
+                      {selectedProduct.categoriaId === 'CAT_005' && <Coffee className="h-16 w-16" />}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-lg mb-2">Detalles</h3>
+                <p className="text-gray-700 mb-4">{selectedProduct.descripcion}</p>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Categoría:</span>
+                    <span className="font-medium">{
+                      categoriasList.find(c => c.id === selectedProduct.categoriaId)?.nombre || 'No especificada'
+                    }</span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Estado:</span>
+                    <span className={`font-medium ${
+                      selectedProduct.stock.status === 'in_stock' ? 'text-green-600' :
+                      selectedProduct.stock.status === 'low_stock' ? 'text-yellow-600' :
+                      'text-red-600'
+                    }`}>
+                      {selectedProduct.stock.status === 'in_stock' ? 'Disponible' :
+                       selectedProduct.stock.status === 'low_stock' ? 'Stock bajo' :
+                       'No disponible'}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Cantidad disponible:</span>
+                    <span className="font-medium">{selectedProduct.stock.currentQuantity}</span>
+                  </div>
+                </div>
+                
+                <div className="mt-6 flex space-x-4">
+                  <button 
+                    className="px-4 py-2 bg-[#F4821F] hover:bg-[#E67812] text-white rounded-md flex-1"
+                    onClick={() => {
+                      handleAgregarAlMenu(selectedProduct);
+                      setShowProductModal(false);
+                    }}
+                  >
+                    Agregar al menú
+                  </button>
+                  
+                  <button 
+                    className={`px-4 py-2 rounded-md flex-1 ${
+                      menuData?.productosFavoritos?.some(p => p.id === selectedProduct.id)
+                        ? 'bg-red-500 hover:bg-red-600 text-white'
+                        : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+                    }`}
+                    onClick={() => handleToggleFavorite(selectedProduct)}
+                  >
+                    {menuData?.productosFavoritos?.some(p => p.id === selectedProduct.id)
+                      ? 'Quitar de favoritos'
+                      : 'Agregar a favoritos'
+                    }
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sección "Menu del Día" */}
+      <div className="bg-white rounded-lg shadow-sm p-4 mt-4">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-gray-700">Menu del Día</h2>
           <div className="bg-gray-100 px-3 py-1 rounded-full text-sm flex items-center">
@@ -368,51 +687,76 @@ export default function MenuDiaPage() {
             </span>
           </div>
         </div>
-        
         <MenuDiarioRediseno 
           productos={versionedProductosMenu}
           onRemoveProduct={handleRemoveFromMenu}
-          onUpdateCantidad={(productoId: string, cantidad: number) => {
-            // Buscar el producto en el menú
-            const producto = menuData.productosMenu.find(p => p.id === productoId);
-            if (producto) {
-              // Actualizar la cantidad del producto
-              const productoActualizado = {
-                ...producto,
-                stock: {
-                  ...producto.stock,
-                  currentQuantity: cantidad
-                }
-              };
-              
-              // Actualizar el menú
-              const nuevosProductos = menuData.productosMenu.map(p => 
-                p.id === productoId ? productoActualizado : p
-              );
-              
-              // Actualizar el estado
-              updateProductosMenu(nuevosProductos);
-              
-              // Mostrar notificación
-              toast.success(`Cantidad de ${producto.nombre} actualizada a ${cantidad}`);
-            }
-          }}
-        />
-        
-        {/* Botones de acción */}
-        <div className="flex justify-end space-x-4 mt-6">
-          <Button 
-            className="bg-[#F4821F] hover:bg-[#E67812] text-white"
-          >
-            Mantener Menu
-          </Button>
-          <Button 
-            className="bg-[#E67812] hover:bg-[#D56A0F] text-white"
-          >
-            Publicar Menu
-          </Button>
+          onUpdateCantidad={(productoId: string, cantidad: number) => {
+            const productoOriginal = menuData?.productosMenu?.find(p => p.id === productoId);
+            if (productoOriginal) {
+              const productoActualizado = {
+                ...productoOriginal,
+                stock: { ...productoOriginal.stock, currentQuantity: cantidad }
+              };
+              updateProductosMenu(
+                menuData.productosMenu.map(p => p.id === productoId ? productoActualizado : p)
+              );
+              toast.success(`Cantidad de ${productoOriginal.nombre} actualizada a ${cantidad}`);
+            }
+          }}
+        />
+        <div className="flex justify-between items-center mt-6">
+          <div>
+            <button 
+              className={`px-4 py-2 rounded-md mr-2 ${showFavorites ? 'bg-[#F4821F] text-white' : 'bg-gray-200 text-gray-800'}`}
+              onClick={() => setShowFavorites(!showFavorites)}
+            >
+              {showFavorites ? 'Ocultar favoritos' : 'Mostrar favoritos'}
+            </button>
+            
+            {showFavorites && (
+              <div className="mt-4 border rounded-lg p-4">
+                <h3 className="font-semibold mb-2">Productos favoritos</h3>
+                {menuData?.productosFavoritos?.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {menuData.productosFavoritos.map(producto => (
+                      <div key={producto.id} className="border rounded p-2 flex justify-between items-center">
+                        <span className="font-medium">{producto.nombre}</span>
+                        <div className="flex space-x-2">
+                          <button 
+                            className="text-[#F4821F] hover:text-[#E67812]"
+                            onClick={() => addProductoToMenu(producto)}
+                            title="Agregar al menú"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                          </button>
+                          <button 
+                            className="text-red-500 hover:text-red-600"
+                            onClick={() => removeProductoFromFavoritos(producto.id)}
+                            title="Quitar de favoritos"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500">No hay productos favoritos</p>
+                )}
+              </div>
+            )}
+          </div>
+          
+          <div className="flex space-x-4">
+            <Button className="bg-[#F4821F] hover:bg-[#E67812] text-white">Mantener Menu</Button>
+            <Button className="bg-[#E67812] hover:bg-[#D56A0F] text-white">Publicar Menu</Button>
+          </div>
         </div>
-      </div>
-    </div>
-  );
+      </div>
+    </div>
+  );
 }

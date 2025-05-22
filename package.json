@@ -13,6 +13,8 @@
     "create-test-user": "node scripts/create-test-user.js"
   },
   "dependencies": {
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@googlemaps/js-api-loader": "^1.16.8",
     "@heroicons/react": "^2.1.5",
     "@hookform/resolvers": "^3.9.1",

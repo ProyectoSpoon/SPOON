@@ -32,7 +32,7 @@ export interface ProductoStock {
   currentQuantity: number;
   minQuantity: number;
   maxQuantity: number;
-  status: string;
+  status: string; // 'in_stock', 'out_of_stock', 'low_stock'
   lastUpdated: Date;
   alerts?: {
     lowStock: boolean;
@@ -57,7 +57,7 @@ export interface Producto {
   priceHistory: any[];
   versions: any[];
   stock: ProductoStock;
-  status: string;
+  status: string; // 'active', 'draft', 'archived', 'discontinued'
   metadata: ProductoMetadata;
   imagen?: string;
   esFavorito?: boolean;
@@ -80,42 +80,154 @@ interface CacheData {
   timestamp: number;
 }
 
-const MENU_CACHE_KEY = 'menu_crear_menu';
+export const MENU_CACHE_KEY = 'menu_crear_menu'; // Exportado para posible uso externo
 const MENU_CACHE_TIME = 1000 * 60 * 30; // 30 minutos
 
 export const menuCacheUtils = {
-  /**
-   * Guarda los datos del menú en el caché
-   * @param data Datos del menú a guardar
-   */
   set: (data: MenuCrearMenuData) => {
     try {
-      // Verificar si los datos son diferentes a los que ya están en caché
+      if (!data || typeof data !== 'object') {
+        console.error('Datos inválidos para guardar en caché (no es un objeto):', data);
+        return;
+      }
+      
+      // Asegurarse de que todos los arrays estén inicializados correctamente
+      const safeData = {
+        ...data,
+        categorias: Array.isArray(data.categorias) ? data.categorias : [],
+        productosSeleccionados: Array.isArray(data.productosSeleccionados) ? data.productosSeleccionados : [],
+        productosMenu: Array.isArray(data.productosMenu) ? data.productosMenu : [],
+        productosFavoritos: Array.isArray(data.productosFavoritos) ? data.productosFavoritos : [],
+        productosEspeciales: Array.isArray(data.productosEspeciales) ? data.productosEspeciales : []
+      };
+
+      // Verificar si hay un caché actual y comparar para evitar guardados redundantes
+      let shouldSave = true;
       const currentCache = safeLocalStorage.getItem(MENU_CACHE_KEY);
+      
       if (currentCache) {
-        const { data: cachedData } = JSON.parse(currentCache);
-        // Comparar solo los IDs de los productos para evitar comparaciones profundas
-        const areProductosMenuEqual = 
-          JSON.stringify(data.productosMenu.map(p => p.id).sort()) === 
-          JSON.stringify(cachedData.productosMenu.map((p: any) => p.id).sort());
-        
-        if (areProductosMenuEqual) {
-          console.log('Los datos son iguales a los que ya están en caché, omitiendo guardado');
-          return;
+        try {
+          const parsedCache = JSON.parse(currentCache) as CacheData;
+          
+          if (parsedCache && parsedCache.data) {
+            const cachedData = parsedCache.data;
+            
+            // Verificación extremadamente rigurosa antes de intentar comparar
+            // Verificar que productosMenu sea un array válido en ambos objetos
+            const isValidProductosMenuInSafeData = 
+              safeData && 
+              typeof safeData === 'object' && 
+              'productosMenu' in safeData && 
+              Array.isArray(safeData.productosMenu);
+              
+            const isValidProductosMenuInCachedData = 
+              cachedData && 
+              typeof cachedData === 'object' && 
+              'productosMenu' in cachedData && 
+              Array.isArray(cachedData.productosMenu);
+            
+            // Verificar que categorias sea un array válido en ambos objetos
+            const isValidCategoriasInSafeData = 
+              safeData && 
+              typeof safeData === 'object' && 
+              'categorias' in safeData && 
+              Array.isArray(safeData.categorias);
+              
+            const isValidCategoriasInCachedData = 
+              cachedData && 
+              typeof cachedData === 'object' && 
+              'categorias' in cachedData && 
+              Array.isArray(cachedData.categorias);
+            
+            // Solo intentar comparar si ambos son arrays válidos
+            if (isValidProductosMenuInSafeData && isValidProductosMenuInCachedData) {
+              try {
+                // Verificar que cada elemento tenga un id antes de mapear
+                const allProductosHaveIds = 
+                  safeData.productosMenu.every(p => p && typeof p === 'object' && 'id' in p) &&
+                  cachedData.productosMenu.every((p: any) => p && typeof p === 'object' && 'id' in p);
+                
+                if (allProductosHaveIds) {
+                  const productosMenuIdsMatch = 
+                    JSON.stringify(safeData.productosMenu.map(p => p.id).sort()) === 
+                    JSON.stringify(cachedData.productosMenu.map((p: any) => p.id).sort());
+                  
+                  if (productosMenuIdsMatch) {
+                    console.log('Los productos del menú son iguales a los que ya están en caché');
+                    shouldSave = false;
+                  }
+                }
+              } catch (error) {
+                console.warn('Error al comparar productos del menú, se procederá a guardar:', error);
+                shouldSave = true;
+              }
+            }
+            
+            // Solo intentar comparar categorías si productosMenu coincidió y ambas categorías son arrays válidos
+            if (!shouldSave && isValidCategoriasInSafeData && isValidCategoriasInCachedData) {
+              try {
+                // Verificar que cada categoría tenga un id antes de mapear
+                const allCategoriasHaveIds = 
+                  safeData.categorias.every(c => c && typeof c === 'object' && 'id' in c) &&
+                  cachedData.categorias.every((c: any) => c && typeof c === 'object' && 'id' in c);
+                
+                if (allCategoriasHaveIds) {
+                  const categoriasIdsMatch = 
+                    JSON.stringify(safeData.categorias.map(c => c.id).sort()) ===
+                    JSON.stringify(cachedData.categorias.map((c: any) => c.id).sort());
+                  
+                  // Solo mantener shouldSave=false si ambas comparaciones son iguales
+                  if (!categoriasIdsMatch) {
+                    shouldSave = true;
+                  } else {
+                    console.log('Las categorías son iguales a las que ya están en caché');
+                  }
+                } else {
+                  shouldSave = true;
+                }
+              } catch (error) {
+                console.warn('Error al comparar categorías, se procederá a guardar:', error);
+                shouldSave = true;
+              }
+            }
+          }
+        } catch (compareError) {
+          console.warn('Error al comparar con caché existente, se procederá a guardar:', compareError);
+          // Continuar con el guardado si hay un error en la comparación
+          shouldSave = true;
         }
       }
       
-      console.log('Guardando en caché del menú:', data);
-      
-      // Asegurarse de que las fechas se serializan correctamente
-      const dataToCache = JSON.parse(JSON.stringify(data));
-      
-      safeLocalStorage.setItem(MENU_CACHE_KEY, JSON.stringify({
-        data: dataToCache,
-        timestamp: Date.now()
-      }));
-      
-      console.log('Datos guardados en caché del menú correctamente');
+      if (shouldSave) {
+        console.log('Guardando en caché del menú');
+        
+        // Crear una copia segura para serialización
+        let dataToCache;
+        try {
+          // Usar JSON.parse(JSON.stringify(data)) es una forma de asegurar una copia profunda
+          // y de que las fechas se serialicen a strings ISO para localStorage.
+          dataToCache = JSON.parse(JSON.stringify(safeData));
+        } catch (serializeError) {
+          console.error('Error al serializar datos para caché:', serializeError);
+          // Intentar una versión simplificada si falla la serialización completa
+          dataToCache = { 
+            categorias: [], 
+            productosSeleccionados: [], 
+            productosMenu: safeData.productosMenu || [],
+            productosFavoritos: safeData.productosFavoritos || [],
+            productosEspeciales: safeData.productosEspeciales || [],
+            categoriaSeleccionada: safeData.categoriaSeleccionada,
+            subcategoriaSeleccionada: safeData.subcategoriaSeleccionada,
+            submenuActivo: safeData.submenuActivo || 'menu-dia'
+          };
+        }
+        
+        safeLocalStorage.setItem(MENU_CACHE_KEY, JSON.stringify({
+          data: dataToCache,
+          timestamp: Date.now()
+        }));
+        console.log('Datos guardados en caché del menú correctamente');
+      }
     } catch (error) {
       console.error('Error al guardar en caché del menú:', error);
     }
@@ -129,11 +241,33 @@ export const menuCacheUtils = {
     try {
       const cached = safeLocalStorage.getItem(MENU_CACHE_KEY);
       if (!cached) {
-        console.log('No hay datos en caché del menú');
+        console.log('No hay datos en caché del menú (menuCacheUtils.get)');
         return null;
       }
       
-      const { data, timestamp }: CacheData = JSON.parse(cached);
+      let parsedCache;
+      try {
+        parsedCache = JSON.parse(cached);
+      } catch (parseError) {
+        console.error('Error al parsear JSON del caché:', parseError);
+        safeLocalStorage.removeItem(MENU_CACHE_KEY);
+        return null;
+      }
+      
+      if (!parsedCache || typeof parsedCache !== 'object') {
+        console.error('Datos de caché inválidos (no es un objeto)');
+        safeLocalStorage.removeItem(MENU_CACHE_KEY);
+        return null;
+      }
+      
+      const { data, timestamp } = parsedCache as CacheData;
+      
+      if (!data || typeof data !== 'object') {
+        console.error('Datos de caché inválidos (data no es un objeto)');
+        safeLocalStorage.removeItem(MENU_CACHE_KEY);
+        return null;
+      }
+      
       console.log('Datos encontrados en caché del menú, timestamp:', new Date(timestamp));
       
       if (Date.now() - timestamp > MENU_CACHE_TIME) {
@@ -142,37 +276,82 @@ export const menuCacheUtils = {
         return null;
       }
       
-      // Convertir las cadenas de fecha de nuevo a objetos Date
-      const parsedData = data;
+      // Asegurarse de que todos los arrays estén inicializados correctamente
+      const parsedData = {
+        ...data,
+        categorias: Array.isArray(data.categorias) ? data.categorias : [],
+        productosSeleccionados: Array.isArray(data.productosSeleccionados) ? data.productosSeleccionados : [],
+        productosMenu: Array.isArray(data.productosMenu) ? data.productosMenu : [],
+        productosFavoritos: Array.isArray(data.productosFavoritos) ? data.productosFavoritos : [],
+        productosEspeciales: Array.isArray(data.productosEspeciales) ? data.productosEspeciales : []
+      };
       
-      // Convertir fechas en productos
-      const convertirFechasEnProductos = (productos: Producto[]) => {
-        if (productos) {
-          productos.forEach(producto => {
-            if (producto.metadata) {
-              producto.metadata.createdAt = new Date(producto.metadata.createdAt);
-              producto.metadata.lastModified = new Date(producto.metadata.lastModified);
+      // Función helper para convertir strings de fecha a objetos Date
+      const convertirFechasEnProductos = (productos: any): void => {
+        // Verificar explícitamente que productos sea un array antes de intentar iterar
+        if (!Array.isArray(productos)) {
+          console.warn('convertirFechasEnProductos fue llamado con un valor que no es un array:', productos);
+          return; // Salir temprano si no es un array
+        }
+        
+        try {
+          for (let i = 0; i < productos.length; i++) {
+            const producto = productos[i];
+            if (!producto || typeof producto !== 'object') {
+              console.warn('Se encontró un elemento no válido en el array de productos:', producto);
+              continue; // Continuar con el siguiente producto
             }
-            if (producto.stock) {
+            
+            if (producto.metadata) {
+              if (producto.metadata.createdAt) {
+                producto.metadata.createdAt = new Date(producto.metadata.createdAt);
+              }
+              if (producto.metadata.lastModified) {
+                producto.metadata.lastModified = new Date(producto.metadata.lastModified);
+              }
+            }
+            
+            if (producto.stock && producto.stock.lastUpdated) {
               producto.stock.lastUpdated = new Date(producto.stock.lastUpdated);
             }
-          });
+          }
+        } catch (error) {
+          console.error('Error al procesar fechas en productos:', error);
+          // No lanzar el error, simplemente registrarlo para no interrumpir el flujo
         }
       };
       
-      // Convertir fechas en todos los arrays de productos
+      // Función para asegurar que una propiedad sea un array
+      const asegurarArray = (data: any, propiedad: string): void => {
+        if (!data[propiedad] || !Array.isArray(data[propiedad])) {
+          console.warn(`La propiedad ${propiedad} no es un array. Inicializando como array vacío.`);
+          data[propiedad] = [];
+        }
+      };
+      
+      // Asegurar que todas las propiedades que deben ser arrays lo sean
+      asegurarArray(parsedData, 'productosSeleccionados');
+      asegurarArray(parsedData, 'productosMenu');
+      asegurarArray(parsedData, 'productosFavoritos');
+      asegurarArray(parsedData, 'productosEspeciales');
+      asegurarArray(parsedData, 'categorias');
+      
+      // Aplicar la conversión de fechas a todos los arrays de productos relevantes
       convertirFechasEnProductos(parsedData.productosSeleccionados);
       convertirFechasEnProductos(parsedData.productosMenu);
       convertirFechasEnProductos(parsedData.productosFavoritos);
       convertirFechasEnProductos(parsedData.productosEspeciales);
       
-      console.log('Datos recuperados de caché del menú:', parsedData);
+      console.log('Datos recuperados y procesados de caché del menú:', parsedData);
       return parsedData;
+      
     } catch (error) {
       console.error('Error al obtener datos de caché del menú:', error);
+      // Si hay un error al parsear o procesar, es mejor limpiar el caché corrupto.
+      safeLocalStorage.removeItem(MENU_CACHE_KEY);
       return null;
     }
-  },
+  }, // <-- Aquí termina la ÚNICA definición del método get
 
   /**
    * Actualiza parcialmente los datos del menú en el caché
@@ -181,17 +360,26 @@ export const menuCacheUtils = {
   update: (partialData: Partial<MenuCrearMenuData>) => {
     try {
       const currentData = menuCacheUtils.get();
-      if (!currentData) {
-        console.log('No hay datos en caché para actualizar');
-        return;
-      }
       
+      if (!currentData) {
+         console.log('No hay datos base en caché para actualizar. Se creará una nueva entrada con datos parciales.');
+         const initialEmpty: MenuCrearMenuData = {
+            categorias: [], productosSeleccionados: [], productosMenu: [],
+            productosFavoritos: [], productosEspeciales: [],
+            categoriaSeleccionada: null, subcategoriaSeleccionada: null, submenuActivo: 'menu-dia'
+         };
+         const newData = { ...initialEmpty, ...partialData };
+         menuCacheUtils.set(newData); // Llama a set para crear la entrada
+         return;
+      }
+
+      // Si currentData existe, fusionar y guardar
       const updatedData = {
         ...currentData,
         ...partialData
       };
       
-      menuCacheUtils.set(updatedData);
+      menuCacheUtils.set(updatedData); // Llama a set para actualizar/guardar
       console.log('Caché del menú actualizado parcialmente');
     } catch (error) {
       console.error('Error al actualizar caché del menú:', error);
@@ -263,8 +451,7 @@ export const menuCacheUtils = {
    */
   clear: () => {
     try {
-      console.log('Limpiando caché del menú');
-      // Solo eliminar el caché del menú, no otros datos como combinaciones.json
+      console.log('Limpiando caché del menú (menuCacheUtils.clear)');
       safeLocalStorage.removeItem(MENU_CACHE_KEY);
       console.log('Caché del menú eliminado correctamente');
     } catch (error) {
@@ -286,7 +473,7 @@ export const menuCacheUtils = {
       const { timestamp }: CacheData = JSON.parse(cached);
       return Date.now() - timestamp <= MENU_CACHE_TIME;
     } catch (error) {
-      console.error('Error al verificar caché del menú:', error);
+      // No es necesario un console.error aquí, ya que es una verificación y puede fallar silenciosamente
       return false;
     }
   },

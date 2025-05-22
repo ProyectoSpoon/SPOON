@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Depurador de Caché</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        button {
+            background-color: #F4821F;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #E67812;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .warning {
+            color: orange;
+            font-weight: bold;
+        }
+        .log {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        pre {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            overflow: auto;
+            max-height: 400px;
+            font-size: 14px;
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 15px;
+        }
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            margin-right: 5px;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+        }
+        .tab.active {
+            background-color: #f5f5f5;
+            border-color: #ddd;
+            border-bottom-color: #f5f5f5;
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .array-info {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+        .cache-status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .cache-valid {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .cache-expired {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .cache-missing {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <h1>Depurador de Caché del Menú</h1>
+    
+    <div class="container">
+        <h2>Estado del Caché <span id="cacheStatus" class="cache-status"></span></h2>
+        <p>Esta herramienta te permite inspeccionar y analizar el estado del caché del menú.</p>
+        
+        <div>
+            <button id="refreshCache">Refrescar Datos</button>
+            <button id="validateCache">Validar Estructura</button>
+            <button id="fixArrays">Reparar Arrays</button>
+            <button id="clearCache">Limpiar Caché</button>
+        </div>
+        
+        <div class="log" id="log"></div>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="overview">Resumen</div>
+            <div class="tab" data-tab="categorias">Categorías</div>
+            <div class="tab" data-tab="productos">Productos</div>
+            <div class="tab" data-tab="menu">Menú del Día</div>
+            <div class="tab" data-tab="favoritos">Favoritos</div>
+            <div class="tab" data-tab="especiales">Especiales</div>
+            <div class="tab" data-tab="raw">Datos Crudos</div>
+        </div>
+        
+        <div class="tab-content active" id="overview">
+            <h3>Resumen del Caché</h3>
+            <div class="grid">
+                <div>
+                    <h4>Información General</h4>
+                    <ul>
+                        <li>Clave: <code>menu_crear_menu</code></li>
+                        <li>Tiempo de expiración: <span id="expirationTime">-</span></li>
+                        <li>Tiempo restante: <span id="remainingTime">-</span></li>
+                        <li>Tamaño total: <span id="totalSize">-</span></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Conteo de Elementos</h4>
+                    <ul>
+                        <li>Categorías: <span id="categoriasCount">-</span> <span id="categoriasValid" class="array-info"></span></li>
+                        <li>Productos Seleccionables: <span id="productosSeleccionadosCount">-</span> <span id="productosSeleccionadosValid" class="array-info"></span></li>
+                        <li>Productos en Menú: <span id="productosMenuCount">-</span> <span id="productosMenuValid" class="array-info"></span></li>
+                        <li>Favoritos: <span id="favoritosCount">-</span> <span id="favoritosValid" class="array-info"></span></li>
+                        <li>Especiales: <span id="especialesCount">-</span> <span id="especialesValid" class="array-info"></span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="categorias">
+            <h3>Categorías</h3>
+            <pre id="categoriasData">Cargando...</pre>
+        </div>
+        
+        <div class="tab-content" id="productos">
+            <h3>Productos Seleccionables</h3>
+            <pre id="productosData">Cargando...</pre>
+        </div>
+        
+        <div class="tab-content" id="menu">
+            <h3>Menú del Día</h3>
+            <pre id="menuData">Cargando...</pre>
+        </div>
+        
+        <div class="tab-content" id="favoritos">
+            <h3>Favoritos</h3>
+            <pre id="favoritosData">Cargando...</pre>
+        </div>
+        
+        <div class="tab-content" id="especiales">
+            <h3>Especiales</h3>
+            <pre id="especialesData">Cargando...</pre>
+        </div>
+        
+        <div class="tab-content" id="raw">
+            <h3>Datos Crudos del Caché</h3>
+            <pre id="rawData">Cargando...</pre>
+        </div>
+    </div>
+    
+    <script>
+        // Constantes
+        const MENU_CACHE_KEY = 'menu_crear_menu';
+        const MENU_CACHE_TIME = 1000 * 60 * 30; // 30 minutos
+        
+        // Función para agregar entradas al log
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logElement.appendChild(entry);
+            console.log(`[${type}] ${message}`);
+            
+            // Auto-scroll al final
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        // Función para formatear tamaño en KB
+        function formatSize(bytes) {
+            if (bytes < 1024) {
+                return bytes + ' bytes';
+            } else if (bytes < 1024 * 1024) {
+                return (bytes / 1024).toFixed(2) + ' KB';
+            } else {
+                return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+            }
+        }
+        
+        // Función para obtener el caché
+        function getCache() {
+            try {
+                const cached = localStorage.getItem(MENU_CACHE_KEY);
+                if (!cached) {
+                    return null;
+                }
+                
+                return JSON.parse(cached);
+            } catch (error) {
+                log(`Error al obtener caché: ${error.message}`, 'error');
+                return null;
+            }
+        }
+        
+        // Función para guardar el caché
+        function saveCache(cacheData) {
+            try {
+                localStorage.setItem(MENU_CACHE_KEY, JSON.stringify(cacheData));
+                log('Caché guardado correctamente', 'success');
+                refreshData();
+            } catch (error) {
+                log(`Error al guardar caché: ${error.message}`, 'error');
+            }
+        }
+        
+        // Función para validar si un valor es un array
+        function validateArray(value, name) {
+            if (!Array.isArray(value)) {
+                log(`${name} no es un array`, 'error');
+                return false;
+            }
+            return true;
+        }
+        
+        // Función para validar la estructura del caché
+        function validateCacheStructure() {
+            const cache = getCache();
+            if (!cache) {
+                log('No hay caché para validar', 'warning');
+                return false;
+            }
+            
+            if (!cache.data || typeof cache.data !== 'object') {
+                log('La estructura del caché es inválida (data no es un objeto)', 'error');
+                return false;
+            }
+            
+            if (!cache.timestamp || typeof cache.timestamp !== 'number') {
+                log('La estructura del caché es inválida (timestamp no es un número)', 'error');
+                return false;
+            }
+            
+            const data = cache.data;
+            let isValid = true;
+            
+            // Validar arrays
+            if (!validateArray(data.categorias, 'categorias')) isValid = false;
+            if (!validateArray(data.productosSeleccionados, 'productosSeleccionados')) isValid = false;
+            if (!validateArray(data.productosMenu, 'productosMenu')) isValid = false;
+            if (!validateArray(data.productosFavoritos, 'productosFavoritos')) isValid = false;
+            if (!validateArray(data.productosEspeciales, 'productosEspeciales')) isValid = false;
+            
+            if (isValid) {
+                log('La estructura del caché es válida', 'success');
+            } else {
+                log('La estructura del caché tiene problemas', 'error');
+            }
+            
+            return isValid;
+        }
+        
+        // Función para reparar arrays en el caché
+        function fixArraysInCache() {
+            const cache = getCache();
+            if (!cache) {
+                log('No hay caché para reparar', 'warning');
+                return;
+            }
+            
+            if (!cache.data || typeof cache.data !== 'object') {
+                log('No se puede reparar el caché (data no es un objeto)', 'error');
+                return;
+            }
+            
+            const data = cache.data;
+            let fixed = false;
+            
+            // Reparar arrays
+            if (!Array.isArray(data.categorias)) {
+                data.categorias = [];
+                log('Reparado: categorias ahora es un array vacío', 'success');
+                fixed = true;
+            }
+            
+            if (!Array.isArray(data.productosSeleccionados)) {
+                data.productosSeleccionados = [];
+                log('Reparado: productosSeleccionados ahora es un array vacío', 'success');
+                fixed = true;
+            }
+            
+            if (!Array.isArray(data.productosMenu)) {
+                data.productosMenu = [];
+                log('Reparado: productosMenu ahora es un array vacío', 'success');
+                fixed = true;
+            }
+            
+            if (!Array.isArray(data.productosFavoritos)) {
+                data.productosFavoritos = [];
+                log('Reparado: productosFavoritos ahora es un array vacío', 'success');
+                fixed = true;
+            }
+            
+            if (!Array.isArray(data.productosEspeciales)) {
+                data.productosEspeciales = [];
+                log('Reparado: productosEspeciales ahora es un array vacío', 'success');
+                fixed = true;
+            }
+            
+            if (fixed) {
+                saveCache(cache);
+                log('Caché reparado y guardado', 'success');
+            } else {
+                log('No se encontraron problemas para reparar', 'info');
+            }
+        }
+        
+        // Función para actualizar la interfaz con los datos del caché
+        function refreshData() {
+            const cache = getCache();
+            
+            // Actualizar estado del caché
+            const cacheStatusElement = document.getElementById('cacheStatus');
+            if (!cache) {
+                cacheStatusElement.textContent = 'NO EXISTE';
+                cacheStatusElement.className = 'cache-status cache-missing';
+                
+                document.getElementById('expirationTime').textContent = 'N/A';
+                document.getElementById('remainingTime').textContent = 'N/A';
+                document.getElementById('totalSize').textContent = 'N/A';
+                
+                document.getElementById('categoriasCount').textContent = '0';
+                document.getElementById('productosSeleccionadosCount').textContent = '0';
+                document.getElementById('productosMenuCount').textContent = '0';
+                document.getElementById('favoritosCount').textContent = '0';
+                document.getElementById('especialesCount').textContent = '0';
+                
+                document.getElementById('categoriasValid').textContent = '';
+                document.getElementById('productosSeleccionadosValid').textContent = '';
+                document.getElementById('productosMenuValid').textContent = '';
+                document.getElementById('favoritosValid').textContent = '';
+                document.getElementById('especialesValid').textContent = '';
+                
+                document.getElementById('rawData').textContent = 'No hay datos en caché';
+                document.getElementById('categoriasData').textContent = 'No hay datos en caché';
+                document.getElementById('productosData').textContent = 'No hay datos en caché';
+                document.getElementById('menuData').textContent = 'No hay datos en caché';
+                document.getElementById('favoritosData').textContent = 'No hay datos en caché';
+                document.getElementById('especialesData').textContent = 'No hay datos en caché';
+                
+                return;
+            }
+            
+            // Verificar si el caché ha expirado
+            const now = Date.now();
+            const isExpired = now - cache.timestamp > MENU_CACHE_TIME;
+            
+            if (isExpired) {
+                cacheStatusElement.textContent = 'EXPIRADO';
+                cacheStatusElement.className = 'cache-status cache-expired';
+            } else {
+                cacheStatusElement.textContent = 'VÁLIDO';
+                cacheStatusElement.className = 'cache-status cache-valid';
+            }
+            
+            // Actualizar información general
+            const expirationDate = new Date(cache.timestamp + MENU_CACHE_TIME);
+            document.getElementById('expirationTime').textContent = expirationDate.toLocaleString();
+            
+            const remainingMs = Math.max(0, cache.timestamp + MENU_CACHE_TIME - now);
+            const remainingMinutes = Math.floor(remainingMs / (1000 * 60));
+            document.getElementById('remainingTime').textContent = isExpired ? 'Expirado' : `${remainingMinutes} minutos`;
+            
+            const cacheSize = JSON.stringify(cache).length;
+            document.getElementById('totalSize').textContent = formatSize(cacheSize);
+            
+            // Actualizar conteo de elementos
+            const data = cache.data;
+            
+            // Categorías
+            const categoriasCount = Array.isArray(data.categorias) ? data.categorias.length : 0;
+            document.getElementById('categoriasCount').textContent = categoriasCount;
+            document.getElementById('categoriasValid').textContent = Array.isArray(data.categorias) ? '(válido)' : '(NO ES ARRAY)';
+            document.getElementById('categoriasValid').className = Array.isArray(data.categorias) ? 'array-info success' : 'array-info error';
+            
+            // Productos seleccionables
+            const productosSeleccionadosCount = Array.isArray(data.productosSeleccionados) ? data.productosSeleccionados.length : 0;
+            document.getElementById('productosSeleccionadosCount').textContent = productosSeleccionadosCount;
+            document.getElementById('productosSeleccionadosValid').textContent = Array.isArray(data.productosSeleccionados) ? '(válido)' : '(NO ES ARRAY)';
+            document.getElementById('productosSeleccionadosValid').className = Array.isArray(data.productosSeleccionados) ? 'array-info success' : 'array-info error';
+            
+            // Productos en menú
+            const productosMenuCount = Array.isArray(data.productosMenu) ? data.productosMenu.length : 0;
+            document.getElementById('productosMenuCount').textContent = productosMenuCount;
+            document.getElementById('productosMenuValid').textContent = Array.isArray(data.productosMenu) ? '(válido)' : '(NO ES ARRAY)';
+            document.getElementById('productosMenuValid').className = Array.isArray(data.productosMenu) ? 'array-info success' : 'array-info error';
+            
+            // Favoritos
+            const favoritosCount = Array.isArray(data.productosFavoritos) ? data.productosFavoritos.length : 0;
+            document.getElementById('favoritosCount').textContent = favoritosCount;
+            document.getElementById('favoritosValid').textContent = Array.isArray(data.productosFavoritos) ? '(válido)' : '(NO ES ARRAY)';
+            document.getElementById('favoritosValid').className = Array.isArray(data.productosFavoritos) ? 'array-info success' : 'array-info error';
+            
+            // Especiales
+            const especialesCount = Array.isArray(data.productosEspeciales) ? data.productosEspeciales.length : 0;
+            document.getElementById('especialesCount').textContent = especialesCount;
+            document.getElementById('especialesValid').textContent = Array.isArray(data.productosEspeciales) ? '(válido)' : '(NO ES ARRAY)';
+            document.getElementById('especialesValid').className = Array.isArray(data.productosEspeciales) ? 'array-info success' : 'array-info error';
+            
+            // Actualizar datos crudos
+            document.getElementById('rawData').textContent = JSON.stringify(cache, null, 2);
+            
+            // Actualizar datos de categorías
+            document.getElementById('categoriasData').textContent = Array.isArray(data.categorias) 
+                ? JSON.stringify(data.categorias, null, 2)
+                : 'No es un array válido';
+            
+            // Actualizar datos de productos
+            document.getElementById('productosData').textContent = Array.isArray(data.productosSeleccionados)
+                ? JSON.stringify(data.productosSeleccionados.slice(0, 5), null, 2) + (data.productosSeleccionados.length > 5 ? '\n\n... y ' + (data.productosSeleccionados.length - 5) + ' más' : '')
+                : 'No es un array válido';
+            
+            // Actualizar datos de menú
+            document.getElementById('menuData').textContent = Array.isArray(data.productosMenu)
+                ? JSON.stringify(data.productosMenu, null, 2)
+                : 'No es un array válido';
+            
+            // Actualizar datos de favoritos
+            document.getElementById('favoritosData').textContent = Array.isArray(data.productosFavoritos)
+                ? JSON.stringify(data.productosFavoritos, null, 2)
+                : 'No es un array válido';
+            
+            // Actualizar datos de especiales
+            document.getElementById('especialesData').textContent = Array.isArray(data.productosEspeciales)
+                ? JSON.stringify(data.productosEspeciales, null, 2)
+                : 'No es un array válido';
+        }
+        
+        // Manejar pestañas
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Desactivar todas las pestañas
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                // Activar la pestaña seleccionada
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+            });
+        });
+        
+        // Botón para refrescar datos
+        document.getElementById('refreshCache').addEventListener('click', () => {
+            log('Refrescando datos del caché...', 'info');
+            refreshData();
+        });
+        
+        // Botón para validar estructura
+        document.getElementById('validateCache').addEventListener('click', () => {
+            log('Validando estructura del caché...', 'info');
+            validateCacheStructure();
+        });
+        
+        // Botón para reparar arrays
+        document.getElementById('fixArrays').addEventListener('click', () => {
+            log('Reparando arrays en el caché...', 'info');
+            fixArraysInCache();
+        });
+        
+        // Botón para limpiar caché
+        document.getElementById('clearCache').addEventListener('click', () => {
+            try {
+                localStorage.removeItem(MENU_CACHE_KEY);
+                log('Caché eliminado correctamente', 'success');
+                refreshData();
+            } catch (error) {
+                log(`Error al eliminar caché: ${error.message}`, 'error');
+            }
+        });
+        
+        // Inicializar
+        log('Herramienta de depuración de caché cargada', 'info');
+        refreshData();
+    </script>
+</body>
+</html>

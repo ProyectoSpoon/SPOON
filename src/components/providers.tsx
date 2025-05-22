@@ -18,7 +18,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
           {children}
           <ReloadProductsButton />
           <ForceReloadButton />
-          <Toaster position="top-right" />
+          <Toaster 
+            position="top-right" 
+            closeButton
+            richColors
+            expand={false}
+            duration={4000}
+            visibleToasts={3}
+          />
         </AuthProvider>
       </ThemeProvider>
     </Suspense>
