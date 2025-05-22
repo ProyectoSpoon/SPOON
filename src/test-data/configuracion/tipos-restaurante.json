@@ -1,0 +1,36 @@
+{
+  "tiposRestaurante": [
+    {
+      "id": "tipo_desayunos",
+      "nombre": "Desayunos",
+      "descripcion": "Restaurante especializado en desayunos",
+      "icono": "coffee",
+      "color": "#8B4513",
+      "activo": true
+    },
+    {
+      "id": "tipo_almuerzos",
+      "nombre": "Almuerzos",
+      "descripcion": "Restaurante de almuerzos ejecutivos",
+      "icono": "utensils",
+      "color": "#F4821F",
+      "activo": true
+    },
+    {
+      "id": "tipo_comida_rapida",
+      "nombre": "Comida Rápida",
+      "descripcion": "Restaurante de comida rápida",
+      "icono": "burger",
+      "color": "#FF4500",
+      "activo": true
+    },
+    {
+      "id": "tipo_heladeria",
+      "nombre": "Heladería",
+      "descripcion": "Heladería y postres",
+      "icono": "ice-cream",
+      "color": "#9370DB",
+      "activo": true
+    }
+  ]
+}

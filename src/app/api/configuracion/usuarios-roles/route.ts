@@ -2,26 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
-/**
- * GET: Obtener las categorías de un tipo de restaurante específico
- */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { tipoId: string } }
-) {
-  try {
-    const tipoId = params.tipoId;
-    
-    // Construir la ruta al archivo JSON
-    const filePath = path.join(
-      process.cwd(),
-      `src/test-data/configuracion/categorias/${tipoId}.json`
-    );
+const filePath = path.join(process.cwd(), 'src/test-data/configuracion/usuarios-roles.json');
 
+/**
+ * GET: Obtener los usuarios y roles
+ */
+export async function GET() {
+  try {
     // Verificar si el archivo existe
     if (!fs.existsSync(filePath)) {
       return NextResponse.json(
-        { error: `No se encontraron categorías para el tipo ${tipoId}` },
+        { error: 'No se encontró el archivo de usuarios y roles' },
         { status: 404 }
       );
     }
@@ -32,40 +23,29 @@ export async function GET(
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error(`Error al leer las categorías:`, error);
+    console.error('Error al leer los usuarios y roles:', error);
     return NextResponse.json(
-      { error: 'Error al leer las categorías' },
+      { error: 'Error al leer los usuarios y roles' },
       { status: 500 }
     );
   }
 }
 
 /**
- * POST: Guardar las categorías de un tipo de restaurante específico
+ * POST: Guardar los usuarios y roles
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { tipoId: string } }
-) {
+export async function POST(request: NextRequest) {
   try {
-    const tipoId = params.tipoId;
-    
     // Obtener los datos del request
     const data = await request.json();
 
     // Validar los datos
-    if (!data.categorias || !Array.isArray(data.categorias)) {
+    if (!data.usuarios || !Array.isArray(data.usuarios) || !data.roles || !Array.isArray(data.roles)) {
       return NextResponse.json(
         { error: 'Formato de datos inválido' },
         { status: 400 }
       );
     }
-
-    // Construir la ruta al archivo JSON
-    const filePath = path.join(
-      process.cwd(),
-      `src/test-data/configuracion/categorias/${tipoId}.json`
-    );
 
     // Crear el directorio si no existe
     const dirPath = path.dirname(filePath);
@@ -78,9 +58,9 @@ export async function POST(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error(`Error al guardar las categorías:`, error);
+    console.error('Error al guardar los usuarios y roles:', error);
     return NextResponse.json(
-      { error: 'Error al guardar las categorías' },
+      { error: 'Error al guardar los usuarios y roles' },
       { status: 500 }
     );
   }

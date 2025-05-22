@@ -2,17 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
-const filePath = path.join(process.cwd(), 'src/test-data/configuracion/tipos-restaurante.json');
+const filePath = path.join(process.cwd(), 'src/test-data/configuracion/informacion-general.json');
 
 /**
- * GET: Obtener los tipos de restaurante
+ * GET: Obtener la información general del restaurante
  */
 export async function GET() {
   try {
     // Verificar si el archivo existe
     if (!fs.existsSync(filePath)) {
       return NextResponse.json(
-        { error: 'No se encontró el archivo de tipos de restaurante' },
+        { error: 'No se encontró el archivo de información general' },
         { status: 404 }
       );
     }
@@ -23,16 +23,16 @@ export async function GET() {
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error al leer los tipos de restaurante:', error);
+    console.error('Error al leer la información general:', error);
     return NextResponse.json(
-      { error: 'Error al leer los tipos de restaurante' },
+      { error: 'Error al leer la información general' },
       { status: 500 }
     );
   }
 }
 
 /**
- * POST: Guardar los tipos de restaurante
+ * POST: Guardar la información general del restaurante
  */
 export async function POST(request: NextRequest) {
   try {
@@ -40,9 +40,9 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
 
     // Validar los datos
-    if (!data.tiposRestaurante || !Array.isArray(data.tiposRestaurante)) {
+    if (!data.nombreRestaurante || !data.direccion || !data.telefono || !data.email) {
       return NextResponse.json(
-        { error: 'Formato de datos inválido' },
+        { error: 'Faltan campos obligatorios' },
         { status: 400 }
       );
     }
@@ -58,9 +58,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error al guardar los tipos de restaurante:', error);
+    console.error('Error al guardar la información general:', error);
     return NextResponse.json(
-      { error: 'Error al guardar los tipos de restaurante' },
+      { error: 'Error al guardar la información general' },
       { status: 500 }
     );
   }

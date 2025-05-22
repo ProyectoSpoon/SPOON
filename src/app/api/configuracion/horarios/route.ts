@@ -2,17 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
-const filePath = path.join(process.cwd(), 'src/test-data/configuracion/tipos-restaurante.json');
+const filePath = path.join(process.cwd(), 'src/test-data/configuracion/horarios.json');
 
 /**
- * GET: Obtener los tipos de restaurante
+ * GET: Obtener los horarios del restaurante
  */
 export async function GET() {
   try {
     // Verificar si el archivo existe
     if (!fs.existsSync(filePath)) {
       return NextResponse.json(
-        { error: 'No se encontró el archivo de tipos de restaurante' },
+        { error: 'No se encontró el archivo de horarios' },
         { status: 404 }
       );
     }
@@ -23,16 +23,16 @@ export async function GET() {
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error al leer los tipos de restaurante:', error);
+    console.error('Error al leer los horarios:', error);
     return NextResponse.json(
-      { error: 'Error al leer los tipos de restaurante' },
+      { error: 'Error al leer los horarios' },
       { status: 500 }
     );
   }
 }
 
 /**
- * POST: Guardar los tipos de restaurante
+ * POST: Guardar los horarios del restaurante
  */
 export async function POST(request: NextRequest) {
   try {
@@ -40,11 +40,22 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
 
     // Validar los datos
-    if (!data.tiposRestaurante || !Array.isArray(data.tiposRestaurante)) {
+    if (!data.horarioRegular) {
       return NextResponse.json(
-        { error: 'Formato de datos inválido' },
+        { error: 'Faltan los horarios regulares' },
         { status: 400 }
       );
+    }
+
+    // Validar que horarioRegular tenga todos los días de la semana
+    const diasSemana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+    for (const dia of diasSemana) {
+      if (!data.horarioRegular[dia] || !Array.isArray(data.horarioRegular[dia])) {
+        return NextResponse.json(
+          { error: `Falta el horario para el día ${dia}` },
+          { status: 400 }
+        );
+      }
     }
 
     // Crear el directorio si no existe
@@ -58,9 +69,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error al guardar los tipos de restaurante:', error);
+    console.error('Error al guardar los horarios:', error);
     return NextResponse.json(
-      { error: 'Error al guardar los tipos de restaurante' },
+      { error: 'Error al guardar los horarios' },
       { status: 500 }
     );
   }
