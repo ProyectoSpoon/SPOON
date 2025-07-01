@@ -1,7 +1,6 @@
 // src/app/config-restaurante/ubicacion/hooks/useUbicacion.ts
 import { useState, useCallback } from 'react';
 import { useToast } from '@/shared/Hooks/use-toast';
-import { LocationService } from '@/firebase/services/location.service';
 import { useConfigStore } from '@/app/config-restaurante/store/config-store';
 import { useAuth } from '@/context/authcontext';
 
@@ -29,9 +28,10 @@ export function useUbicacion(restaurantId: string) {
 
     try {
       setCargando(true);
-      const ubicacionGuardada = await LocationService.getLocation(restaurantId);
-
-      if (ubicacionGuardada) {
+      const response = await fetch(`/api/restaurants/${restaurantId}/location`);
+      
+      if (response.ok) {
+        const ubicacionGuardada = await response.json();
         setCoordenadas(ubicacionGuardada.coordenadas);
         setDireccion(ubicacionGuardada.direccion);
         actualizarCampo('ubicacion', 'direccion', true);
@@ -62,10 +62,20 @@ export function useUbicacion(restaurantId: string) {
     try {
       setGuardando(true);
 
-      await LocationService.saveLocation(restaurantId, {
-        direccion: nuevaDireccion,
-        coordenadas: nuevasCoordenadas
+      const response = await fetch(`/api/restaurants/${restaurantId}/location`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          direccion: nuevaDireccion,
+          coordenadas: nuevasCoordenadas
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error('Error al guardar la ubicación');
+      }
 
       setDireccion(nuevaDireccion);
       setCoordenadas(nuevasCoordenadas);
@@ -100,7 +110,21 @@ export function useUbicacion(restaurantId: string) {
 
     try {
       setGuardando(true);
-      await LocationService.updateLocation(restaurantId, nuevasCoordenadas);
+      
+      const response = await fetch(`/api/restaurants/${restaurantId}/location`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          coordenadas: nuevasCoordenadas
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al actualizar las coordenadas');
+      }
+
       setCoordenadas(nuevasCoordenadas);
       actualizarCampo('ubicacion', 'coordenadas', true);
 

@@ -2,9 +2,6 @@
 import { useToast } from '@/shared/components/ui/Toast/use-toast'
 import { Alert, AlertDescription } from '@/shared/components/ui/Alert'
 import { ErrorCategory, ErrorSeverity, AppError } from '@/shared/types/error.types'
-import { auth } from '@/firebase/config'
-
-import { isFirebaseError, normalizeFirebaseError } from '@/shared/Utils/firebase-error.utils'
 
 export class ErrorHandlerService {
  private static RETRY_ATTEMPTS = 3;
@@ -24,9 +21,7 @@ export class ErrorHandlerService {
  }
 
  static async handleError(error: unknown, context?: Record<string, unknown>): Promise<void> {
-   const appError = isFirebaseError(error) 
-     ? normalizeFirebaseError(error) 
-     : this.normalizeError(error, context);
+   const appError = this.normalizeError(error, context);
 
    if (this.isRateLimited(appError.code)) {
      console.warn(`Error rate limited: ${appError.code}`);
@@ -40,14 +35,41 @@ export class ErrorHandlerService {
  }
 
  private static normalizeError(error: unknown, context?: Record<string, unknown>): AppError {
+   // Handle different types of errors
+   let code = 'UNKNOWN_ERROR';
+   let category = ErrorCategory.BUSINESS_LOGIC;
+   let severity = ErrorSeverity.MEDIUM;
+   let message = 'Ha ocurrido un error inesperado';
+
+   if (error instanceof Error) {
+     message = error.message;
+     
+     // Categorize based on error message or type
+     if (error.message.includes('fetch') || error.message.includes('network')) {
+       category = ErrorCategory.NETWORK;
+       code = 'NETWORK_ERROR';
+     } else if (error.message.includes('auth') || error.message.includes('unauthorized')) {
+       category = ErrorCategory.AUTHENTICATION;
+       code = 'AUTH_ERROR';
+       severity = ErrorSeverity.HIGH;
+     } else if (error.message.includes('permission') || error.message.includes('forbidden')) {
+       category = ErrorCategory.AUTHORIZATION;
+       code = 'PERMISSION_ERROR';
+     } else if (error.message.includes('validation') || error.message.includes('invalid')) {
+       category = ErrorCategory.VALIDATION;
+       code = 'VALIDATION_ERROR';
+       severity = ErrorSeverity.LOW;
+     }
+   }
+
    return {
-     code: 'UNKNOWN_ERROR',
-     message: error instanceof Error ? error.message : 'Ha ocurrido un error inesperado',
-     category: ErrorCategory.BUSINESS_LOGIC,
-     severity: ErrorSeverity.MEDIUM,
+     code,
+     message,
+     category,
+     severity,
      metadata: {
        timestamp: new Date(),
-       path: window.location.pathname,
+       path: typeof window !== 'undefined' ? window.location.pathname : '/',
        context,
        retryCount: 0
      },
@@ -179,8 +201,18 @@ export class ErrorHandlerService {
 
  private static async handleAuthError(): Promise<void> {
    try {
-     await signOut(auth);
-     window.location.href = '/login';
+     // Clear authentication tokens/cookies
+     if (typeof window !== 'undefined') {
+       // Clear any auth cookies or localStorage
+       document.cookie.split(";").forEach((c) => {
+         document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+       });
+       localStorage.clear();
+       sessionStorage.clear();
+       
+       // Redirect to login
+       window.location.href = '/login';
+     }
    } catch (error) {
      console.error('Error during auth recovery:', error);
      throw error;

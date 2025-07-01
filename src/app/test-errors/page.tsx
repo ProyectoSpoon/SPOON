@@ -1,8 +1,6 @@
 // src/app/test-errors/page.tsx
 'use client'
 
-import { auth, db } from '@/firebase/config'
-
 import { ErrorHandlerService } from '@/shared/services/error-handler.service'
 import { Button } from '@/shared/components/ui/Button'
 import { Card } from '@/shared/components/ui/Card'
@@ -55,7 +53,14 @@ export default function TestErrorsPage() {
   // 1. Error de Autenticación
   const testAuthError = async () => {
     try {
-      await signInWithEmailAndPassword(auth, 'test@test.com', 'wrongpassword')
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'test@test.com', password: 'wrongpassword' })
+      });
+      if (!response.ok) {
+        throw new Error('Authentication failed');
+      }
     } catch (error) {
       await ErrorHandlerService.handleError(error, {
         context: 'auth-test',
@@ -83,11 +88,9 @@ const testDatabaseError = async () => {
     try {
       console.log('Intentando error de base de datos...');
       // Intentamos leer un documento que sabemos que no existe
-      const docRef = doc(db, 'una-coleccion-que-no-existe', 'un-id-que-no-existe');
-      const docSnap = await getDoc(docRef);
-      
-      if (!docSnap.exists()) {
-        throw new Error('No se encontró el documento');
+      const response = await fetch('/api/test/database-error');
+      if (!response.ok) {
+        throw new Error('Database operation failed');
       }
     } catch (error) {
       console.log('Error capturado:', error); // Para ver el error en consola
@@ -189,7 +192,7 @@ const testGeneralError = () => {
     {
         key: 'database',
         title: 'Error de Base de Datos',
-        description: 'Intenta escribir en una colección inexistente en Firestore.',
+        description: 'Intenta acceder a una tabla inexistente en PostgreSQL.',
         icon: <Database className="w-6 h-6 text-purple-500" />,
         onClick: () => handleErrorTest('database', testDatabaseError)
       },
@@ -203,7 +206,7 @@ const testGeneralError = () => {
     {
         key: 'permission',
         title: 'Error de Permisos',
-        description: 'Intenta escribir en una colección protegida del sistema.',
+        description: 'Intenta acceder a un recurso protegido del sistema.',
         icon: <Shield className="w-6 h-6 text-green-500" />,
         onClick: () => handleErrorTest('permission', testPermissionError)
       },

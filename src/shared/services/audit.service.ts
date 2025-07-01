@@ -1,18 +1,4 @@
 // src/shared/services/audit.service.ts
-import { auth, db } from '@/firebase/config';
-import { 
-  collection, 
-  addDoc, 
-  query, 
-  where, 
-  getDocs, 
-  orderBy, 
-  limit,
-  startAfter,
-  serverTimestamp,
-  DocumentData,
-  QueryDocumentSnapshot
-} from 'firebase/firestore';
 import { 
   AuditEvent, 
   AuditEventType, 
@@ -24,11 +10,11 @@ import {
 } from '@/shared/types/audit.types';
 
 export class AuditService {
-    private static readonly COLLECTION_NAME = 'audit_logs';
     private static readonly PAGE_SIZE = 50;
   
     private static getCurrentUserId(): string {
-      return auth.currentUser?.uid ?? 'system';  // Usando el operador nullish
+      // Get user ID from session/token or return 'system'
+      return 'system'; // TODO: Implement proper user session management
     }
     
     static async logEvent(
@@ -42,9 +28,9 @@ export class AuditService {
         const currentUserId = this.getCurrentUserId();
         const safeMetadata = {
           ...metadata,
-          userId: metadata.userId ?? currentUserId, // Aseguramos que nunca sea undefined
-          timestamp: serverTimestamp(),
-          path: window.location.pathname || '/'
+          userId: metadata.userId ?? currentUserId,
+          timestamp: new Date().toISOString(),
+          path: typeof window !== 'undefined' ? window.location.pathname : '/'
         };
     
         const auditEvent: Omit<AuditEvent, 'id'> = {
@@ -56,15 +42,22 @@ export class AuditService {
           ...(error && { error: this.normalizeError(error) })
         };
     
-        // Verificación adicional
         console.log('Audit Event to save:', JSON.stringify(auditEvent, null, 2));
     
-        const docRef = await addDoc(
-          collection(db, this.COLLECTION_NAME), 
-          auditEvent
-        );
-    
-        return docRef.id;
+        const response = await fetch('/api/audit/events', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(auditEvent),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to log audit event');
+        }
+
+        const result = await response.json();
+        return result.id;
       } catch (error) {
         console.error('[AuditService] Error logging event:', error);
         throw error;
@@ -160,43 +153,30 @@ export class AuditService {
 
     static async queryEvents(
       filter: AuditFilter,
-      lastDoc?: QueryDocumentSnapshot<DocumentData>
+      page: number = 0
     ): Promise<AuditQueryResult> {
       try {
-        let q = query(
-          collection(db, this.COLLECTION_NAME),
-          orderBy('metadata.timestamp', 'desc')
-        );
+        const queryParams = new URLSearchParams({
+          page: page.toString(),
+          limit: this.PAGE_SIZE.toString(),
+          ...(filter.startDate && { startDate: filter.startDate.toISOString() }),
+          ...(filter.endDate && { endDate: filter.endDate.toISOString() }),
+          ...(filter.type?.length && { types: filter.type.join(',') }),
+          ...(filter.severity?.length && { severities: filter.severity.join(',') }),
+          ...(filter.userId && { userId: filter.userId }),
+        });
 
-        if (filter.startDate) {
-          q = query(q, where('metadata.timestamp', '>=', filter.startDate));
-        }
-        if (filter.endDate) {
-          q = query(q, where('metadata.timestamp', '<=', filter.endDate));
-        }
-        if (filter.type?.length) {
-          q = query(q, where('type', 'in', filter.type));
-        }
-        if (filter.severity?.length) {
-          q = query(q, where('severity', 'in', filter.severity));
-        }
-        if (filter.userId) {
-          q = query(q, where('metadata.userId', '==', filter.userId));
+        const response = await fetch(`/api/audit/events?${queryParams}`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to query audit events');
         }
 
-        q = query(q, limit(this.PAGE_SIZE));
-        if (lastDoc) {
-          q = query(q, startAfter(lastDoc));
-        }
-
-        const snapshot = await getDocs(q);
+        const result = await response.json();
         return {
-          events: snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          })) as AuditEvent[],
-          total: snapshot.size,
-          hasMore: snapshot.size === this.PAGE_SIZE
+          events: result.events as AuditEvent[],
+          total: result.total,
+          hasMore: result.hasMore
         };
       } catch (error) {
         console.error('[AuditService] Error querying events:', error);

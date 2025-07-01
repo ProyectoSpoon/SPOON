@@ -1,6 +1,4 @@
 import { useState, useEffect } from 'react';
-;
-import { db } from '@/firebase/config';
 
 interface SalePreference {
   favoriteAddons: string[];
@@ -16,22 +14,57 @@ export function useSalePreferences(userId: string) {
   const [loading, setLoading] = useState(true);
 
   const loadPreferences = async () => {
-    const doc = await getDoc(doc(db, 'userPreferences', userId));
-    setPreferences(doc.exists() ? doc.data() as SalePreference : {
-      favoriteAddons: [],
-      quickKeys: {},
-      defaultQuantity: 1,
-      showPrices: true,
-      compactMode: false,
-      lastUsedAddons: []
-    });
+    try {
+      const response = await fetch(`/api/users/${userId}/preferences`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setPreferences(data);
+      } else {
+        // Set default preferences if none exist
+        setPreferences({
+          favoriteAddons: [],
+          quickKeys: {},
+          defaultQuantity: 1,
+          showPrices: true,
+          compactMode: false,
+          lastUsedAddons: []
+        });
+      }
+    } catch (error) {
+      console.error('Error loading preferences:', error);
+      setPreferences({
+        favoriteAddons: [],
+        quickKeys: {},
+        defaultQuantity: 1,
+        showPrices: true,
+        compactMode: false,
+        lastUsedAddons: []
+      });
+    }
     setLoading(false);
   };
 
   const updatePreferences = async (updates: Partial<SalePreference>) => {
-    const newPrefs = { ...preferences, ...updates };
-    await setDoc(doc(db, 'userPreferences', userId), newPrefs);
-    setPreferences(newPrefs);
+    try {
+      const newPrefs = { ...preferences, ...updates };
+      
+      const response = await fetch(`/api/users/${userId}/preferences`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newPrefs),
+      });
+
+      if (response.ok) {
+        setPreferences(newPrefs);
+      } else {
+        throw new Error('Error updating preferences');
+      }
+    } catch (error) {
+      console.error('Error updating preferences:', error);
+    }
   };
 
   useEffect(() => {

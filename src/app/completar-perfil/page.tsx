@@ -2,8 +2,6 @@
 'use client'
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-;
-import { db } from '@/firebase/config';
 import { useAuth } from '@/context/authcontext';
 
 export default function CompletarPerfil() {
@@ -27,11 +25,22 @@ export default function CompletarPerfil() {
       setEstaCargando(true);
       setError('');
 
-      const userRef = doc(db, 'dueno_restaurante', usuario.email);
-      await updateDoc(userRef, {
-        telefono,
-        requiresAdditionalInfo: false
+      // API call to update user profile in PostgreSQL
+      const response = await fetch('/api/users/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: usuario.email,
+          telefono,
+          requiresAdditionalInfo: false
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error('Error al actualizar perfil');
+      }
 
       router.push('/dashboard');
     } catch (error) {

@@ -1,7 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { auth } from '@/firebase/config';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/shared/components/ui/Alert';
 import { Loader2 } from 'lucide-react';
@@ -15,20 +14,27 @@ export default function VerificarEmail() {
   const [countdown, setCountdown] = useState(0);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (!user) {
+    // Check authentication status via API
+    const checkAuthStatus = async () => {
+      try {
+        const response = await fetch('/api/auth/status');
+        if (!response.ok) {
+          router.push('/inicio');
+          return;
+        }
+        
+        const { user } = await response.json();
+        if (user?.emailVerified) {
+          router.push('/completar-perfil');
+        } else {
+          setIsVerifying(false);
+        }
+      } catch (error) {
         router.push('/inicio');
-        return;
       }
+    };
 
-      if (user.emailVerified) {
-        router.push('/completar-perfil');
-      } else {
-        setIsVerifying(false);
-      }
-    });
-
-    return () => unsubscribe();
+    checkAuthStatus();
   }, [router]);
 
   const handleResendVerification = async () => {
@@ -37,7 +43,18 @@ export default function VerificarEmail() {
     try {
       setIsVerifying(true);
       setError('');
-      await reenviarVerificacionEmail();
+      
+      const response = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al reenviar el correo de verificación');
+      }
+
       setCountdown(60); // 60 segundos de espera
       
       const timer = setInterval(() => {

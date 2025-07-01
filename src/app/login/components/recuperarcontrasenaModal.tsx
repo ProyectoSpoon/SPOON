@@ -1,7 +1,5 @@
 'use client';
 import { useState } from 'react';
-import { auth } from '@/firebase/config';
-;
 import { XIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -21,16 +19,28 @@ const RecuperarContrasenaModal = ({ isOpen, onClose }: Props) => {
     setCargando(true);
 
     try {
-      await sendPasswordResetEmail(auth, email);
-      toast.success('Se ha enviado un correo para restablecer tu contraseña');
-      onClose();
-      setEmail('');
-    } catch (err: any) {
-      let mensajeError = 'Error al enviar el correo de recuperación.';
-      if (err.code === 'auth/user-not-found') {
-        mensajeError = 'No existe una cuenta con este correo electrónico.';
+      const response = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      if (response.ok) {
+        toast.success('Se ha enviado un correo para restablecer tu contraseña');
+        onClose();
+        setEmail('');
+      } else {
+        const errorData = await response.json();
+        let mensajeError = 'Error al enviar el correo de recuperación.';
+        if (errorData.code === 'user-not-found') {
+          mensajeError = 'No existe una cuenta con este correo electrónico.';
+        }
+        toast.error(mensajeError);
       }
-      toast.error(mensajeError);
+    } catch (err: any) {
+      toast.error('Error al enviar el correo de recuperación.');
     } finally {
       setCargando(false);
     }
