@@ -8,8 +8,9 @@ export interface NuevoUsuario {
   apellido: string;
   email: string;
   password: string;
-  rol: 'admin' | 'staff';
+  rol: 'super_admin' | 'owner' | 'manager' | 'kitchen' | 'waiter' | 'customer';
   telefono?: string;
+  restaurantId?: string;
 }
 
 // Tipo para representar a un usuario existente
@@ -18,11 +19,12 @@ export interface Usuario {
   email: string;
   nombre: string;
   apellido: string;
-  rol: 'admin' | 'staff';
+  rol: 'super_admin' | 'owner' | 'manager' | 'kitchen' | 'waiter' | 'customer';
   telefono?: string;
-  estado: 'activo' | 'inactivo' | 'bloqueado';
+  estado: 'active' | 'inactive' | 'pending' | 'suspended';
   fechaCreacion: Date;
   ultimoAcceso?: Date;
+  restaurantId?: string;
 }
 
 /**
@@ -37,8 +39,8 @@ export async function crearUsuario(usuario: NuevoUsuario): Promise<Usuario> {
     const result = await query(
       `INSERT INTO usuarios (
         uid, email, nombre, apellido, rol, 
-        telefono, estado, fecha_creacion
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
+        telefono, estado, fecha_creacion, restaurant_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, $8)
       RETURNING *`,
       [
         uid,
@@ -47,7 +49,8 @@ export async function crearUsuario(usuario: NuevoUsuario): Promise<Usuario> {
         usuario.apellido,
         usuario.rol,
         usuario.telefono || null,
-        'activo'
+        'active',
+        usuario.restaurantId || null
       ]
     );
     
@@ -73,8 +76,9 @@ export async function crearUsuario(usuario: NuevoUsuario): Promise<Usuario> {
       apellido: usuario.apellido,
       rol: usuario.rol,
       telefono: usuario.telefono,
-      estado: 'activo',
-      fechaCreacion: new Date()
+      estado: 'active',
+      fechaCreacion: new Date(),
+      restaurantId: usuario.restaurantId
     };
   } catch (error) {
     console.error('Error al crear usuario en PostgreSQL:', error);
@@ -96,6 +100,7 @@ interface UsuarioRow {
   estado: string;
   fechaCreacion: string; // Fecha en formato string que luego convertiremos a Date
   ultimoAcceso: string | null;
+  restaurantId: string | null;
 }
 
 export async function obtenerUsuarios(): Promise<Usuario[]> {
@@ -103,17 +108,18 @@ export async function obtenerUsuarios(): Promise<Usuario[]> {
     const result = await query(
       `SELECT uid, email, nombre, apellido, rol, telefono, 
               estado, fecha_creacion as "fechaCreacion", 
-              ultimo_acceso as "ultimoAcceso"
+              ultimo_acceso as "ultimoAcceso", restaurant_id as "restaurantId"
        FROM usuarios
        ORDER BY fecha_creacion DESC`
     );
     
     return result.rows.map((row: UsuarioRow) => ({
       ...row,
-      rol: row.rol as 'admin' | 'staff',
-      estado: row.estado as 'activo' | 'inactivo' | 'bloqueado',
+      rol: row.rol as 'super_admin' | 'owner' | 'manager' | 'kitchen' | 'waiter' | 'customer',
+      estado: row.estado as 'active' | 'inactive' | 'pending' | 'suspended',
       fechaCreacion: new Date(row.fechaCreacion),
-      ultimoAcceso: row.ultimoAcceso ? new Date(row.ultimoAcceso) : undefined
+      ultimoAcceso: row.ultimoAcceso ? new Date(row.ultimoAcceso) : undefined,
+      restaurantId: row.restaurantId || undefined
     }));
   } catch (error) {
     console.error('Error al obtener usuarios:', error);

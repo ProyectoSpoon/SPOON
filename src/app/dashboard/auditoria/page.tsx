@@ -150,7 +150,7 @@ export default function AuditoriaPage() {
                   )}
                 </DataTable.Cell>
                 <DataTable.Cell>
-                  <Badge variant="outline">
+                  <Badge>
                     {event.type}
                   </Badge>
                 </DataTable.Cell>

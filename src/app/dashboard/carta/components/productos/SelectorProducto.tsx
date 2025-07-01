@@ -7,8 +7,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/Select";
-;
-import { db } from '@/firebase/config';
 
 interface Producto {
   id: string;
@@ -23,6 +21,30 @@ interface SelectorProductoProps {
   onProductoSeleccionado: (producto: Producto) => void;
   className?: string;
 }
+
+// Mock data para desarrollo
+const MOCK_PRODUCTOS: Record<string, Producto[]> = {
+  'principios': [
+    { id: '1', nombre: 'Frijoles', descripcion: 'Frijoles rojos cocinados con plátano y costilla', tipo: 'principio', precio: 15000 },
+    { id: '2', nombre: 'Arroz con Coco', descripcion: 'Arroz preparado con leche de coco', tipo: 'principio', precio: 10000 },
+  ],
+  'proteinas': [
+    { id: '3', nombre: 'Pollo Asado', descripcion: 'Pollo marinado y asado a la parrilla', tipo: 'proteina', precio: 18000 },
+    { id: '4', nombre: 'Pescado Frito', descripcion: 'Pescado fresco frito con especias', tipo: 'proteina', precio: 20000 },
+  ],
+  'acompañamientos': [
+    { id: '5', nombre: 'Patacones', descripcion: 'Plátano verde frito y aplastado', tipo: 'acompanamiento', precio: 6000 },
+    { id: '6', nombre: 'Yuca Frita', descripcion: 'Yuca cortada en bastones y frita', tipo: 'acompanamiento', precio: 5000 },
+  ],
+  'bebidas': [
+    { id: '7', nombre: 'Limonada Natural', descripcion: 'Limonada fresca con agua o leche', tipo: 'bebida', precio: 4000 },
+    { id: '8', nombre: 'Jugo de Maracuyá', descripcion: 'Jugo natural de maracuyá', tipo: 'bebida', precio: 4500 },
+  ],
+  'entradas': [
+    { id: '9', nombre: 'Sopa de Guineo', descripcion: 'Sopa tradicional con plátano verde', tipo: 'entrada', precio: 8500 },
+    { id: '10', nombre: 'Ajiaco', descripcion: 'Sopa típica con tres tipos de papa, pollo y guascas', tipo: 'entrada', precio: 12000 },
+  ],
+};
 
 export function SelectorProducto({
   categoriaId,
@@ -41,55 +63,10 @@ export function SelectorProducto({
       setError(null);
       
       try {
-        let coleccionName: string;
-        // Determinar la colección basada en el ID de la categoría
-        switch(categoriaId) {
-          case 'principios':
-            coleccionName = 'Principio';
-            break;
-          case 'proteinas':
-            coleccionName = 'Proteina';
-            break;
-          case 'acompañamientos':
-            coleccionName = 'Acompanamientos';
-            break;
-          case 'bebidas':
-            coleccionName = 'Bebida';
-            break;
-          case 'entradas':
-            coleccionName = 'Entrada';
-            break;
-          default:
-            console.log('ID de categoría recibido:', categoriaId);
-            throw new Error('Categoría no reconocida');
-        }
-
-        const productosRef = collection(db, coleccionName);
-        const snapshot = await getDocs(productosRef);
+        // Simular delay de carga
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        if (snapshot.empty) {
-          setProductos([]);
-          return;
-        }
-
-        const productosData = snapshot.docs.map(doc => {
-          const data = doc.data();
-          const nombre = 
-            data[coleccionName] || 
-            data['Tipo de Proteína'] || 
-            data.Entrada || 
-            data['Tipo de Bebida'] || 
-            data.Acompanamiento || '';
-
-          return {
-            id: doc.id,
-            nombre: nombre,
-            descripcion: data.Descripción || data.Descripcion || '',
-            tipo: coleccionName,
-            precio: data.precio || 0
-          };
-        }).filter(producto => producto.nombre && producto.descripcion);
-
+        const productosData = MOCK_PRODUCTOS[categoriaId] || [];
         setProductos(productosData);
         setError(null);
       } catch (error) {

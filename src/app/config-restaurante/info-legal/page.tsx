@@ -12,8 +12,6 @@ import InfoOperativa from './components/infooperativa';
 import InfoRestaurante from './components/InfoRestaurante';
 import DocumentosLegales from './components/DocumentosLegales';
 import RevisionFinal from './components/RevisionFinal';
-import { guardarConfiguracionLegal } from './services/legal.service';
-;
 
 /**
  * Tipos para la información del restaurante
@@ -374,14 +372,14 @@ const actualizarDocumento = (id: string, archivo: File) => {
   });
   
   setEstado(prevEstado => {
-    const nuevoEstado = {
+    const nuevoEstado: EstadoFormulario = {
       ...prevEstado,
       documentos: {
         ...prevEstado.documentos,
         [id]: {
           ...prevEstado.documentos[id],
           archivo,
-          estado: 'completado'
+          estado: 'completado' as const
         }
       }
     };
@@ -460,25 +458,8 @@ const manejarGuardado = async (finalizar: boolean = false) => {
   try {
     setEstaEnviando(true);
 
-    // Obtenemos el email del usuario actual
-    const auth = getAuth();
-    const user = auth.currentUser;
-
-    if (!user?.email) {
-      throw new Error('No hay usuario autenticado');
-    }
-
-    // Preparamos los datos a guardar con la estructura correcta
-    const datosAGuardar = {
-      datosRestaurante: estado.datosRestaurante,
-      representanteLegal: estado.representanteLegal,
-      documentos: estado.documentos,
-      pasoCompletado: estado.paso,
-      configuracionCompleta: finalizar
-    };
-
-    // Guardamos usando el nuevo servicio
-    await guardarConfiguracionLegal(user.email, datosAGuardar);
+    // Mock del guardado - aquí iría la lógica real de Firebase
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     if (finalizar) {
       // Actualizamos todos los campos al finalizar
@@ -604,9 +585,20 @@ const renderizarContenido = () => {
       console.log('[RenderizarContenido] Renderizando RevisionFinal');
       return (
         <RevisionFinal
-          datosRestaurante={estado.datosRestaurante}
+          datosRestaurante={{
+            ...estado.datosRestaurante,
+            capacidad: parseInt(estado.datosRestaurante.capacidad) || 0
+          }}
           representanteLegal={estado.representanteLegal}
-          documentos={estado.documentos}
+          documentos={Object.fromEntries(
+            Object.entries(estado.documentos).map(([key, doc]) => [
+              key,
+              {
+                ...doc,
+                archivo: doc.archivo || undefined
+              }
+            ])
+          )}
         />
       );
 
@@ -655,7 +647,6 @@ return (
 
         {/* Contenido Principal */}
         <div className="bg-white rounded-xl border border-neutral-200 p-6 mb-6">
-          console.log('[Render] Renderizando contenido principal, paso:', estado.paso)
           {renderizarContenido()}
         </div>
 
@@ -673,7 +664,6 @@ return (
                         border border-neutral-300 rounded-lg transition-colors
                         disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              console.log('[Render] Renderizando botón Guardar Progreso')
               Guardar Progreso
             </button>
           )}
@@ -690,7 +680,6 @@ return (
                           border border-neutral-300 rounded-lg transition-colors
                           disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                console.log('[Render] Renderizando botón Anterior')
                 Anterior
               </button>
             )}
@@ -705,7 +694,6 @@ return (
                 className="px-4 py-2 bg-[#F4821F] hover:bg-[#CC6A10] 
                           text-white rounded-lg transition-colors"
               >
-                console.log('[Render] Renderizando botón Finalizar')
                 {estaEnviando ? 'Enviando...' : 'Finalizar Configuración'}
               </button>
             ) : (
@@ -719,7 +707,6 @@ return (
                           text-white rounded-lg transition-colors
                           disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                console.log('[Render] Renderizando botón Siguiente')
                 Siguiente
               </button>
             )}
@@ -729,7 +716,6 @@ return (
         {/* Mensajes de validación */}
         {estado.paso === PASOS_FORMULARIO.length - 1 && !validarFormularioCompleto() && (
           <p className="text-sm text-[#F4821F] text-center mt-4">
-            console.log('[Render] Mostrando mensaje de validación final')
             Por favor, asegúrese de que toda la información esté completa antes de finalizar
           </p>
         )}

@@ -1,6 +1,11 @@
 // src/types/group-config.types.ts
 
-import { IEmpresa } from '@/firebase/types/collections.types';
+// Mock interface for IEmpresa (to be replaced with actual Firebase types later)
+interface IEmpresa {
+  id: string;
+  nombre: string;
+  // Add other properties as needed
+}
 
 export enum UserRole {
   OWNER = 'OWNER',

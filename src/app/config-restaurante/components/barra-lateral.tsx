@@ -23,7 +23,7 @@ export default function BarraLateral() {
     <div className="fixed right-4 top-1/3 transform -translate-y-1/2 z-50">
       <div className="flex flex-col gap-3 bg-white p-3 rounded-lg shadow-lg border border-gray-200">
         <Button
-          variant="primary"
+          variant="default"
           size="sm"
           onClick={handleSave}
           className="flex items-center gap-2 w-full"

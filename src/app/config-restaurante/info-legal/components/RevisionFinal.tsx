@@ -1,5 +1,37 @@
 
 import { CheckCircle } from 'lucide-react';
+
+// Tipos necesarios para el componente
+interface DatosRestaurante {
+  nombre: string;
+  telefono: string;
+  email: string;
+  descripcion: string;
+  tipoRestaurante: string;
+  especialidad: string;
+  capacidad: number;
+  razonSocial: string;
+  nit: string;
+  regimenTributario: string;
+  actividadEconomica: string;
+}
+
+interface RepresentanteLegal {
+  nombres: string;
+  apellidos: string;
+  tipoDocumento: string;
+  numeroDocumento: string;
+  email: string;
+  telefono: string;
+  cargo: string;
+}
+
+interface Documento {
+  id: string;
+  nombre: string;
+  archivo?: File;
+}
+
 /**
  * Componente de revisión final que muestra toda la información recopilada
  * @param props - Propiedades del componente

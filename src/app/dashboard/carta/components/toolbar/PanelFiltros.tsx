@@ -1,6 +1,7 @@
 // src/app/dashboard/carta/components/toolbar/PanelFiltros.tsx
-import { useCategoriasStore } from '../../store/categoriasStore';
-import { useProductosStore } from '../../store/productosStore';
+import { useState } from 'react';
+import { X } from 'lucide-react';
+import { Button } from '@/shared/components/ui/Button';
 import {
   Select,
   SelectContent,
@@ -10,9 +11,43 @@ import {
 } from '@/shared/components/ui/Select';
 import { Badge } from '@/shared/components/ui/Badge';
 
-export function PanelFiltros() {
-  const { categorias } = useCategoriasStore();
-  const { filtros, setFiltros } = useProductosStore();
+interface Filtros {
+  busqueda: string;
+  categoria: string | null;
+  estado: 'todos' | 'activo' | 'inactivo';
+}
+
+interface PanelFiltrosProps {
+  filtros?: Filtros;
+  onFiltrosChange?: (filtros: Partial<Filtros>) => void;
+}
+
+// Mock data para categorías
+const CATEGORIAS_MOCK = [
+  { id: 'entrada', nombre: 'Entradas' },
+  { id: 'principio', nombre: 'Principios' },
+  { id: 'proteina', nombre: 'Proteínas' },
+  { id: 'acompanamiento', nombre: 'Acompañamientos' },
+  { id: 'bebida', nombre: 'Bebidas' },
+];
+
+export function PanelFiltros({ 
+  filtros = { busqueda: '', categoria: null, estado: 'todos' },
+  onFiltrosChange = () => {}
+}: PanelFiltrosProps) {
+  const [filtrosLocales, setFiltrosLocales] = useState<Filtros>(filtros);
+
+  const actualizarFiltros = (nuevosFiltros: Partial<Filtros>) => {
+    const filtrosActualizados = { ...filtrosLocales, ...nuevosFiltros };
+    setFiltrosLocales(filtrosActualizados);
+    onFiltrosChange(nuevosFiltros);
+  };
+
+  const limpiarFiltros = () => {
+    const filtrosVacios = { busqueda: '', categoria: null, estado: 'todos' as const };
+    setFiltrosLocales(filtrosVacios);
+    onFiltrosChange(filtrosVacios);
+  };
 
   return (
     <div className="p-4 bg-white border rounded-lg space-y-4">
@@ -21,11 +56,7 @@ export function PanelFiltros() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setFiltros({
-            busqueda: '',
-            categoria: null,
-            estado: 'todos'
-          })}
+          onClick={limpiarFiltros}
         >
           Limpiar filtros
         </Button>
@@ -35,8 +66,8 @@ export function PanelFiltros() {
         <div className="space-y-2">
           <label className="text-sm font-medium">Categoría</label>
           <Select
-            value={filtros.categoria || 'todas'}
-            onValueChange={(value) => setFiltros({
+            value={filtrosLocales.categoria || 'todas'}
+            onValueChange={(value) => actualizarFiltros({
               categoria: value === 'todas' ? null : value
             })}
           >
@@ -45,7 +76,7 @@ export function PanelFiltros() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todas">Todas las categorías</SelectItem>
-              {categorias.map((cat) => (
+              {CATEGORIAS_MOCK.map((cat) => (
                 <SelectItem key={cat.id} value={cat.id}>
                   {cat.nombre}
                 </SelectItem>
@@ -57,9 +88,9 @@ export function PanelFiltros() {
         <div className="space-y-2">
           <label className="text-sm font-medium">Estado</label>
           <Select
-            value={filtros.estado}
-            onValueChange={(value: typeof filtros.estado) => 
-              setFiltros({ estado: value })
+            value={filtrosLocales.estado}
+            onValueChange={(value: 'todos' | 'activo' | 'inactivo') => 
+              actualizarFiltros({ estado: value })
             }
           >
             <SelectTrigger>
@@ -76,22 +107,22 @@ export function PanelFiltros() {
 
       {/* Badges de filtros activos */}
       <div className="flex flex-wrap gap-2 pt-2">
-        {filtros.categoria && (
-          <Badge variant="secondary" className="flex items-center gap-1">
-            {categorias.find(c => c.id === filtros.categoria)?.nombre}
+        {filtrosLocales.categoria && (
+          <Badge className="flex items-center gap-1">
+            {CATEGORIAS_MOCK.find(c => c.id === filtrosLocales.categoria)?.nombre}
             <button
-              onClick={() => setFiltros({ categoria: null })}
+              onClick={() => actualizarFiltros({ categoria: null })}
               className="ml-1 hover:text-neutral-900"
             >
               <X className="h-3 w-3" />
             </button>
           </Badge>
         )}
-        {filtros.estado !== 'todos' && (
-          <Badge variant="secondary" className="flex items-center gap-1">
-            {filtros.estado === 'activo' ? 'Activos' : 'Inactivos'}
+        {filtrosLocales.estado !== 'todos' && (
+          <Badge className="flex items-center gap-1">
+            {filtrosLocales.estado === 'activo' ? 'Activos' : 'Inactivos'}
             <button
-              onClick={() => setFiltros({ estado: 'todos' })}
+              onClick={() => actualizarFiltros({ estado: 'todos' })}
               className="ml-1 hover:text-neutral-900"
             >
               <X className="h-3 w-3" />

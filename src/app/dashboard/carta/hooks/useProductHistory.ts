@@ -1,18 +1,5 @@
 import { useState, useCallback } from 'react';
 import { 
-  collection, 
-  query, 
-  where, 
-  orderBy, 
-  limit, 
-  getDocs,
-  addDoc,
-  updateDoc,
-  doc,
-  serverTimestamp 
-} from 'firebase/firestore';
-import { db } from '@/firebase/config';
-import { 
   ProductVersion, 
   PriceHistory, 
   StockUpdate, 
@@ -33,19 +20,34 @@ export function useProductHistory({ productId, restaurantId }: UseProductHistory
   const fetchVersionHistory = useCallback(async () => {
     setLoading(true);
     try {
-      const versionsRef = collection(db, 'product_versions');
-      const q = query(
-        versionsRef,
-        where('productId', '==', productId),
-        where('restaurantId', '==', restaurantId),
-        orderBy('version', 'desc')
-      );
+      // Simular datos de historial de versiones
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({
-        ...doc.data(),
-        id: doc.id
-      })) as ProductVersion[];
+      const mockVersions: ProductVersion[] = [
+        {
+          id: `version_${productId}_1`,
+          productId,
+          version: 1,
+          changes: [
+            {
+              field: 'nombre',
+              oldValue: 'Producto Original',
+              newValue: 'Producto Actualizado',
+              changedBy: 'admin',
+              timestamp: new Date(Date.now() - 86400000), // 1 día atrás
+              changeReason: 'Actualización de nombre'
+            }
+          ],
+          metadata: {
+            createdAt: new Date(Date.now() - 86400000),
+            createdBy: 'admin',
+            status: 'published'
+          },
+          restaurantId
+        }
+      ];
+      
+      return mockVersions;
 
     } catch (err) {
       setError('Error al obtener historial de versiones');
@@ -59,19 +61,30 @@ export function useProductHistory({ productId, restaurantId }: UseProductHistory
   const fetchPriceHistory = useCallback(async () => {
     setLoading(true);
     try {
-      const pricesRef = collection(db, 'product_prices');
-      const q = query(
-        pricesRef,
-        where('productId', '==', productId),
-        where('restaurantId', '==', restaurantId),
-        orderBy('effectiveDate', 'desc')
-      );
+      // Simular datos de historial de precios
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({
-        ...doc.data(),
-        id: doc.id
-      })) as PriceHistory[];
+      const mockPrices: PriceHistory[] = [
+        {
+          id: `price_${productId}_1`,
+          value: 15000,
+          effectiveDate: new Date(),
+          reason: 'Actualización de precios',
+          createdBy: 'admin',
+          restaurantId,
+          previousPrice: 12000
+        },
+        {
+          id: `price_${productId}_2`,
+          value: 12000,
+          effectiveDate: new Date(Date.now() - 2592000000), // 30 días atrás
+          reason: 'Precio inicial',
+          createdBy: 'admin',
+          restaurantId
+        }
+      ];
+      
+      return mockPrices;
 
     } catch (err) {
       setError('Error al obtener historial de precios');
@@ -85,20 +98,33 @@ export function useProductHistory({ productId, restaurantId }: UseProductHistory
   const fetchStockUpdates = useCallback(async (limitCount = 50) => {
     setLoading(true);
     try {
-      const stockRef = collection(db, 'stock_updates');
-      const q = query(
-        stockRef,
-        where('productId', '==', productId),
-        where('restaurantId', '==', restaurantId),
-        orderBy('timestamp', 'desc'),
-        limit(limitCount)
-      );
+      // Simular datos de actualizaciones de stock
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({
-        ...doc.data(),
-        id: doc.id
-      })) as StockUpdate[];
+      const mockStockUpdates: StockUpdate[] = [
+        {
+          id: `stock_${productId}_1`,
+          quantity: 10,
+          type: 'increment',
+          reason: 'Reposición de inventario',
+          timestamp: new Date(),
+          updatedBy: 'admin',
+          productId,
+          restaurantId
+        },
+        {
+          id: `stock_${productId}_2`,
+          quantity: 5,
+          type: 'decrement',
+          reason: 'Venta',
+          timestamp: new Date(Date.now() - 3600000), // 1 hora atrás
+          updatedBy: 'system',
+          productId,
+          restaurantId
+        }
+      ];
+      
+      return mockStockUpdates.slice(0, limitCount);
 
     } catch (err) {
       setError('Error al obtener actualizaciones de stock');
@@ -116,39 +142,17 @@ export function useProductHistory({ productId, restaurantId }: UseProductHistory
   ) => {
     setLoading(true);
     try {
-      // Obtener precio actual
-      const currentPriceQuery = query(
-        collection(db, 'product_prices'),
-        where('productId', '==', productId),
-        where('effectiveDate', '<=', new Date()),
-        orderBy('effectiveDate', 'desc'),
-        limit(1)
-      );
-      
-      const currentPriceSnapshot = await getDocs(currentPriceQuery);
-      const previousPrice = currentPriceSnapshot.docs[0]?.data()?.value;
-
-      // Registrar nuevo precio
-      await addDoc(collection(db, 'product_prices'), {
-        id: `price_${Date.now()}`,
+      // Simular actualización de precio
+      console.log('Simulando actualización de precio:', {
         productId,
-        restaurantId,
-        value: newPrice,
-        previousPrice,
-        effectiveDate: new Date(),
-        expirationDate,
+        newPrice,
         reason,
-        createdBy: 'current-user', // Deberías obtener esto del contexto de auth
-        timestamp: serverTimestamp()
+        expirationDate
       });
-
-      // Actualizar precio actual en el producto
-      const productRef = doc(db, 'productos', productId);
-      await updateDoc(productRef, {
-        currentPrice: newPrice,
-        'metadata.lastModified': serverTimestamp(),
-        'metadata.lastModifiedBy': 'current-user'
-      });
+      
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      console.log('Precio actualizado exitosamente (simulación)');
 
     } catch (err) {
       setError('Error al actualizar precio');
@@ -170,52 +174,17 @@ export function useProductHistory({ productId, restaurantId }: UseProductHistory
   ) => {
     setLoading(true);
     try {
-      const { reason, location, batchNumber } = options || {};
-
-      // Registrar actualización de stock
-      await addDoc(collection(db, 'stock_updates'), {
-        id: `stock_${Date.now()}`,
+      // Simular actualización de stock
+      console.log('Simulando actualización de stock:', {
         productId,
-        restaurantId,
         quantity,
         type,
-        reason,
-        location,
-        batchNumber,
-        timestamp: serverTimestamp(),
-        updatedBy: 'current-user' // Deberías obtener esto del contexto de auth
+        options
       });
-
-      // Actualizar stock actual
-      const productRef = doc(db, 'productos', productId);
-      const productDoc = await getDocs(query(collection(db, 'productos'), where('id', '==', productId)));
-      const currentStock = productDoc.docs[0].data().stock as ProductStock;
-
-      let newQuantity = currentStock.currentQuantity;
-      switch (type) {
-        case 'increment':
-          newQuantity += quantity;
-          break;
-        case 'decrement':
-          newQuantity = Math.max(0, newQuantity - quantity);
-          break;
-        case 'set':
-          newQuantity = quantity;
-          break;
-      }
-
-      // Determinar estado de stock
-      const stockStatus = 
-        newQuantity <= currentStock.minQuantity ? 'low_stock' :
-        newQuantity >= currentStock.maxQuantity ? 'over_stock' : 'in_stock';
-
-      await updateDoc(productRef, {
-        'stock.currentQuantity': newQuantity,
-        'stock.status': stockStatus,
-        'stock.lastUpdated': serverTimestamp(),
-        'stock.alerts.lowStock': newQuantity <= currentStock.minQuantity,
-        'stock.alerts.overStock': newQuantity >= currentStock.maxQuantity
-      });
+      
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      console.log('Stock actualizado exitosamente (simulación)');
 
     } catch (err) {
       setError('Error al actualizar stock');

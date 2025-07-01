@@ -3,12 +3,46 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useToast } from '@/shared/Hooks/use-toast';
 import { useConfigStore } from '../../store/config-store';
-import restaurantLegalService, {
-  BasicInfo,
-  ContactInfo,
-  OperationalInfo,
-  LegalInfo
-} from '@/firebase/services/restaurant/legal.service';
+
+// Mock types for Firebase service (to be implemented later)
+interface BasicInfo {
+  nombre: string;
+  descripcion: string;
+}
+
+interface ContactInfo {
+  telefono: string;
+  email: string;
+}
+
+interface OperationalInfo {
+  tipoRestaurante: string;
+  especialidad: string;
+  capacidad: string;
+}
+
+interface LegalInfo {
+  razonSocial: string;
+  nit: string;
+  regimenTributario: string;
+  actividadEconomica: string;
+}
+
+// Mock service (to be replaced with actual Firebase service)
+const restaurantLegalService = {
+  getAllLegalInfo: async (restaurantId: string) => ({
+    basicInfo: {},
+    contactInfo: {},
+    operationalInfo: {},
+    legalInfo: {},
+    documents: {}
+  }),
+  saveBasicInfo: async (restaurantId: string, data: BasicInfo) => {},
+  saveContactInfo: async (restaurantId: string, data: ContactInfo) => {},
+  saveOperationalInfo: async (restaurantId: string, data: OperationalInfo) => {},
+  saveLegalInfo: async (restaurantId: string, data: LegalInfo) => {},
+  uploadDocument: async (restaurantId: string, data: any) => 'mock-url'
+};
 
 // Tipos
 export interface InfoRestaurante {
@@ -139,8 +173,8 @@ export function useFormularioLegal(restaurantId: string) {
             ...acc,
             [key]: {
               ...prev.documentos[key],
-              estado: value.status === 'completed' ? 'completado' : 'pendiente',
-              url: value.url
+              estado: (value as any)?.status === 'completed' ? 'completado' : 'pendiente',
+              url: (value as any)?.url
             }
           }), {})
         },

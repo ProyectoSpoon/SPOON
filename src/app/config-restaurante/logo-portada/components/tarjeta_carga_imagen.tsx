@@ -2,15 +2,6 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import {
-  Box,
-  VStack,
-  Text,
-  Input,
-  Image,
-  Icon,
-  IconButton,
-} from '@chakra-ui/react';
 import { FiUpload, FiX } from 'react-icons/fi';
 
 interface PropsTarjetaCargaImagen {
@@ -44,13 +35,11 @@ const TarjetaCargaImagen: React.FC<PropsTarjetaCargaImagen> = ({
   };
 
   return (
-    <Box
-      borderWidth={2}
-      borderStyle="dashed"
-      borderColor={isDragging ? "blue.400" : "gray.200"}
-      borderRadius="xl"
-      p={6}
-      bg={isDragging ? "blue.50" : "white"}
+    <div
+      className={`
+        border-2 border-dashed rounded-xl p-6 transition-colors
+        ${isDragging ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white'}
+      `}
       onDragOver={(e) => {
         e.preventDefault();
         setIsDragging(true);
@@ -58,52 +47,46 @@ const TarjetaCargaImagen: React.FC<PropsTarjetaCargaImagen> = ({
       onDragLeave={() => setIsDragging(false)}
       onDrop={handleDrop}
     >
-      <VStack spacing={4} align="stretch">
-        <Text fontWeight="bold" fontSize="lg">{titulo}</Text>
+      <div className="space-y-4">
+        <h3 className="font-bold text-lg text-neutral-900">{titulo}</h3>
         
         {archivo?.previewUrl ? (
           // Vista previa de la imagen
-          <Box position="relative">
-            <Image
+          <div className="relative">
+            <img
               src={archivo.previewUrl}
               alt={titulo}
-              objectFit="cover"
-              borderRadius="md"
-              maxH="200px"
-              w="100%"
+              className="object-cover rounded-md max-h-[200px] w-full"
             />
-            <IconButton
+            <button
               aria-label="Eliminar imagen"
-              icon={<FiX />}
-              position="absolute"
-              top={2}
-              right={2}
-              size="sm"
-              colorScheme="red"
+              className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
               onClick={() => onFileChange(null as any)}
-            />
-          </Box>
+            >
+              <FiX size={16} />
+            </button>
+          </div>
         ) : (
           // Área de carga
-          <VStack
-            py={10}
-            spacing={4}
-            cursor="pointer"
+          <div
+            className="py-10 space-y-4 cursor-pointer text-center"
             onClick={() => inputRef.current?.click()}
           >
-            <Icon as={FiUpload} w={12} h={12} color="gray.400" />
-            <Text color="gray.500" textAlign="center">
+            <div className="flex justify-center">
+              <FiUpload className="w-12 h-12 text-gray-400" />
+            </div>
+            <p className="text-gray-500 text-center">
               {descripcion}
-            </Text>
-            <Text fontSize="sm" color="gray.400">
+            </p>
+            <p className="text-sm text-gray-400">
               {tipo === 'logo' 
                 ? 'Tamaño recomendado: 400x400px' 
                 : 'Tamaño recomendado: 1200x400px'}
-            </Text>
-          </VStack>
+            </p>
+          </div>
         )}
 
-        <Input
+        <input
           ref={inputRef}
           type="file"
           accept="image/*"
@@ -111,10 +94,10 @@ const TarjetaCargaImagen: React.FC<PropsTarjetaCargaImagen> = ({
             const file = e.target.files?.[0];
             if (file) onFileChange(file);
           }}
-          hidden
+          className="hidden"
         />
-      </VStack>
-    </Box>
+      </div>
+    </div>
   );
 };
 

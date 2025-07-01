@@ -1,15 +1,8 @@
 // src/app/dashboard/carta/hooks/useCategorias.ts
 import { useState, useCallback } from 'react';
-;
-import { db } from '@/firebase/config';
-import { COLLECTIONS } from '@/firebase/types/collections.types';
-import { ICategoriaMenu } from '@/firebase/types/collections.types';
 import { jsonDataService } from '@/services/json-data.service';
 
-// Bandera para determinar si usar los archivos JSON o Firebase
-const USE_JSON_FILES = true;
-
-// Definición de la interfaz Categoria sin extender de ICategoriaMenu para evitar conflictos
+// Definición de la interfaz Categoria
 interface Categoria {
   id: string;
   nombre: string;
@@ -44,58 +37,27 @@ export function useCategorias({ restauranteId }: UseCategoriasProps) {
       
       let categoriasData: Categoria[] = [];
       
-      if (USE_JSON_FILES) {
-        // Usar el servicio JSON para cargar categorías
-        console.log('Cargando categorías desde archivos JSON...');
-        try {
-          // Cargar categorías principales
-          const categoriasJson = await jsonDataService.getCategorias();
-          console.log('Categorías cargadas desde JSON:', categoriasJson);
-          
-          // Cargar subcategorías
-          const subcategoriasJson = await jsonDataService.getSubcategorias();
-          console.log('Subcategorías cargadas desde JSON:', subcategoriasJson);
-          
-          // Combinar categorías y subcategorías
-          categoriasData = [
-            ...categoriasJson,
-            ...subcategoriasJson
-          ];
-          
-          console.log('Total de categorías y subcategorías cargadas:', categoriasData.length);
-        } catch (jsonError) {
-          console.error('Error al cargar categorías desde JSON:', jsonError);
-          throw jsonError;
-        }
-      } else {
-        // Usar Firebase para cargar categorías
-        console.log('Cargando categorías desde Firebase...');
-        const categoriasRef = collection(db, COLLECTIONS.CATEGORIAS_MENU);
-        const q = query(
-          categoriasRef, 
-          where('restauranteId', '==', restauranteId),
-          where('disponible', '==', true)
-        );
+      // Usar el servicio JSON para cargar categorías
+      console.log('Cargando categorías desde archivos JSON...');
+      try {
+        // Cargar categorías principales
+        const categoriasJson = await jsonDataService.getCategorias();
+        console.log('Categorías cargadas desde JSON:', categoriasJson);
         
-        console.log('Query creada, intentando obtener documentos...');
-        const querySnapshot = await getDocs(q);
-        console.log('Documentos encontrados:', querySnapshot.size);
+        // Cargar subcategorías
+        const subcategoriasJson = await jsonDataService.getSubcategorias();
+        console.log('Subcategorías cargadas desde JSON:', subcategoriasJson);
         
-        categoriasData = querySnapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            nombre: data.nombre,
-            tipo: data.tipo,
-            orden: data.orden,
-            restauranteId: data.restauranteId,
-            activo: data.disponible,
-            descripcion: data.descripcion || '',
-            horarios: data.horarios || null,
-            createdAt: data.createdAt?.toDate(),
-            updatedAt: data.updatedAt?.toDate()
-          } as Categoria;
-        });
+        // Combinar categorías y subcategorías
+        categoriasData = [
+          ...categoriasJson,
+          ...subcategoriasJson
+        ];
+        
+        console.log('Total de categorías y subcategorías cargadas:', categoriasData.length);
+      } catch (jsonError) {
+        console.error('Error al cargar categorías desde JSON:', jsonError);
+        throw jsonError;
       }
       
       // Mantener el ordenamiento
@@ -123,54 +85,24 @@ export function useCategorias({ restauranteId }: UseCategoriasProps) {
     setLoading(true);
     setError(null);
     try {
-      let nuevaCategoria: Categoria;
+      // Simulación de agregar categoría con archivos JSON
+      console.log('Simulando agregar categoría en archivos JSON:', datos);
       
-      if (USE_JSON_FILES) {
-        // Simulación de agregar categoría con archivos JSON
-        console.log('Simulando agregar categoría en archivos JSON:', datos);
-        
-        // Generar un ID único para la nueva categoría
-        const nuevoId = `CAT_${Date.now()}`;
-        
-        // Crear la nueva categoría
-        nuevaCategoria = {
-          id: nuevoId,
-          ...datos,
-          activo: true,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          restauranteId
-        };
-        
-        // En una implementación real, aquí se guardaría en el archivo JSON
-        console.log('Nueva categoría creada (simulación):', nuevaCategoria);
-      } else {
-        // Usar Firebase para agregar categoría
-        // Preparar datos para Firestore siguiendo ICategoriaMenu
-        const categoriaData = {
-          nombre: datos.nombre,
-          tipo: datos.tipo,
-          restauranteId,
-          orden: datos.orden || (categorias.length + 1) * 10,
-          disponible: true, // En lugar de activo
-          descripcion: datos.descripcion || '',
-          horarios: datos.horarios || null,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-    
-        const docRef = await addDoc(collection(db, COLLECTIONS.CATEGORIAS_MENU), categoriaData);
-        
-        // Transformar de vuelta a nuestro formato local
-        nuevaCategoria = {
-          id: docRef.id,
-          ...datos,
-          activo: true,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          restauranteId
-        };
-      }
+      // Generar un ID único para la nueva categoría
+      const nuevoId = `CAT_${Date.now()}`;
+      
+      // Crear la nueva categoría
+      const nuevaCategoria: Categoria = {
+        id: nuevoId,
+        ...datos,
+        activo: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        restauranteId
+      };
+      
+      // En una implementación real, aquí se guardaría en el archivo JSON
+      console.log('Nueva categoría creada (simulación):', nuevaCategoria);
       
       // Actualizar el estado local
       setCategorias(prev => {
@@ -198,29 +130,11 @@ export function useCategorias({ restauranteId }: UseCategoriasProps) {
     setLoading(true);
     setError(null);
     try {
-      if (USE_JSON_FILES) {
-        // Simulación de actualizar categoría con archivos JSON
-        console.log('Simulando actualizar categoría en archivos JSON:', { id, datos });
-        
-        // En una implementación real, aquí se actualizaría el archivo JSON
-        console.log('Categoría actualizada (simulación):', { id, ...datos });
-      } else {
-        // Usar Firebase para actualizar categoría
-        const docRef = doc(db, COLLECTIONS.CATEGORIAS_MENU, id);
-        
-        // Preparar datos para Firestore
-        const datosActualizados = {
-          ...datos,
-          disponible: datos.activo, // Mapear activo a disponible
-          updatedAt: new Date()
-        };
-    
-        // Eliminar campos que no queremos enviar a Firestore
-        delete datosActualizados.activo; // Eliminamos porque ya lo mapeamos a disponible
-        delete datosActualizados.id; // No necesitamos enviar el id
-    
-        await updateDoc(docRef, datosActualizados);
-      }
+      // Simulación de actualizar categoría con archivos JSON
+      console.log('Simulando actualizar categoría en archivos JSON:', { id, datos });
+      
+      // En una implementación real, aquí se actualizaría el archivo JSON
+      console.log('Categoría actualizada (simulación):', { id, ...datos });
   
       // Actualizar estado local
       setCategorias(prev => {
@@ -256,21 +170,11 @@ export function useCategorias({ restauranteId }: UseCategoriasProps) {
     setLoading(true);
     setError(null);
     try {
-      if (USE_JSON_FILES) {
-        // Simulación de eliminar categoría con archivos JSON
-        console.log('Simulando eliminar categoría en archivos JSON:', id);
-        
-        // En una implementación real, aquí se actualizaría el archivo JSON
-        console.log('Categoría eliminada (simulación):', id);
-      } else {
-        // Usar Firebase para eliminar categoría
-        const docRef = doc(db, COLLECTIONS.CATEGORIAS_MENU, id);
-        // Soft delete - marcar como no disponible en lugar de eliminar
-        await updateDoc(docRef, {
-          disponible: false,
-          updatedAt: new Date()
-        });
-      }
+      // Simulación de eliminar categoría con archivos JSON
+      console.log('Simulando eliminar categoría en archivos JSON:', id);
+      
+      // En una implementación real, aquí se actualizaría el archivo JSON
+      console.log('Categoría eliminada (simulación):', id);
   
       // Actualizar estado local
       setCategorias(prev => prev.filter(cat => cat.id !== id));

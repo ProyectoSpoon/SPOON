@@ -1,6 +1,9 @@
 // Actualizamos solo el datosConfiguracion con las rutas correctas
+import { TarjetaConfiguracion } from './group-config.types';
+
 export const datosConfiguracion: TarjetaConfiguracion[] = [
   {
+    id: "info-legal",
     titulo: "Información Legal",
     descripcion: "Documentos y datos fiscales",
     ruta: "/config-restaurante/info-legal",
@@ -16,6 +19,7 @@ export const datosConfiguracion: TarjetaConfiguracion[] = [
     ]
   },
   {
+    id: "horario-comercial",
     titulo: "Horario Comercial",
     descripcion: "Configura tus horarios de atención",
     ruta: "/config-restaurante/horario-comercial", // Ruta actualizada
@@ -27,6 +31,7 @@ export const datosConfiguracion: TarjetaConfiguracion[] = [
     ]
   },
   {
+    id: "logo-portada",
     titulo: "Logo y Portada",
     descripcion: "Personaliza tu imagen",
     ruta: "/config-restaurante/logo-portada", // Ruta actualizada
@@ -39,6 +44,7 @@ export const datosConfiguracion: TarjetaConfiguracion[] = [
   },
   
   {
+    id: "ubicacion",
     titulo: "Ubicación",
     descripcion: "Diles donde estas ubicado",
     ruta: "/config-restaurante/ubicacion", // Ruta actualizada

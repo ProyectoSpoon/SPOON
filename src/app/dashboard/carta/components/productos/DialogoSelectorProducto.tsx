@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -15,9 +15,6 @@ import {
   SelectValue,
 } from "@/shared/components/ui/Select";
 import { Button } from "@/shared/components/ui/Button";
-import { useEffect } from 'react';
-;
-import { db } from '@/firebase/config';
 
 interface Producto {
   id: string;
@@ -34,6 +31,30 @@ interface DialogoSelectorProductoProps {
   categoriaId: string | null;
 }
 
+// Mock data para desarrollo
+const MOCK_PRODUCTOS: Record<string, Producto[]> = {
+  'entrada': [
+    { id: '1', nombre: 'Sopa de Guineo', descripcion: 'Sopa tradicional con plátano verde', tipo: 'entrada', precio: 8500 },
+    { id: '2', nombre: 'Ajiaco', descripcion: 'Sopa típica con tres tipos de papa, pollo y guascas', tipo: 'entrada', precio: 12000 },
+  ],
+  'principio': [
+    { id: '3', nombre: 'Frijoles', descripcion: 'Frijoles rojos cocinados con plátano y costilla', tipo: 'principio', precio: 15000 },
+    { id: '4', nombre: 'Arroz con Coco', descripcion: 'Arroz preparado con leche de coco', tipo: 'principio', precio: 10000 },
+  ],
+  'proteina': [
+    { id: '5', nombre: 'Pollo Asado', descripcion: 'Pollo marinado y asado a la parrilla', tipo: 'proteina', precio: 18000 },
+    { id: '6', nombre: 'Pescado Frito', descripcion: 'Pescado fresco frito con especias', tipo: 'proteina', precio: 20000 },
+  ],
+  'acompanamiento': [
+    { id: '7', nombre: 'Patacones', descripcion: 'Plátano verde frito y aplastado', tipo: 'acompanamiento', precio: 6000 },
+    { id: '8', nombre: 'Yuca Frita', descripcion: 'Yuca cortada en bastones y frita', tipo: 'acompanamiento', precio: 5000 },
+  ],
+  'bebida': [
+    { id: '9', nombre: 'Limonada Natural', descripcion: 'Limonada fresca con agua o leche', tipo: 'bebida', precio: 4000 },
+    { id: '10', nombre: 'Jugo de Maracuyá', descripcion: 'Jugo natural de maracuyá', tipo: 'bebida', precio: 4500 },
+  ],
+};
+
 export function DialogoSelectorProducto({
   open,
   onOpenChange,
@@ -46,47 +67,6 @@ export function DialogoSelectorProducto({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const obtenerNombreColeccion = (id: string): string => {
-      console.log('=== Debug Info ===');
-      console.log('ID de categoría recibido:', id);
-      console.log('Tipo de ID:', typeof id);
-      
-      // Convertir el ID a minúsculas para hacer la comparación más robusta
-      const idLowerCase = id.toLowerCase();
-      console.log('ID en minúsculas:', idLowerCase);
-
-      // Mapa actualizado de IDs a nombres de colección
-      const colecciones: Record<string, string> = {
-        'entrada': 'Entrada',
-        'entradas': 'Entrada',
-        'principio': 'Principio',
-        'principios': 'Principio',
-        'proteina': 'Proteina',
-        'proteinas': 'Proteina',
-        'acompanamiento': 'Acompanamientos',
-        'acompanamientos': 'Acompanamientos',
-        'bebida': 'Bebida',
-        'bebidas': 'Bebida',
-        // Variantes con prefijo por si acaso
-        'categoria-entrada': 'Entrada',
-        'categoria-principio': 'Principio',
-        'categoria-proteina': 'Proteina',
-        'categoria-acompanamiento': 'Acompanamientos',
-        'categoria-bebida': 'Bebida'
-      };
-
-      console.log('Colecciones disponibles:', Object.keys(colecciones));
-      const coleccion = colecciones[idLowerCase];
-      console.log('Colección encontrada:', coleccion);
-
-      if (!coleccion) {
-        console.error('ID de categoría no reconocido:', id);
-        throw new Error(`Categoría no reconocida: ${id}`);
-      }
-
-      return coleccion;
-    };
-
     const cargarProductos = async () => {
       if (!categoriaId || !open) {
         console.log('No se ejecuta la carga:', { categoriaId, open });
@@ -98,69 +78,13 @@ export function DialogoSelectorProducto({
       
       try {
         console.log('Iniciando carga de productos para categoría:', categoriaId);
-        const coleccionName = obtenerNombreColeccion(categoriaId);
-        console.log('Nombre de colección a consultar:', coleccionName);
-
-        const productosRef = collection(db, coleccionName);
-        console.log('Referencia de colección creada');
         
-        const snapshot = await getDocs(productosRef);
-        console.log('Snapshot obtenido, documentos:', snapshot.size);
+        // Simular delay de carga
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        if (snapshot.empty) {
-          console.log('No se encontraron documentos');
-          setProductos([]);
-          return;
-        }
-
-        const productosData = snapshot.docs.map(doc => {
-          const data = doc.data();
-          console.log('Datos del documento:', data);
-          
-          let nombre = '';
-
-          // Manejar diferentes estructuras de datos según la colección
-          switch(coleccionName) {
-            case 'Entrada':
-              nombre = data.Entrada || '';
-              console.log('Procesando entrada:', nombre);
-              break;
-            case 'Principio':
-              nombre = data.Principio || '';
-              console.log('Procesando principio:', nombre);
-              break;
-            case 'Proteina':
-              nombre = data['Tipo de Proteína'] || '';
-              console.log('Procesando proteína:', nombre);
-              break;
-            case 'Acompanamientos':
-              nombre = data.Acompanamiento || '';
-              console.log('Procesando acompañamiento:', nombre);
-              break;
-            case 'Bebida':
-              nombre = data['Tipo de Bebida'] || '';
-              console.log('Procesando bebida:', nombre);
-              break;
-          }
-
-          const producto = {
-            id: doc.id,
-            nombre: nombre,
-            descripcion: data.Descripción || data.Descripcion || '',
-            tipo: coleccionName,
-            precio: data.precio || 0
-          };
-
-          console.log('Producto procesado:', producto);
-          return producto;
-        }).filter(producto => {
-          const esValido = producto.nombre && producto.descripcion;
-          if (!esValido) {
-            console.log('Producto filtrado por falta de datos:', producto);
-          }
-          return esValido;
-        });
-
+        const categoriaKey = categoriaId.toLowerCase();
+        const productosData = MOCK_PRODUCTOS[categoriaKey] || [];
+        
         console.log('Total de productos procesados:', productosData.length);
         setProductos(productosData);
         setError(null);
@@ -252,6 +176,9 @@ export function DialogoSelectorProducto({
                   <h4 className="font-medium mb-2">Descripción:</h4>
                   <p className="text-sm text-gray-600">
                     {productoSeleccionado.descripcion}
+                  </p>
+                  <p className="text-sm text-gray-600 mt-2">
+                    Precio: ${productoSeleccionado.precio.toLocaleString()}
                   </p>
                 </div>
               )}

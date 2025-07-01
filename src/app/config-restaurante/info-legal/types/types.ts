@@ -1,9 +1,31 @@
 // src/app/config-restaurante/info-legal/types/types.ts
 
-import { IEmpresa, ISucursal } from '@/firebase/types/collections.types';
+// Mock types for Firebase (to be replaced with actual Firebase types later)
+interface MockDatosFiscales {
+  razonSocial: string;
+  nit: string;
+  regimenTributario: string;
+  actividadEconomica: string;
+}
+
+interface MockDocumentosLegales {
+  rut: string;
+  camara_comercio: string;
+  cedula_representante: string;
+  registro_sanitario: string;
+}
+
+interface MockEmpresa {
+  datosFiscales: MockDatosFiscales;
+  documentosLegales: MockDocumentosLegales;
+}
+
+interface MockSucursal {
+  tipo: string;
+}
 
 // Tipos para la información del restaurante
-export interface InfoRestauranteType extends Pick<IEmpresa['datosFiscales'], 'razonSocial' | 'nit' | 'regimenTributario' | 'actividadEconomica'> {
+export interface InfoRestauranteType extends Pick<MockEmpresa['datosFiscales'], 'razonSocial' | 'nit' | 'regimenTributario' | 'actividadEconomica'> {
   tipoPersona: 'Persona natural' | 'Persona jurídica';
   responsabilidadFiscal: 'No responsable de IVA' | 'Responsable de IVA';
   nombresRestaurante: string;
@@ -20,7 +42,7 @@ export interface RepresentanteLegalType {
 
 // Tipos para los documentos cargados
 export interface DocumentoCargadoType {
-  tipo: keyof IEmpresa['documentosLegales'] | 'otros';
+  tipo: keyof MockEmpresa['documentosLegales'] | 'otros';
   archivo: File | null;
   nombreArchivo: string;
   estado: 'pendiente' | 'cargando' | 'completo' | 'error';
@@ -37,7 +59,7 @@ export interface EstadoFormularioLegal {
 }
 
 // Información Operativa
-export interface InfoOperativa extends Pick<ISucursal, 'tipo'> {
+export interface InfoOperativa extends Pick<MockSucursal, 'tipo'> {
   tipoRestaurante: string;
   especialidad: string;
   capacidad: string;

@@ -4,7 +4,10 @@ import { Button } from '@/shared/components/ui/Button';
 interface ItemProductoProps {
   id: string;
   nombre: string;
+  descripcion?: string;
+  precio?: number;
   imagen?: string;
+  categoriaId?: string;
   isActive?: boolean;
   onAdd: () => void; // Cambiamos de (id: string) => void a () => void
   onDelete: (id: string) => void;

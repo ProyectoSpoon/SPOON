@@ -9,8 +9,8 @@ import { TablaCombinacionesMenu } from '../components/tabla-combinaciones-menu/T
 import { useCombinacionesMenu } from '../hooks/useCombinacionesMenu';
 
 export default function EspecialesPage() {
-  const { sessionInfo } = useAuth();
-  const restauranteId = sessionInfo?.restaurantId || 'default';
+  const { user } = useAuth();
+  const restauranteId = 'default'; // Usar valor por defecto hasta que se implemente la gestión de restaurantes
   
   // Usar el hook de combinaciones para especiales
   const {

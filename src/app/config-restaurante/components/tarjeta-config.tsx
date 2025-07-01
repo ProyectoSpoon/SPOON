@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { CheckCircle, AlertCircle, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { useConfigStore } from '../store/config-store';
-import { TarjetaConfiguracion, EstadoTarjeta } from '../types/types';
+import { TarjetaConfiguracion } from '@/types/group-config.types';
 
 interface TarjetaConfigProps {
   tarjeta: TarjetaConfiguracion;
@@ -16,7 +16,7 @@ export default function TarjetaConfig({ tarjeta }: TarjetaConfigProps) {
   const camposTotales = tarjeta.camposRequeridos.length;
 
   // Mapeamos los estados del store a los estados visuales
-  const mapearEstado = (estado: EstadoTarjeta): 'pendiente' | 'incompleto' | 'completo' => {
+  const mapearEstado = (estado: 'no_iniciado' | 'incompleto' | 'completo'): 'pendiente' | 'incompleto' | 'completo' => {
     switch (estado) {
       case 'no_iniciado':
         return 'pendiente';

@@ -8,16 +8,20 @@ import SubirPortada from './components/subirportada';
 import VistaPrevia from './components/vistaprevia';
 import ConfigFooter from '@/app/config-restaurante/components/ConfigFooter/ConfigFooter';
 
-/**
- * @typedef {Object} PasoFormulario
- * @property {string} titulo - Título del paso
- * @property {string} descripcion - Descripción del paso
- */
+// Tipos TypeScript
+interface PasoFormulario {
+  titulo: string;
+  descripcion: string;
+}
 
-/**
- * @type {PasoFormulario[]}
- */
-const pasosFormulario = [
+interface ArchivoImagen {
+  archivo: File | null;
+  previewUrl: string | null;
+  estado: 'pendiente' | 'cargando' | 'completado' | 'error';
+  error?: string;
+}
+
+const pasosFormulario: PasoFormulario[] = [
   {
     titulo: 'Logo',
     descripcion: 'Logo del restaurante'
@@ -32,18 +36,7 @@ const pasosFormulario = [
   }
 ];
 
-/**
- * @typedef {Object} ArchivoImagen
- * @property {File | null} archivo - Archivo de imagen
- * @property {string | null} previewUrl - URL de vista previa
- * @property {'pendiente' | 'cargando' | 'completado' | 'error'} estado - Estado del archivo
- * @property {string} [error] - Mensaje de error opcional
- */
-
-/**
- * @type {ArchivoImagen}
- */
-const estadoInicial = {
+const estadoInicial: ArchivoImagen = {
   archivo: null,
   previewUrl: null,
   estado: 'pendiente',

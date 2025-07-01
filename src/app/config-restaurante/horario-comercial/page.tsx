@@ -3,76 +3,45 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useConfigStore } from '../store/config-store';
-import HorarioSemanal from '@/app/dashboard/horario-comercial/components/HorarioSemanal';
+import HorarioSemanal, { type HorarioDay } from '@/app/dashboard/horario-comercial/components/HorarioSemanal';
 import ConfigFooter from '../components/ConfigFooter/ConfigFooter';
-import { HorariosSemanales } from '@/app/dashboard/horario-comercial/types/horarios.types';
 import { useToast } from '@/shared/Hooks/use-toast';
 
-const horarioInicial: HorariosSemanales = {
-  lunes: [{
-    horaApertura: "09:00",
-    horaCierre: "18:00",
-    estaActivo: true
-  }],
-  martes: [{
-    horaApertura: "09:00",
-    horaCierre: "18:00",
-    estaActivo: true
-  }],
-  miercoles: [{
-    horaApertura: "09:00",
-    horaCierre: "18:00",
-    estaActivo: true
-  }],
-  jueves: [{
-    horaApertura: "09:00",
-    horaCierre: "18:00",
-    estaActivo: true
-  }],
-  viernes: [{
-    horaApertura: "09:00",
-    horaCierre: "18:00",
-    estaActivo: true
-  }],
-  sabado: [{
-    horaApertura: "09:00",
-    horaCierre: "18:00",
-    estaActivo: true
-  }],
-  domingo: [{
-    horaApertura: "09:00",
-    horaCierre: "18:00",
-    estaActivo: true
-  }]
-};
+const horarioInicial: HorarioDay[] = [
+  { day: 'Lunes', isOpen: true, openTime: '09:00', closeTime: '18:00' },
+  { day: 'Martes', isOpen: true, openTime: '09:00', closeTime: '18:00' },
+  { day: 'Miércoles', isOpen: true, openTime: '09:00', closeTime: '18:00' },
+  { day: 'Jueves', isOpen: true, openTime: '09:00', closeTime: '18:00' },
+  { day: 'Viernes', isOpen: true, openTime: '09:00', closeTime: '18:00' },
+  { day: 'Sábado', isOpen: true, openTime: '09:00', closeTime: '18:00' },
+  { day: 'Domingo', isOpen: false, openTime: '09:00', closeTime: '18:00' }
+];
 
 export default function HorarioComercialPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { actualizarCampo } = useConfigStore();
   const [estaGuardando, setEstaGuardando] = useState(false);
-  const [horarios, setHorarios] = useState<HorariosSemanales>(horarioInicial);
+  const [horarios, setHorarios] = useState<HorarioDay[]>(horarioInicial);
 
-  const validarHorarios = (horarios: HorariosSemanales): boolean => {
-    for (const dia of Object.keys(horarios)) {
-      const rangosDelDia = horarios[dia];
-      
-      for (const rango of rangosDelDia) {
+  const validarHorarios = (horarios: HorarioDay[]): boolean => {
+    for (const horarioDia of horarios) {
+      if (horarioDia.isOpen) {
         // Validar que ambos horarios estén establecidos
-        if (!rango.horaApertura || !rango.horaCierre) {
+        if (!horarioDia.openTime || !horarioDia.closeTime) {
           toast({
             title: "Error de validación",
-            description: `Por favor, establece los horarios de apertura y cierre para ${dia}`,
+            description: `Por favor, establece los horarios de apertura y cierre para ${horarioDia.day}`,
             variant: "destructive"
           });
           return false;
         }
 
         // Validar que la hora de cierre sea posterior a la de apertura
-        if (rango.horaApertura >= rango.horaCierre) {
+        if (horarioDia.openTime >= horarioDia.closeTime) {
           toast({
             title: "Error de validación",
-            description: `El horario de cierre debe ser posterior al de apertura en ${dia}`,
+            description: `El horario de cierre debe ser posterior al de apertura en ${horarioDia.day}`,
             variant: "destructive"
           });
           return false;
@@ -130,8 +99,8 @@ export default function HorarioComercialPage() {
         {/* Contenido Principal */}
         <div className="bg-white rounded-xl border border-neutral-200 p-6 mb-6">
           <HorarioSemanal
-            horarios={horarios}
-            onHorariosChange={setHorarios}
+            initialSchedule={horarios}
+            onScheduleChange={setHorarios}
           />
 
           {/* Botón de guardar */}

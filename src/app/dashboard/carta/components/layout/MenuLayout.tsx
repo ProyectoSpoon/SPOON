@@ -297,6 +297,7 @@ export function MenuLayout({
       id: 'id' in producto ? producto.id : Date.now().toString(),
       nombre: producto.nombre,
       descripcion: producto.descripcion,
+      precio: producto.precio,
       categoriaId: menuData.subcategoriaSeleccionada || '',
       currentVersion: 1,
       priceHistory: [],
@@ -343,6 +344,27 @@ export function MenuLayout({
     }
   };
 
+  // Función para convertir Producto a VersionedProduct
+  const convertirProductoAVersioned = (producto: Producto): VersionedProduct => {
+    return {
+      id: producto.id,
+      nombre: producto.nombre,
+      descripcion: producto.descripcion,
+      currentPrice: producto.precio,
+      categoriaId: producto.categoriaId,
+      currentVersion: producto.currentVersion,
+      priceHistory: producto.priceHistory,
+      versions: producto.versions,
+      stock: {
+        ...producto.stock,
+        status: producto.stock.status as 'in_stock' | 'low_stock' | 'out_of_stock'
+      },
+      status: producto.status as 'active' | 'draft' | 'archived' | 'discontinued',
+      metadata: producto.metadata,
+      imagen: producto.imagen
+    };
+  };
+
   // Nuevo handler para agregar productos a la columna de productos
   const handleAgregarProducto = (producto: VersionedProduct) => {
     console.log('=== handleAgregarProducto ===');
@@ -353,6 +375,7 @@ export function MenuLayout({
       id: producto.id,
       nombre: producto.nombre,
       descripcion: producto.descripcion,
+      precio: producto.currentPrice,
       categoriaId: producto.categoriaId,
       currentVersion: producto.currentVersion,
       priceHistory: producto.priceHistory,
@@ -397,6 +420,7 @@ export function MenuLayout({
       id: producto.id,
       nombre: producto.nombre,
       descripcion: producto.descripcion,
+      precio: producto.currentPrice,
       categoriaId: producto.categoriaId,
       currentVersion: producto.currentVersion,
       priceHistory: producto.priceHistory,
@@ -499,7 +523,7 @@ export function MenuLayout({
                   subcategoriaId={menuData.subcategoriaSeleccionada || undefined}
                   onProductSelect={handleAgregarProducto}
                   onAddToMenu={handleAgregarAlMenu}
-                  productosSeleccionados={menuData.productosSeleccionados as VersionedProduct[]}
+                  productosSeleccionados={menuData.productosSeleccionados.map(convertirProductoAVersioned)}
                 />
               </div>
             </div>
@@ -522,7 +546,7 @@ export function MenuLayout({
               </div>
               <div className="px-3 py-2">
                 <MenuDiario 
-                  productos={menuData.productosMenu as VersionedProduct[]} 
+                  productos={menuData.productosMenu.map(convertirProductoAVersioned)} 
                   onRemoveProduct={removeProductoFromMenu}
                 />
               </div>
@@ -551,7 +575,7 @@ export function MenuLayout({
                   Esta acción eliminará el producto del catálogo. No afectará a los menús existentes.
                 </DialogDescription>
               </DialogHeader>
-              <DialogFooter>
+              <DialogFooter>hyperx cloud iiHyperX Cloud Alpha
                 <Button
                   variant="outline"
                   onClick={() => setDialogoEliminar(false)}

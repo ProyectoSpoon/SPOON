@@ -6,7 +6,8 @@ import {
   ConfigSection,
   ConfigTemplate,
   GroupConfig,
-  TarjetaConfiguracion
+  TarjetaConfiguracion,
+  CampoRequerido
 } from '@/types/group-config.types';
 
 // Datos iniciales de las tarjetas de configuración
@@ -222,10 +223,18 @@ export const useConfigStore = create<ConfigStore>()(
           const groupConfig = get().groupConfigs.find(g => g.id === groupId);
           if (!groupConfig) throw new Error('Configuración de grupo no encontrada');
 
-          const newRestaurantConfig = {
-            ...groupConfig.defaultConfig,
+          const newRestaurantConfig: RestaurantConfig = {
+            id: `config_${restaurantId}_${Date.now()}`,
             restaurantId,
-            inheritedFrom: groupId
+            groupId,
+            sections: groupConfig.defaultConfig.sections || [],
+            inheritedFrom: groupId,
+            overrides: groupConfig.defaultConfig.overrides || {},
+            metadata: {
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              version: '1.0.0'
+            }
           };
 
           set(state => ({

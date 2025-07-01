@@ -1,13 +1,5 @@
 'use client'
 import React from 'react';
-import { motion } from 'framer-motion';
-import {
-  Box,
-  Flex,
-  Text,
-  Tooltip,
-  useColorModeValue,
-} from '@chakra-ui/react';
 
 // Props que acepta el componente
 interface PropIndicadorProgreso {
@@ -22,37 +14,16 @@ const IndicadorProgreso: React.FC<PropIndicadorProgreso> = ({
   pasos, 
   pasoActual 
 }) => {
-  // Colores para los diferentes estados
-  const colorCompletado = useColorModeValue('spoon.500', 'spoon.400');
-  const colorActivo = useColorModeValue('blue.500', 'blue.400');
-  const colorPendiente = useColorModeValue('gray.200', 'gray.600');
-  const colorTexto = useColorModeValue('gray.600', 'gray.400');
-
-  // Animación para los pasos
-  const variantesAnimacion = {
-    inactivo: { scale: 1 },
-    activo: { scale: 1.1 },
-    completado: { scale: 1, backgroundColor: colorCompletado }
-  };
-
   return (
-    <Box py={8}>
-      <Flex justify="space-between" align="center" position="relative">
+    <div className="py-8">
+      <div className="flex justify-between items-center relative">
         {/* Línea de progreso */}
-        <Box
-          position="absolute"
-          height="2px"
-          width="100%"
-          bg={colorPendiente}
-          zIndex={0}
-        >
-          <Box
-            height="100%"
-            width={`${(pasoActual / (pasos.length - 1)) * 100}%`}
-            bg={colorCompletado}
-            transition="width 0.5s ease-in-out"
+        <div className="absolute h-0.5 w-full bg-gray-200 z-0">
+          <div
+            className="h-full bg-[#FF9933] transition-all duration-500 ease-in-out"
+            style={{ width: `${(pasoActual / (pasos.length - 1)) * 100}%` }}
           />
-        </Box>
+        </div>
 
         {/* Pasos */}
         {pasos.map((paso, index) => {
@@ -60,70 +31,49 @@ const IndicadorProgreso: React.FC<PropIndicadorProgreso> = ({
           const estaActivo = index === pasoActual;
 
           return (
-            <Tooltip
+            <div
               key={paso.titulo}
-              label={paso.descripcion}
-              hasArrow
-              placement="top"
+              className="relative z-10 group"
+              title={paso.descripcion}
             >
-              <Box position="relative" zIndex={1}>
-                <motion.div
-                  variants={variantesAnimacion}
-                  animate={
-                    estaActivo ? 'activo' : 
-                    estaCompleto ? 'completado' : 
-                    'inactivo'
+              <div
+                className={`
+                  w-10 h-10 rounded-full border-2 flex justify-center items-center
+                  text-sm font-bold transition-all duration-200 hover:scale-105
+                  ${estaCompleto 
+                    ? 'bg-[#FF9933] border-[#FF9933] text-white' 
+                    : estaActivo 
+                    ? 'bg-white border-blue-500 text-blue-500' 
+                    : 'bg-gray-200 border-gray-200 text-gray-600'
                   }
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Flex
-                    w="40px"
-                    h="40px"
-                    borderRadius="full"
-                    bg={
-                      estaCompleto ? colorCompletado :
-                      estaActivo ? 'white' :
-                      colorPendiente
-                    }
-                    border="2px solid"
-                    borderColor={
-                      estaCompleto ? colorCompletado :
-                      estaActivo ? colorActivo :
-                      colorPendiente
-                    }
-                    justify="center"
-                    align="center"
-                    fontSize="sm"
-                    fontWeight="bold"
-                    color={
-                      estaCompleto ? 'white' :
-                      estaActivo ? colorActivo :
-                      colorTexto
-                    }
-                  >
-                    {estaCompleto ? '✓' : index + 1}
-                  </Flex>
-                </motion.div>
+                `}
+              >
+                {estaCompleto ? '✓' : index + 1}
+              </div>
 
-                {/* Título del paso */}
-                <Text
-                  mt={2}
-                  textAlign="center"
-                  fontSize="sm"
-                  fontWeight={estaActivo ? 'bold' : 'medium'}
-                  color={estaActivo ? colorActivo : colorTexto}
-                  maxW="120px"
-                  mx="auto"
-                >
-                  {paso.titulo}
-                </Text>
-              </Box>
-            </Tooltip>
+              {/* Título del paso */}
+              <div
+                className={`
+                  mt-2 text-center text-sm max-w-[120px] mx-auto
+                  ${estaActivo 
+                    ? 'font-bold text-blue-500' 
+                    : 'font-medium text-gray-600'
+                  }
+                `}
+              >
+                {paso.titulo}
+              </div>
+
+              {/* Tooltip */}
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-20">
+                {paso.descripcion}
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+              </div>
+            </div>
           )
         })}
-      </Flex>
-    </Box>
+      </div>
+    </div>
   );
 };
 

@@ -241,7 +241,7 @@ export function DialogoNuevoProducto({
                 <Label>Imagen del producto</Label>
                 <Tabs 
                   value={modoImagen} 
-                  onValueChange={(v: 'galeria' | 'subir') => setModoImagen(v)}
+                  onValueChange={(v) => setModoImagen(v as 'galeria' | 'subir')}
                 >
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="galeria">Galería Spoon</TabsTrigger>

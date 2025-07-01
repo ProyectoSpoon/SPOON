@@ -451,7 +451,7 @@ export function FormularioProducto({
 
       {/* Alertas de estado */}
       {editando && !producto.estado && (
-        <Alert className="mt-4" variant="warning">
+        <Alert className="mt-4" variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Producto inactivo</AlertTitle>
           <AlertDescription>
@@ -461,7 +461,7 @@ export function FormularioProducto({
       )}
 
       {editando && producto.restriccionEdad && (
-        <Alert className="mt-4" variant="warning">
+        <Alert className="mt-4" variant="default">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Restricción de edad</AlertTitle>
           <AlertDescription>

@@ -69,6 +69,7 @@ export interface VersionedProduct {
   id: string;
   nombre: string;
   descripcion: string;
+  currentPrice: number;
   categoriaId: string;
   currentVersion: number;
   priceHistory: PriceHistory[];

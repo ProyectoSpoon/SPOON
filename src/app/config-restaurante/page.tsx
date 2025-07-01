@@ -53,7 +53,7 @@ export default function ConfiguracionRestaurante() {
           <Button
             onClick={handleContinuar}
             disabled={!puedeAvanzar}
-            variant={puedeAvanzar ? 'primary' : 'secondary'}
+            variant={puedeAvanzar ? 'default' : 'secondary'}
             size="lg"
             className={`w-full md:w-auto ${
               puedeAvanzar 

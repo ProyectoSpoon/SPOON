@@ -65,6 +65,22 @@ export interface ConfigField {
     };
   }
   
+  // Tipos para las tarjetas de configuración
+  export interface CampoRequerido {
+    id: string;
+    nombre: string;
+    completado: boolean;
+  }
+
+  export interface TarjetaConfiguracion {
+    id: string;
+    titulo: string;
+    descripcion: string;
+    ruta: string;
+    estado: 'no_iniciado' | 'incompleto' | 'completo';
+    camposRequeridos: CampoRequerido[];
+  }
+
   export interface ConfigurationState {
     templates: ConfigTemplate[];
     groupConfigs: GroupConfig[];
@@ -72,4 +88,8 @@ export interface ConfigField {
     activeConfig: RestaurantConfig | null;
     loading: boolean;
     error: string | null;
+    // Propiedades para el sistema de configuración por tarjetas
+    progreso: number;
+    tarjetas: TarjetaConfiguracion[];
+    puedeAvanzar: boolean;
   }

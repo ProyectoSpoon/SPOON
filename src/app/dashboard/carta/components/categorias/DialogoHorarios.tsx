@@ -12,7 +12,7 @@ import { Input } from '@/shared/components/ui/Input';
 import { Label } from '@/shared/components/ui/Label';
 import { Switch } from '@/shared/components/ui/Switch';
 import { useCategoriasStore } from '../../store/categoriasStore';
-import { Categoria } from '../../types/menu.types';
+import { Categoria, Dia } from '../../types/menu.types';
 
 /**
  * Props para el componente DialogoHorarios.
@@ -84,9 +84,11 @@ export function DialogoHorarios({ open, onOpenChange, categoriaId }: DialogoHora
             activo: config.activo,
             dias: Object.entries(config.dias)
               .filter(([_, activo]) => activo)
-              .map(([dia]) => dia),
-            horaInicio: config.horaInicio,
-            horaFin: config.horaFin,
+              .map(([dia]) => dia as Dia),
+            rangos: [{
+              inicio: config.horaInicio,
+              fin: config.horaFin,
+            }],
           }
         });
         onOpenChange(false);

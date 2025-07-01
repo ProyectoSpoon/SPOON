@@ -6,7 +6,7 @@ import { useAuth } from '@/context/authcontext';
 
 export default function CompletarPerfil() {
   const router = useRouter();
-  const { usuario } = useAuth();
+  const { user: usuario } = useAuth();
   const [telefono, setTelefono] = useState('');
   const [estaCargando, setEstaCargando] = useState(false);
   const [error, setError] = useState('');

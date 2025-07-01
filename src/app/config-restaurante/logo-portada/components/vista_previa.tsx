@@ -2,20 +2,6 @@
 'use client';
 
 import React from 'react';
-import {
-  Box,
-  VStack,
-  HStack,  // Añadida esta importación
-  Text,
-  Image,
-  Card,
-  CardHeader,
-  CardBody,
-  Heading,
-  Icon,
-  Skeleton,
-  Badge,
-} from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { FiSmartphone } from 'react-icons/fi';
 
@@ -31,127 +17,94 @@ const VistaPrevia: React.FC<PropsVistaPrevia> = ({ logo, portada }) => {
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <Card>
-        <CardHeader>
-          <VStack align="start" spacing={2}>
-            <Heading size="md">Vista Previa</Heading>
-            <Text color="gray.600" fontSize="sm">
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
+        <div className="p-6 border-b border-gray-100">
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold text-neutral-900">Vista Previa</h3>
+            <p className="text-gray-600 text-sm">
               Así se verá en la aplicación
-            </Text>
-          </VStack>
-        </CardHeader>
+            </p>
+          </div>
+        </div>
 
-        <CardBody>
-          <VStack spacing={6}>
+        <div className="p-6">
+          <div className="space-y-6 flex flex-col items-center">
             {/* Vista móvil */}
-            <Box 
-              border="1px" 
-              borderColor="gray.200" 
-              borderRadius="2xl" 
-              overflow="hidden"
-              w="100%"
-              maxW="320px"
-              bg="white"
-            >
-              <VStack spacing={0}>
+            <div className="border border-gray-200 rounded-2xl overflow-hidden w-full max-w-[320px] bg-white">
+              <div className="space-y-0">
                 {/* Header con icono de móvil */}
-                <Box 
-                  w="100%" 
-                  p={4} 
-                  borderBottom="1px" 
-                  borderColor="gray.100"
-                  bg="gray.50"
-                >
-                  <HStack spacing={2}>
-                    <Icon as={FiSmartphone} />
-                    <Text fontSize="sm" fontWeight="medium">Vista Móvil</Text>
-                  </HStack>
-                </Box>
+                <div className="w-full p-4 border-b border-gray-100 bg-gray-50">
+                  <div className="flex items-center space-x-2">
+                    <FiSmartphone className="w-4 h-4" />
+                    <span className="text-sm font-medium">Vista Móvil</span>
+                  </div>
+                </div>
 
                 {/* Imagen de portada */}
-                <Box position="relative" w="100%" h="160px">
+                <div className="relative w-full h-40">
                   {portada ? (
-                    <Image
+                    <img
                       src={portada}
                       alt="Portada del restaurante"
-                      objectFit="cover"
-                      w="100%"
-                      h="100%"
+                      className="object-cover w-full h-full"
                     />
                   ) : (
-                    <Skeleton h="100%" w="100%" />
+                    <div className="h-full w-full bg-gray-200 animate-pulse" />
                   )}
                   
                   {/* Logo superpuesto */}
                   {logo && (
-                    <Box
-                      position="absolute"
-                      bottom="-30px"
-                      left="20px"
-                      bg="white"
-                      borderRadius="full"
-                      p={2}
-                      boxShadow="lg"
-                    >
-                      <Image
+                    <div className="absolute -bottom-8 left-5 bg-white rounded-full p-2 shadow-lg">
+                      <img
                         src={logo}
                         alt="Logo del restaurante"
-                        w="60px"
-                        h="60px"
-                        borderRadius="full"
-                        objectFit="cover"
+                        className="w-15 h-15 rounded-full object-cover"
+                        style={{ width: '60px', height: '60px' }}
                       />
-                    </Box>
+                    </div>
                   )}
-                </Box>
+                </div>
 
                 {/* Contenido de ejemplo */}
-                <Box w="100%" p={6} pt={10}>
-                  <VStack align="start" spacing={4}>
-                    <Heading size="md">Tu Restaurante</Heading>
-                    <Badge colorScheme="green">Abierto ahora</Badge>
-                    <Text fontSize="sm" color="gray.600">
+                <div className="w-full p-6 pt-10">
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-semibold text-neutral-900">Tu Restaurante</h4>
+                    <span className="inline-block px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-full">
+                      Abierto ahora
+                    </span>
+                    <p className="text-sm text-gray-600">
                       Aquí aparecerá la descripción de tu restaurante...
-                    </Text>
-                  </VStack>
-                </Box>
-              </VStack>
-            </Box>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {/* Indicadores de estado */}
-            <HStack spacing={4} w="100%" justify="center">
-              <Badge 
-                colorScheme={logo ? "green" : "gray"}
-                variant="subtle"
-                px={3}
-                py={1}
-              >
+            <div className="flex space-x-4 w-full justify-center">
+              <span className={`
+                px-3 py-1 text-sm font-medium rounded-full
+                ${logo ? 'text-green-700 bg-green-100' : 'text-gray-700 bg-gray-100'}
+              `}>
                 Logo: {logo ? "✓" : "Pendiente"}
-              </Badge>
-              <Badge 
-                colorScheme={portada ? "green" : "gray"}
-                variant="subtle"
-                px={3}
-                py={1}
-              >
+              </span>
+              <span className={`
+                px-3 py-1 text-sm font-medium rounded-full
+                ${portada ? 'text-green-700 bg-green-100' : 'text-gray-700 bg-gray-100'}
+              `}>
                 Portada: {portada ? "✓" : "Pendiente"}
-              </Badge>
-            </HStack>
+              </span>
+            </div>
 
             {/* Mensaje informativo */}
-            <Box 
-              p={4} 
-              bg="blue.50" 
-              borderRadius="md" 
-              w="100%"
-            >
-              <Text fontSize="sm" color="blue.600">
+            <div className="p-4 bg-blue-50 rounded-md w-full">
+              <p className="text-sm text-blue-600">
                 Las imágenes se ajustarán automáticamente para mantener la mejor calidad posible en todos los dispositivos.
-              </Text>
-            </Box>
-          </VStack>
-        </CardBody>
-      </Card>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </motion.div>
   );
 };
