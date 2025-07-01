@@ -82,7 +82,7 @@ export const actualizarHorarios = async (
           
           // Combinamos los datos existentes con los nuevos
           const datosActualizados: DatosHorarios = {
-            horarioRegular: datos.horarioRegular || (datosExistentes?.horarioRegular || {}),
+            horarioRegular: datos.horarioRegular || (datosExistentes?.horarioRegular || {} as any),
             fechaActualizacion: new Date().toISOString()
           };
           

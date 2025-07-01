@@ -16,10 +16,10 @@ export const ordenarProductos = (
         comparacion = a.precio - b.precio;
         break;
       case 'createdAt':
-        comparacion = a.createdAt.getTime() - b.createdAt.getTime();
+        comparacion = (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0);
         break;
       case 'updatedAt':
-        comparacion = a.updatedAt.getTime() - b.updatedAt.getTime();
+        comparacion = (a.updatedAt?.getTime() || 0) - (b.updatedAt?.getTime() || 0);
         break;
     }
     return orden === 'asc' ? comparacion : -comparacion;

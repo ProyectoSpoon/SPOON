@@ -1,6 +1,6 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@zod/resolver';
+import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
 import {
@@ -9,12 +9,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/shared/components/ui/Dialog';
-import { Input } from '@/shared/components/ui/Input';
-import { Button } from '@/shared/components/ui/Button';
-import { Label } from '@/shared/components/ui/Label';
-import { RadioGroup, RadioGroupItem } from '@/shared/components/ui/RadioGroup';
-import { Switch } from '@/shared/components/ui/Switch';
+} from '@/shared/components/ui/Dialog/dialog';
+import { Button } from '@/shared/components/ui/Button/button';
 import { Usuario } from '../../types/usuarios.types';
 
 const formSchema = z.object({
@@ -49,13 +45,13 @@ export default function ModalEditarUsuario({
     formState: { errors, isSubmitting } 
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    values: usuario ? {
+    defaultValues: usuario ? {
       nombre: usuario.nombre,
       apellido: usuario.apellido,
       email: usuario.email,
       telefono: usuario.telefono || '',
       rol: usuario.rol,
-      estado: usuario.estado
+      estado: usuario.estado === 'bloqueado' ? 'inactivo' : usuario.estado
     } : undefined
   });
 
@@ -84,80 +80,99 @@ export default function ModalEditarUsuario({
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="nombre">Nombre</Label>
-              <Input
+              <label htmlFor="nombre" className="text-sm font-medium">Nombre</label>
+              <input
                 id="nombre"
                 placeholder="Juan"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 {...register('nombre')}
-                error={errors.nombre?.message}
               />
+              {errors.nombre && (
+                <p className="text-sm text-red-500">{errors.nombre.message}</p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="apellido">Apellido</Label>
-              <Input
+              <label htmlFor="apellido" className="text-sm font-medium">Apellido</label>
+              <input
                 id="apellido"
                 placeholder="Pérez"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 {...register('apellido')}
-                error={errors.apellido?.message}
               />
+              {errors.apellido && (
+                <p className="text-sm text-red-500">{errors.apellido.message}</p>
+              )}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
+            <label htmlFor="email" className="text-sm font-medium">Email</label>
+            <input
               id="email"
               type="email"
               placeholder="juan@ejemplo.com"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               {...register('email')}
-              error={errors.email?.message}
             />
+            {errors.email && (
+              <p className="text-sm text-red-500">{errors.email.message}</p>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="telefono">Teléfono (opcional)</Label>
-            <Input
+            <label htmlFor="telefono" className="text-sm font-medium">Teléfono (opcional)</label>
+            <input
               id="telefono"
               type="tel"
               placeholder="+34 600 000 000"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               {...register('telefono')}
-              error={errors.telefono?.message}
             />
+            {errors.telefono && (
+              <p className="text-sm text-red-500">{errors.telefono.message}</p>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label>Rol</Label>
-            <RadioGroup
-              defaultValue={usuario.rol}
-              onValueChange={(value) => setValue('rol', value as 'admin' | 'staff')}
-            >
+            <label className="text-sm font-medium">Rol</label>
+            <div className="space-y-2">
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="staff" id="staff" />
-                <Label htmlFor="staff">Staff</Label>
+                <input
+                  type="radio"
+                  id="staff"
+                  value="staff"
+                  {...register('rol')}
+                />
+                <label htmlFor="staff" className="text-sm">Staff</label>
               </div>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="admin" id="admin" />
-                <Label htmlFor="admin">Administrador</Label>
+                <input
+                  type="radio"
+                  id="admin"
+                  value="admin"
+                  {...register('rol')}
+                />
+                <label htmlFor="admin" className="text-sm">Administrador</label>
               </div>
-            </RadioGroup>
+            </div>
           </div>
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Estado</Label>
-              <div className="text-sm text-muted-foreground">
+              <label className="text-sm font-medium">Estado</label>
+              <div className="text-sm text-gray-500">
                 {estadoActual === 'activo' ? 'Usuario activo' : 'Usuario inactivo'}
               </div>
             </div>
-            <Switch
+            <input
+              type="checkbox"
               checked={estadoActual === 'activo'}
-              onCheckedChange={(checked) => 
-                setValue('estado', checked ? 'activo' : 'inactivo')
-              }
+              onChange={(e) => setValue('estado', e.target.checked ? 'activo' : 'inactivo')}
+              className="h-4 w-4"
             />
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex gap-2">
             <Button
               type="button"
               variant="outline"

@@ -19,7 +19,7 @@ import type { PeriodoTiempo } from '../types/estadisticas.types';
 
 export default function RendimientoMenuPage() {
   const [periodoSeleccionado, setPeriodoSeleccionado] = useState<PeriodoTiempo>('mes');
-  const { datos, cargando, error } = useRendimientoMenu(periodoSeleccionado);
+  const { datos, loading: cargando, error } = useRendimientoMenu(periodoSeleccionado);
 
   const formatearMoneda = (valor: number) => {
     return new Intl.NumberFormat('es-CO', {
@@ -103,7 +103,7 @@ export default function RendimientoMenuPage() {
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-4">Top Platos por Rendimiento</h3>
           <div className="space-y-4">
-            {datos?.mejoresPlatos.slice(0, 5).map((plato, index) => (
+            {datos?.mejoresPlatos.slice(0, 5).map((plato: any, index: number) => (
               <div 
                 key={index}
                 className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg"
@@ -144,7 +144,7 @@ export default function RendimientoMenuPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100">
-              {datos?.rendimientoPlatos.map((plato, index) => (
+              {datos?.rendimientoPlatos.map((plato: any, index: number) => (
                 <tr key={index}>
                   <td className="p-3">{plato.plato}</td>
                   <td className="p-3 text-neutral-600">{plato.categoria}</td>

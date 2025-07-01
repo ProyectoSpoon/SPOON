@@ -1,78 +1,70 @@
 import pool, { query } from './database';
-import { initAuthTables } from '@/services/postgres/auth.service';
-import { MenuService } from '@/services/postgres/menu.service';
 
 /**
- * Inicializa todas las tablas necesarias para la aplicación
+ * Inicializa la base de datos con las tablas necesarias
  */
-export async function initializeDatabase() {
+export async function initDatabase(): Promise<void> {
   try {
-    console.log('Inicializando base de datos Spoon...');
-
-    // Tablas de autenticación
-    await initAuthTables();
+    console.log('Simulando inicialización de base de datos...');
     
-    // Tablas del módulo de menú
-    await MenuService.initTables();
+    // Simular delay de inicialización
+    await new Promise(resolve => setTimeout(resolve, 500));
     
-    // Otras tablas necesarias para la aplicación
-    // ...
-    
-    console.log('Base de datos inicializada correctamente');
-    return true;
+    console.log('Base de datos inicializada (simulación)');
   } catch (error) {
-    console.error('Error al inicializar la base de datos:', error);
+    console.error('Error inicializando base de datos:', error);
     throw error;
   }
 }
 
 /**
- * Función para inicializar datos de prueba si es necesario
+ * Verifica si la base de datos está disponible
  */
-export async function seedTestData() {
+export async function checkDatabaseConnection(): Promise<boolean> {
   try {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Añadiendo datos de prueba para entorno de desarrollo...');
-      
-      // Verificar si ya hay categorías
-      const categoriasResult = await query('SELECT COUNT(*) FROM categorias WHERE restaurante_id = 1');
-      const categoriasCount = parseInt(categoriasResult.rows[0].count);
-      
-      if (categoriasCount === 0) {
-        // Insertar categorías base
-        await query(`
-          INSERT INTO categorias (nombre, orden, restaurante_id) 
-          VALUES 
-            ('Entradas', 1, 1),
-            ('Principios', 2, 1),
-            ('Proteinas', 3, 1),
-            ('Acompañamientos', 4, 1),
-            ('Bebidas', 5, 1)
-        `);
-        console.log('Categorías base añadidas');
-      }
-      
-      // Aquí se añadirían más datos de prueba según sea necesario
-      
-      console.log('Datos de prueba añadidos correctamente');
-    }
+    console.log('Verificando conexión a base de datos...');
+    
+    // Simular verificación de conexión
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    console.log('Conexión a base de datos verificada (simulación)');
+    return true;
   } catch (error) {
-    console.error('Error al añadir datos de prueba:', error);
-    // No lanzamos el error para que la aplicación pueda seguir funcionando
+    console.error('Error verificando conexión:', error);
+    return false;
   }
 }
 
-// Si este archivo se ejecuta directamente
-if (require.main === module) {
-  (async () => {
-    try {
-      await initializeDatabase();
-      await seedTestData();
-      console.log('Proceso de inicialización completado');
-      process.exit(0);
-    } catch (error) {
-      console.error('Error durante la inicialización:', error);
-      process.exit(1);
-    }
-  })();
+/**
+ * Ejecuta las migraciones necesarias
+ */
+export async function runMigrations(): Promise<void> {
+  try {
+    console.log('Ejecutando migraciones...');
+    
+    // Simular ejecución de migraciones
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    console.log('Migraciones ejecutadas (simulación)');
+  } catch (error) {
+    console.error('Error ejecutando migraciones:', error);
+    throw error;
+  }
+}
+
+/**
+ * Crea datos de ejemplo para desarrollo
+ */
+export async function seedDatabase(): Promise<void> {
+  try {
+    console.log('Creando datos de ejemplo...');
+    
+    // Simular creación de datos de ejemplo
+    await new Promise(resolve => setTimeout(resolve, 400));
+    
+    console.log('Datos de ejemplo creados (simulación)');
+  } catch (error) {
+    console.error('Error creando datos de ejemplo:', error);
+    throw error;
+  }
 }

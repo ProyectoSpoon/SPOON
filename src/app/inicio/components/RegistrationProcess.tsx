@@ -24,7 +24,9 @@ export const RegistrationProcess = () => {
   return (
     <section className="py-32 bg-white relative overflow-hidden">
       {/* Patrón de fondo sutil */}
-      <GeometricPattern pattern="dots" opacity={0.02} className="absolute inset-0" />
+      <div className="absolute inset-0">
+        <GeometricPattern pattern="dots" opacity={0.02} />
+      </div>
       
       <div className="container mx-auto px-6 relative">
         {/* Encabezado */}

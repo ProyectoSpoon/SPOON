@@ -8,49 +8,29 @@ import { GraficoVentasPeriodo } from '../components/AnalisisVentas/GraficoVentas
 import { PeriodoTiempo, KPI } from '../types/estadisticas.types';
 
 // Datos de ejemplo - Esto vendría de Firebase
-const kpisEjemplo: KPI[] = [
+const kpisEjemplo = [
   {
-    id: "ventas-totales",
     titulo: "Ventas Totales",
     valor: 2345678,
-    tipo: "moneda",
-    icono: "dollar",
     valorAnterior: 2000000,
-    colorIcono: "text-blue-600",
-    colorFondo: "bg-blue-100",
     descripcion: "Total de ventas del periodo"
   },
   {
-    id: "ordenes-totales",
     titulo: "Órdenes Totales",
     valor: 1234,
-    tipo: "numero",
-    icono: "bag",
     valorAnterior: 1100,
-    colorIcono: "text-green-600",
-    colorFondo: "bg-green-100",
     descripcion: "Número total de órdenes"
   },
   {
-    id: "ticket-promedio",
     titulo: "Ticket Promedio",
     valor: 1890,
-    tipo: "moneda",
-    icono: "dollar",
     valorAnterior: 1750,
-    colorIcono: "text-purple-600",
-    colorFondo: "bg-purple-100",
     descripcion: "Valor promedio por orden"
   },
   {
-    id: "tiempo-promedio",
     titulo: "Tiempo Promedio",
     valor: 23,
-    tipo: "numero",
-    icono: "clock",
     valorAnterior: 25,
-    colorIcono: "text-orange-600",
-    colorFondo: "bg-orange-100",
     descripcion: "Tiempo promedio de atención"
   }
 ];
@@ -103,7 +83,7 @@ export default function AnalisisVentasPage() {
       </Card>
 
       {/* KPIs */}
-      <KPIsCards kpis={kpisEjemplo} />
+      <KPIsCards kpis={kpisEjemplo as any} />
 
       {/* Gráfico Principal */}
       <div className="mt-6">

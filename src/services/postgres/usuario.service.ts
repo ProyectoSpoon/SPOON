@@ -119,7 +119,8 @@ export async function obtenerUsuarios(): Promise<Usuario[]> {
       estado: row.estado as 'active' | 'inactive' | 'pending' | 'suspended',
       fechaCreacion: new Date(row.fechaCreacion),
       ultimoAcceso: row.ultimoAcceso ? new Date(row.ultimoAcceso) : undefined,
-      restaurantId: row.restaurantId || undefined
+      restaurantId: row.restaurantId || undefined,
+      telefono: row.telefono || undefined
     }));
   } catch (error) {
     console.error('Error al obtener usuarios:', error);

@@ -1,125 +1,157 @@
 // src/context/configuracioncontext.tsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { db } from '@/firebase/config';
-;
-import { useAuth } from '@/context/authcontext'; // Asumiendo que tienes un contexto de autenticación
 
-interface ConfiguracionTarjeta {
-  id: string;
-  titulo: string;
-  estado: EstadoTarjeta;
-  camposCompletados: number;
-  camposTotales: number;
-  ruta: string;
-  datos: Record<string, any>;
+export interface ConfiguracionRestaurante {
+  id?: string;
+  nombre: string;
+  direccion: string;
+  telefono: string;
+  email: string;
+  descripcion?: string;
+  horarios: {
+    [key: string]: {
+      abierto: boolean;
+      apertura: string;
+      cierre: string;
+    };
+  };
+  configuracionPagos: {
+    efectivo: boolean;
+    tarjeta: boolean;
+    transferencia: boolean;
+  };
+  configuracionDelivery: {
+    activo: boolean;
+    radioKm: number;
+    costoMinimo: number;
+    tiempoEstimado: number;
+  };
+  configuracionNotificaciones: {
+    email: boolean;
+    sms: boolean;
+    push: boolean;
+  };
+  tema: {
+    colorPrimario: string;
+    colorSecundario: string;
+    logo?: string;
+  };
 }
 
 interface ConfiguracionContextType {
-  tarjetas: ConfiguracionTarjeta[];
-  progreso: number;
-  actualizarTarjeta: (id: string, datos: Partial<ConfiguracionTarjeta>) => void;
-  puedeAvanzar: boolean;
-  guardarProgreso: () => Promise<void>;
+  configuracion: ConfiguracionRestaurante | null;
+  loading: boolean;
+  error: string | null;
+  actualizarConfiguracion: (config: Partial<ConfiguracionRestaurante>) => Promise<void>;
   cargarConfiguracion: () => Promise<void>;
 }
 
-export const ConfiguracionProvider = ({ children }: { children: React.ReactNode }) => {
-  const { user } = useAuth();
-  const [tarjetas, setTarjetas] = useState<ConfiguracionTarjeta[]>([
-    {
-      id: 'info-legal',
-      titulo: 'Información Legal',
-      estado: 'pendiente',
-      camposCompletados: 0,
-      camposTotales: 5,
-      ruta: '/config-restaurante/info-legal',
-      datos: {}
-    },
-    {
-      id: 'info-restaurante',
-      titulo: 'Información del Restaurante',
-      estado: 'pendiente',
-      camposCompletados: 0,
-      camposTotales: 8,
-      ruta: '/config-restaurante/info-restaurante',
-      datos: {}
-    },
-    // Añade más tarjetas según necesites
-  ]);
+const ConfiguracionContext = createContext<ConfiguracionContextType | undefined>(undefined);
 
-  const [progreso, setProgreso] = useState(0);
+export const useConfiguracion = () => {
+  const context = useContext(ConfiguracionContext);
+  if (context === undefined) {
+    throw new Error('useConfiguracion debe ser usado dentro de un ConfiguracionProvider');
+  }
+  return context;
+};
+
+export const ConfiguracionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [configuracion, setConfiguracion] = useState<ConfiguracionRestaurante | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const cargarConfiguracion = async () => {
-    if (!user?.uid) return;
-
     try {
-      const configRef = doc(db, 'restaurantes', user.uid, 'configuracion', 'general');
-      const docSnap = await getDoc(configRef);
-
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        setTarjetas(prevTarjetas => 
-          prevTarjetas.map(tarjeta => ({
-            ...tarjeta,
-            ...data.tarjetas?.find((t: ConfiguracionTarjeta) => t.id === tarjeta.id)
-          }))
-        );
-      }
-    } catch (error) {
-      console.error('Error al cargar la configuración:', error);
+      setLoading(true);
+      setError(null);
+      
+      console.log('Simulando carga de configuración...');
+      
+      // Simular delay de carga
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Configuración de ejemplo
+      const configEjemplo: ConfiguracionRestaurante = {
+        id: 'rest_1',
+        nombre: 'Restaurante SPOON',
+        direccion: 'Calle Principal 123, Ciudad',
+        telefono: '+57 300 123 4567',
+        email: 'contacto@spoon.com',
+        descripcion: 'El mejor restaurante de la ciudad',
+        horarios: {
+          lunes: { abierto: true, apertura: '08:00', cierre: '22:00' },
+          martes: { abierto: true, apertura: '08:00', cierre: '22:00' },
+          miercoles: { abierto: true, apertura: '08:00', cierre: '22:00' },
+          jueves: { abierto: true, apertura: '08:00', cierre: '22:00' },
+          viernes: { abierto: true, apertura: '08:00', cierre: '23:00' },
+          sabado: { abierto: true, apertura: '09:00', cierre: '23:00' },
+          domingo: { abierto: false, apertura: '09:00', cierre: '21:00' }
+        },
+        configuracionPagos: {
+          efectivo: true,
+          tarjeta: true,
+          transferencia: true
+        },
+        configuracionDelivery: {
+          activo: true,
+          radioKm: 5,
+          costoMinimo: 15000,
+          tiempoEstimado: 30
+        },
+        configuracionNotificaciones: {
+          email: true,
+          sms: false,
+          push: true
+        },
+        tema: {
+          colorPrimario: '#F4821F',
+          colorSecundario: '#2D3748'
+        }
+      };
+      
+      setConfiguracion(configEjemplo);
+      console.log('Configuración cargada (simulación):', configEjemplo);
+      
+    } catch (err) {
+      console.error('Error al cargar configuración:', err);
+      setError('Error al cargar la configuración del restaurante');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const guardarProgreso = async () => {
-    if (!user?.uid) return;
-
+  const actualizarConfiguracion = async (configActualizada: Partial<ConfiguracionRestaurante>) => {
     try {
-      const configRef = doc(db, 'restaurantes', user.uid, 'configuracion', 'general');
-      await setDoc(configRef, {
-        tarjetas,
-        progreso,
-        ultimaActualizacion: serverTimestamp(),
-      }, { merge: true });
-    } catch (error) {
-      console.error('Error al guardar el progreso:', error);
-      throw error;
-    }
-  };
-
-  const actualizarTarjeta = async (id: string, nuevosDatos: Partial<ConfiguracionTarjeta>) => {
-    setTarjetas(prev => prev.map(tarjeta => 
-      tarjeta.id === id ? { ...tarjeta, ...nuevosDatos } : tarjeta
-    ));
-
-    // Guardamos automáticamente después de cada actualización
-    try {
-      await guardarProgreso();
-    } catch (error) {
-      console.error('Error al guardar la actualización:', error);
+      setLoading(true);
+      setError(null);
+      
+      console.log('Simulando actualización de configuración:', configActualizada);
+      
+      // Simular delay de actualización
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setConfiguracion(prev => prev ? { ...prev, ...configActualizada } : null);
+      console.log('Configuración actualizada (simulación)');
+      
+    } catch (err) {
+      console.error('Error al actualizar configuración:', err);
+      setError('Error al actualizar la configuración');
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (user?.uid) {
-      cargarConfiguracion();
-    }
-  }, [user?.uid]);
+    cargarConfiguracion();
+  }, []);
 
-  useEffect(() => {
-    const calcularProgreso = () => {
-      const tarjetasCompletas = tarjetas.filter(t => t.estado === 'completo').length;
-      setProgreso((tarjetasCompletas / tarjetas.length) * 100);
-    };
-
-    calcularProgreso();
-  }, [tarjetas]);
-
-  const value = {
-    tarjetas,
-    progreso,
-    actualizarTarjeta,
-    puedeAvanzar: progreso === 100,
-    guardarProgreso,
+  const value: ConfiguracionContextType = {
+    configuracion,
+    loading,
+    error,
+    actualizarConfiguracion,
     cargarConfiguracion
   };
 
@@ -128,12 +160,4 @@ export const ConfiguracionProvider = ({ children }: { children: React.ReactNode 
       {children}
     </ConfiguracionContext.Provider>
   );
-};
-
-export const useConfiguracion = () => {
-  const context = useContext(ConfiguracionContext);
-  if (context === undefined) {
-    throw new Error('useConfiguracion debe usarse dentro de ConfiguracionProvider');
-  }
-  return context;
 };

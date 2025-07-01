@@ -62,13 +62,13 @@ export default function TablaUsuarios({
               <DataTable.Cell>
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    {usuario.photoURL ? (
-                      <img 
-                        src={usuario.photoURL} 
-                        alt={`${usuario.nombre} ${usuario.apellido}`}
-                        className="w-8 h-8 rounded-full object-cover"
-                      />
-                    ) : (
+              {false ? (
+                <img
+                  src=""
+                  alt={`${usuario.nombre} ${usuario.apellido}`}
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              ) : (
                       <span className="text-primary text-sm">
                         {usuario.nombre[0]}
                         {usuario.apellido[0]}
@@ -83,18 +83,18 @@ export default function TablaUsuarios({
               </DataTable.Cell>
               <DataTable.Cell>{usuario.email}</DataTable.Cell>
               <DataTable.Cell>
-                <Badge variant={usuario.rol === 'admin' ? 'default' : 'secondary'}>
+                <span className={`px-2 py-1 rounded text-xs ${usuario.rol === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
                   {usuario.rol === 'admin' ? 'Administrador' : 'Staff'}
-                </Badge>
+                </span>
               </DataTable.Cell>
               <DataTable.Cell>
-                <Badge variant={usuario.estado === 'activo' ? 'success' : 'destructive'}>
+                <span className={`px-2 py-1 rounded text-xs ${usuario.estado === 'activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                   {usuario.estado === 'activo' ? 'Activo' : 'Inactivo'}
-                </Badge>
+                </span>
               </DataTable.Cell>
               <DataTable.Cell>
                 {usuario.ultimoAcceso ? (
-                  format(usuario.ultimoAcceso.toDate(), 'PPp', { locale: es })
+                  format(usuario.ultimoAcceso instanceof Date ? usuario.ultimoAcceso : new Date(usuario.ultimoAcceso), 'PPp', { locale: es })
                 ) : (
                   'Nunca'
                 )}

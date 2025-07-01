@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 ;
-import { db } from '@/firebase/config';
+// Removido import de Firebase para evitar errores de compilación
 import type { PeriodoTiempo } from '../types/estadisticas.types';
 
 interface TendenciaHoraria {

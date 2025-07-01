@@ -81,7 +81,7 @@ const VistaHorariosRestaurante: React.FC = () => {
       try {
         const horariosGuardados = await obtenerHorarios(idRestauranteTemporal);
         if (horariosGuardados?.horarioRegular) {
-          setHorarios(horariosGuardados.horarioRegular);
+          setHorarios(horariosGuardados.horarioRegular as any);
           setOrigenDatos('storage');
           toast({
             title: "Datos cargados",
@@ -127,7 +127,7 @@ const VistaHorariosRestaurante: React.FC = () => {
     setGuardando(true);
     try {
       const actualizado = await actualizarHorarios(idRestauranteTemporal, {
-        horarioRegular: horarios
+        horarioRegular: horarios as any
       });
 
       if (actualizado) {

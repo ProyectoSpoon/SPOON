@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { VersionedProduct } from '@/app/dashboard/carta/types/product-versioning.types';
-import { MenuService } from '@/app/dashboard/carta/services/menu.service';
+import { menuService } from '@/app/dashboard/carta/services/menu.service';
 import { MenuCache } from '@/app/dashboard/carta/utils/menu-cache.utils';
 
 interface MenuState {
@@ -20,7 +20,6 @@ interface MenuActions {
 type MenuStore = MenuState & MenuActions;
 
 export const useMenuStore = create<MenuStore>((set, get) => {
-  let menuService: MenuService | null = null;
   const cache = MenuCache.getInstance();
 
   return {
@@ -33,9 +32,7 @@ export const useMenuStore = create<MenuStore>((set, get) => {
     loadItems: async (restaurantId: string, categoryId?: string) => {
       set({ loading: true, error: null });
       try {
-        if (!menuService) {
-          menuService = new MenuService(restaurantId);
-        }
+        console.log('Cargando elementos del menú (simulación):', { restaurantId, categoryId });
 
         // Intentar obtener desde caché
         const key = categoryId || 'all';
@@ -46,8 +43,42 @@ export const useMenuStore = create<MenuStore>((set, get) => {
           return;
         }
 
-        // Si no está en caché, cargar desde el servicio
-        const items = await menuService.getMenuItems(categoryId);
+        // Simular carga de datos
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Datos de ejemplo
+        const items: VersionedProduct[] = [
+          {
+            id: 'item_1',
+            nombre: 'Menú Ejecutivo',
+            descripcion: 'Menú completo del día',
+            currentPrice: 15000,
+            categoriaId: categoryId || 'CAT_001',
+            currentVersion: 1,
+            priceHistory: [],
+            versions: [],
+            status: 'active',
+            stock: {
+              currentQuantity: 50,
+              minQuantity: 10,
+              maxQuantity: 100,
+              status: 'in_stock',
+              lastUpdated: new Date(),
+              alerts: {
+                lowStock: false,
+                overStock: false,
+                thresholds: { low: 10, high: 90 }
+              }
+            },
+            metadata: {
+              createdAt: new Date(),
+              createdBy: 'system',
+              lastModified: new Date(),
+              lastModifiedBy: 'system'
+            }
+          }
+        ];
+
         cache.setItems(key, items);
         set({ items, loading: false });
 
@@ -60,11 +91,11 @@ export const useMenuStore = create<MenuStore>((set, get) => {
     updateItems: async (items: VersionedProduct[]) => {
       set({ loading: true, error: null });
       try {
-        if (!menuService) {
-          throw new Error('MenuService no inicializado');
-        }
+        console.log('Actualizando elementos del menú (simulación):', items);
 
-        await menuService.updateMenuItems(items);
+        // Simular actualización
+        await new Promise(resolve => setTimeout(resolve, 300));
+
         const key = get().currentCategory || 'all';
         cache.updateItems(key, () => items);
         set({ items, loading: false });

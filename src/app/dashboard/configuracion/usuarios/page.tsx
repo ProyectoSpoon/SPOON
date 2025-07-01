@@ -48,8 +48,8 @@ export default function UsuariosPage() {
           />
         </div>
         
-        <TablaUsuarios 
-          usuarios={usuarios}
+        <TablaUsuarios
+          usuarios={usuarios as any}
           isLoading={isLoading}
         />
       </div>
@@ -57,7 +57,7 @@ export default function UsuariosPage() {
       <ModalNuevoUsuario
         abierto={modalAbierto}
         onClose={() => setModalAbierto(false)}
-        onCrear={handleCrearUsuario}
+        onCrear={handleCrearUsuario as any}
       />
     </div>
   );

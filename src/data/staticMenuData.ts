@@ -53,6 +53,7 @@ const transformarProducto = (prod: any): Producto => {
     descripcion: String(prod.descripcion),
     categoriaId: String(prod.id_categoria),
     imagen: String(prod.imagen_url || '/images/placeholder.jpg'),
+    precio: Number(prod.precio || 0),
     currentVersion: parseInt(String(prod.currentVersion), 10) || 1,
     priceHistory: prod.priceHistory || [],
     versions: prod.versions || [],

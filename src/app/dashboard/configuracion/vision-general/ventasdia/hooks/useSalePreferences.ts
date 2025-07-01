@@ -58,7 +58,7 @@ export function useSalePreferences(userId: string) {
       });
 
       if (response.ok) {
-        setPreferences(newPrefs);
+        setPreferences(newPrefs as any);
       } else {
         throw new Error('Error updating preferences');
       }

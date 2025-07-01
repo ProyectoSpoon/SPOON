@@ -1,6 +1,4 @@
 import { useState, useCallback } from 'react';
-;
-import { db } from '@/firebase/config';
 import { DateTime } from 'luxon';
 import { TimezoneHandler } from '@/app/dashboard/carta/programacion-semanal/utils/timezone-handler.utils';
 import { ScheduleValidator } from '@/app/dashboard/carta/programacion-semanal/services/schedule-validator.service';
@@ -26,22 +24,33 @@ export function useProgramacionSemanal(restaurantId: string) {
   const cargarProgramacion = useCallback(async (weekStart: Date) => {
     setLoading(true);
     try {
-      const weekEnd = DateTime.fromJSDate(weekStart).plus({ days: 7 }).toJSDate();
+      console.log('Cargando programación semanal (simulación):', { restaurantId, weekStart });
       
-      const q = query(
-        collection(db, 'programacion'),
-        where('restaurantId', '==', restaurantId),
-        where('startTime', '>=', weekStart),
-        where('startTime', '<', weekEnd)
-      );
+      // Simular delay de carga
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Datos de ejemplo para la programación semanal
+      const slotsEjemplo: ProgramacionSlot[] = [
+        {
+          id: 'slot_1',
+          menuId: 'menu_almuerzo_1',
+          startTime: new Date(weekStart.getTime() + 12 * 60 * 60 * 1000), // 12:00 PM
+          endTime: new Date(weekStart.getTime() + 15 * 60 * 60 * 1000), // 3:00 PM
+          repeat: 'daily',
+          status: 'active'
+        },
+        {
+          id: 'slot_2',
+          menuId: 'menu_cena_1',
+          startTime: new Date(weekStart.getTime() + 18 * 60 * 60 * 1000), // 6:00 PM
+          endTime: new Date(weekStart.getTime() + 21 * 60 * 60 * 1000), // 9:00 PM
+          repeat: 'daily',
+          status: 'active'
+        }
+      ];
 
-      const snapshot = await getDocs(q);
-      const slots = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as ProgramacionSlot[];
-
-      setProgramacion(slots);
+      setProgramacion(slotsEjemplo);
+      console.log('Programación cargada (simulación):', slotsEjemplo);
     } catch (error) {
       setError('Error al cargar la programación');
       console.error(error);
@@ -53,6 +62,8 @@ export function useProgramacionSemanal(restaurantId: string) {
   const agregarSlot = useCallback(async (slot: Omit<ProgramacionSlot, 'id'>) => {
     setLoading(true);
     try {
+      console.log('Agregando slot de programación (simulación):', slot);
+      
       // Validar el slot
       const existingSlots = programacion.map(p => ({
         startTime: DateTime.fromJSDate(p.startTime),
@@ -71,13 +82,15 @@ export function useProgramacionSemanal(restaurantId: string) {
         throw new Error(validation.reason);
       }
 
-      const docRef = await addDoc(collection(db, 'programacion'), {
-        ...slot,
-        restaurantId,
-        createdAt: new Date()
-      });
+      // Simular delay de creación
+      await new Promise(resolve => setTimeout(resolve, 300));
 
-      setProgramacion(prev => [...prev, { ...slot, id: docRef.id }]);
+      // Generar ID único
+      const newId = `slot_${Date.now()}`;
+      const newSlotWithId = { ...slot, id: newId };
+
+      setProgramacion(prev => [...prev, newSlotWithId]);
+      console.log('Slot agregado exitosamente (simulación):', newSlotWithId);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Error al agregar slot');
       throw error;
@@ -92,6 +105,8 @@ export function useProgramacionSemanal(restaurantId: string) {
   ) => {
     setLoading(true);
     try {
+      console.log('Actualizando slot de programación (simulación):', { id, updates });
+      
       if (updates.startTime || updates.endTime) {
         const currentSlot = programacion.find(p => p.id === id);
         if (!currentSlot) throw new Error('Slot no encontrado');
@@ -116,12 +131,16 @@ export function useProgramacionSemanal(restaurantId: string) {
         }
       }
 
-      await updateDoc(doc(db, 'programacion', id), updates);
+      // Simular delay de actualización
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       setProgramacion(prev => 
         prev.map(slot => 
           slot.id === id ? { ...slot, ...updates } : slot
         )
       );
+      
+      console.log('Slot actualizado exitosamente (simulación)');
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Error al actualizar slot');
       throw error;
@@ -130,12 +149,36 @@ export function useProgramacionSemanal(restaurantId: string) {
     }
   }, [restaurantId, programacion, validator]);
 
+  const eliminarSlot = useCallback(async (id: string) => {
+    setLoading(true);
+    try {
+      console.log('Eliminando slot de programación (simulación):', id);
+      
+      // Simular delay de eliminación
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      setProgramacion(prev => prev.filter(slot => slot.id !== id));
+      console.log('Slot eliminado exitosamente (simulación)');
+    } catch (error) {
+      setError('Error al eliminar slot');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const resetError = useCallback(() => {
+    setError(null);
+  }, []);
+
   return {
     loading,
     error,
     programacion,
     cargarProgramacion,
     agregarSlot,
-    actualizarSlot
+    actualizarSlot,
+    eliminarSlot,
+    resetError
   };
 }

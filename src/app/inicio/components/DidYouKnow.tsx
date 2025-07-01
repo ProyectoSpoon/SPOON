@@ -6,7 +6,9 @@ export const DidYouKnow = () => {
   return (
     <section className="py-32 bg-white relative overflow-hidden">
       {/* Patrones geométricos sutiles */}
-      <GeometricPattern pattern="dots" opacity={0.02} className="absolute inset-0" />
+      <div className="absolute inset-0">
+        <GeometricPattern pattern="dots" opacity={0.02} />
+      </div>
       
       {/* Círculos decorativos con gradientes suaves */}
       <motion.div

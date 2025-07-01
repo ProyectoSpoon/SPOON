@@ -64,9 +64,9 @@ export default function RolesPage() {
                 <h4 className="text-sm font-medium">Permisos asignados</h4>
                 <div className="flex flex-wrap gap-2">
                   {rol.permisos.map((permiso) => (
-                    <Badge key={permiso} variant="secondary">
+                    <span key={permiso} className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded">
                       {permiso}
-                    </Badge>
+                    </span>
                   ))}
                 </div>
               </div>
@@ -90,7 +90,11 @@ export default function RolesPage() {
                 </DataTable.Row>
               </DataTable.Header>
               <DataTable.Body>
-                {/* Contenido de la tabla */}
+                <DataTable.Row>
+                  <DataTable.Cell colSpan={4} align="center" className="h-32 text-muted-foreground">
+                    No hay datos para mostrar
+                  </DataTable.Cell>
+                </DataTable.Row>
               </DataTable.Body>
             </DataTable.Root>
           </div>

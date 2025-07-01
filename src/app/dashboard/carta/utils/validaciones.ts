@@ -22,7 +22,7 @@ export const validarCategoria = (categoria: Partial<Categoria>) => {
   return errores;
 };
 
-export const validarProducto = (producto: Partial<Producto>) => {
+export const validarProducto = (producto: Partial<Producto & { alergenos?: string[] }>) => {
   const errores: Record<string, string> = {};
 
   // Validar nombre

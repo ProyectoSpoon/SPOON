@@ -22,45 +22,47 @@ const convertToVersionedProduct = (producto: Producto): VersionedProduct => {
   const stockStatus = producto.stock?.status as 'in_stock' | 'low_stock' | 'out_of_stock' | undefined || 'out_of_stock';
   const stockData = producto.stock || { currentQuantity: 0, minQuantity: 0, maxQuantity: 0, status: 'out_of_stock', lastUpdated: new Date() };
 
-  return {
-    id: producto.id,
-    nombre: producto.nombre,
-    descripcion: producto.descripcion,
-    categoriaId: producto.categoriaId,
-    currentVersion: producto.currentVersion,
-    priceHistory: Array.isArray(producto.priceHistory) ? producto.priceHistory : [], // Asegurar array
-    versions: Array.isArray(producto.versions) ? producto.versions : [], // Asegurar array
-    stock: {
-      ...stockData,
-      status: stockStatus,
-    },
-    status: producto.status as 'active' | 'draft' | 'archived' | 'discontinued' || 'archived',
-    metadata: producto.metadata || { createdAt: new Date(), createdBy: 'unknown', lastModified: new Date(), lastModifiedBy: 'unknown' }, // Asegurar metadata
-    imagen: producto.imagen,
-    esFavorito: producto.esFavorito,
-    esEspecial: producto.esEspecial
-  };
+  return {
+    id: producto.id,
+    nombre: producto.nombre,
+    descripcion: producto.descripcion,
+    currentPrice: producto.precio || 0, // Agregar currentPrice
+    categoriaId: producto.categoriaId,
+    currentVersion: producto.currentVersion,
+    priceHistory: Array.isArray(producto.priceHistory) ? producto.priceHistory : [], // Asegurar array
+    versions: Array.isArray(producto.versions) ? producto.versions : [], // Asegurar array
+    stock: {
+      ...stockData,
+      status: stockStatus,
+    },
+    status: producto.status as 'active' | 'draft' | 'archived' | 'discontinued' || 'archived',
+    metadata: producto.metadata || { createdAt: new Date(), createdBy: 'unknown', lastModified: new Date(), lastModifiedBy: 'unknown' }, // Asegurar metadata
+    imagen: producto.imagen,
+    esFavorito: producto.esFavorito,
+    esEspecial: producto.esEspecial
+  };
 };
 
 /**
  * Función para convertir un VersionedProduct a Producto
  */
 const convertToProducto = (versionedProduct: VersionedProduct): Producto => {
-  return {
-    id: versionedProduct.id,
-    nombre: versionedProduct.nombre,
-    descripcion: versionedProduct.descripcion,
-    categoriaId: versionedProduct.categoriaId,
-    currentVersion: versionedProduct.currentVersion,
-    priceHistory: versionedProduct.priceHistory,
-    versions: versionedProduct.versions,
-    stock: versionedProduct.stock,
-    status: versionedProduct.status,
-    metadata: versionedProduct.metadata,
-    imagen: versionedProduct.imagen,
-    esFavorito: versionedProduct.esFavorito,
-    esEspecial: versionedProduct.esEspecial
-  };
+  return {
+    id: versionedProduct.id,
+    nombre: versionedProduct.nombre,
+    descripcion: versionedProduct.descripcion,
+    precio: versionedProduct.currentPrice, // Agregar precio
+    categoriaId: versionedProduct.categoriaId,
+    currentVersion: versionedProduct.currentVersion,
+    priceHistory: versionedProduct.priceHistory,
+    versions: versionedProduct.versions,
+    stock: versionedProduct.stock,
+    status: versionedProduct.status,
+    metadata: versionedProduct.metadata,
+    imagen: versionedProduct.imagen,
+    esFavorito: versionedProduct.esFavorito,
+    esEspecial: versionedProduct.esEspecial
+  };
 };
 
 export default function MenuDiaPage() {

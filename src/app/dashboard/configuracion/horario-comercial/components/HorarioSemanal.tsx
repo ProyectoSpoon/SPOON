@@ -202,7 +202,7 @@ return (
                         actualizarRango(dia, indiceRango, 'horaApertura', nuevoValor);
                       }}
                       disabled={!inputsHabilitados[dia]?.[indiceRango]?.apertura}
-                      error={!!errores[dia]?.[indiceRango]}
+                        error={errores[dia]?.[indiceRango] ? 'Error en horario' : undefined}
                       placeholder="--:-- AM"
                     />
                     <TimeInput
@@ -212,7 +212,7 @@ return (
                         actualizarRango(dia, indiceRango, 'horaCierre', nuevoValor);
                       }}
                       disabled={!rango.horaApertura}
-                      error={!!errores[dia]?.[indiceRango]}
+                      error={errores[dia]?.[indiceRango] ? 'Error en horario' : undefined}
                       placeholder="--:-- AM"
                     />
                   </div>

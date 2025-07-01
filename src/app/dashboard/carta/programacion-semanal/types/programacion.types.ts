@@ -37,6 +37,22 @@ export interface ProgramacionDia {
   };
 }
 
+export interface CombinacionProgramada {
+  id: string;
+  nombre: string;
+  descripcion?: string;
+  combinacion: MenuCombinacion;
+  fecha: Date;
+  activa: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  prediccionVentas: {
+    minimo: number;
+    maximo: number;
+  };
+  tendencia: 'up' | 'down' | 'stable';
+}
+
 export interface ProgramacionSemanal {
   dias: Record<string, ProgramacionDia>;
   activa: boolean;

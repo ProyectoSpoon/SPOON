@@ -1,6 +1,6 @@
 // src/app/dashboard/carta/hooks/useCategorias.ts
 import { useState, useCallback } from 'react';
-import { jsonDataService } from '@/services/json-data.service';
+import { categoriasAPI } from '@/services/api.service';
 
 // Definición de la interfaz Categoria
 interface Categoria {
@@ -34,31 +34,29 @@ export function useCategorias({ restauranteId }: UseCategoriasProps) {
     setError(null);
     try {
       console.log('RestauranteId usado:', restauranteId);
+      console.log('Cargando categorías desde PostgreSQL API...');
       
-      let categoriasData: Categoria[] = [];
+      // Cargar categorías principales
+      const categoriasResponse = await categoriasAPI.getCategorias({
+        tipo: 'categoria',
+        restauranteId
+      });
+      console.log('Categorías cargadas desde API:', categoriasResponse.data);
       
-      // Usar el servicio JSON para cargar categorías
-      console.log('Cargando categorías desde archivos JSON...');
-      try {
-        // Cargar categorías principales
-        const categoriasJson = await jsonDataService.getCategorias();
-        console.log('Categorías cargadas desde JSON:', categoriasJson);
-        
-        // Cargar subcategorías
-        const subcategoriasJson = await jsonDataService.getSubcategorias();
-        console.log('Subcategorías cargadas desde JSON:', subcategoriasJson);
-        
-        // Combinar categorías y subcategorías
-        categoriasData = [
-          ...categoriasJson,
-          ...subcategoriasJson
-        ];
-        
-        console.log('Total de categorías y subcategorías cargadas:', categoriasData.length);
-      } catch (jsonError) {
-        console.error('Error al cargar categorías desde JSON:', jsonError);
-        throw jsonError;
-      }
+      // Cargar subcategorías
+      const subcategoriasResponse = await categoriasAPI.getCategorias({
+        tipo: 'subcategoria',
+        restauranteId
+      });
+      console.log('Subcategorías cargadas desde API:', subcategoriasResponse.data);
+      
+      // Combinar categorías y subcategorías
+      const categoriasData = [
+        ...categoriasResponse.data,
+        ...subcategoriasResponse.data
+      ];
+      
+      console.log('Total de categorías y subcategorías cargadas:', categoriasData.length);
       
       // Mantener el ordenamiento
       const categoriasOrdenadas = categoriasData.sort((a, b) => {

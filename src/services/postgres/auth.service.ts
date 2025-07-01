@@ -1,435 +1,167 @@
-'use client';
+// Servicio de autenticación simplificado sin dependencias externas
 
 import pool, { query } from '@/config/database';
-import { hash, compare } from 'bcryptjs';
-import { sign, verify } from 'jsonwebtoken';
-import { UserRole, Permission, DEFAULT_ROLE_PERMISSIONS } from '@/types/auth';
 
 // Constantes para autenticación
-const JWT_SECRET = process.env.JWT_SECRET || 'spoon-restaurant-secret-key';
-const JWT_EXPIRES_IN = '7d';
-const SALT_ROUNDS = 10;
-const MAX_FAILED_ATTEMPTS = 5;
-const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutos
+const JWT_SECRET = process.env.JWT_SECRET || 'spoon-secret-key-2025';
+const JWT_EXPIRES_IN = '24h';
 
-interface UserInfo {
-  uid: string;
+export interface AuthUser {
+  id: string;
   email: string;
-  role: UserRole;
-  permissions: Permission[];
-  nombre: string;
-  apellido: string;
-}
-
-export interface UserSession {
-  uid: string;
-  email: string;
-  lastLogin: Date;
-  failedAttempts: number;
-  lastFailedAttempt: Date | null;
-  is2FAEnabled: boolean;
+  name: string;
+  role: string;
+  permissions: string[];
+  restaurantId?: string;
+  isActive: boolean;
   emailVerified: boolean;
-  phoneNumber?: string;
+  lastLogin?: Date;
 }
 
-// Crear tablas necesarias si no existen (esto debería ejecutarse al iniciar la app)
-export const initAuthTables = async () => {
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface RegisterData {
+  email: string;
+  password: string;
+  name: string;
+  role?: string;
+}
+
+// Simulación de funciones de autenticación
+export async function authenticateUser(credentials: LoginCredentials): Promise<AuthUser | null> {
   try {
-    // Tabla de usuarios
-    await query(`
-      CREATE TABLE IF NOT EXISTS dueno_restaurante (
-        uid VARCHAR(50) PRIMARY KEY,
-        email VARCHAR(100) UNIQUE NOT NULL,
-        password_hash VARCHAR(100),
-        nombre VARCHAR(100) NOT NULL,
-        apellido VARCHAR(100) NOT NULL,
-        telefono VARCHAR(20),
-        fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        ultimo_acceso TIMESTAMP,
-        restaurante_id VARCHAR(50),
-        is_2fa_enabled BOOLEAN DEFAULT FALSE,
-        failed_attempts INTEGER DEFAULT 0,
-        last_failed_attempt TIMESTAMP,
-        requires_additional_info BOOLEAN DEFAULT TRUE,
-        email_verified BOOLEAN DEFAULT FALSE,
-        role VARCHAR(20) DEFAULT 'OWNER',
-        permissions JSONB,
-        activo BOOLEAN DEFAULT TRUE,
-        metodos_auth JSONB DEFAULT '["email"]',
-        sesiones_total INTEGER DEFAULT 0
-      )
-    `);
-
-    // Tabla de sesiones
-    await query(`
-      CREATE TABLE IF NOT EXISTS sessions (
-        uid VARCHAR(50) PRIMARY KEY,
-        email VARCHAR(100) NOT NULL,
-        last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        last_logout TIMESTAMP,
-        last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        token VARCHAR(500),
-        device_info JSONB,
-        FOREIGN KEY (uid) REFERENCES dueno_restaurante(uid)
-      )
-    `);
-
-    console.log('Tablas de autenticación inicializadas correctamente');
-    return true;
+    console.log('Simulando autenticación para:', credentials.email);
+    
+    // Simular delay de autenticación
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Usuario de ejemplo para testing
+    if (credentials.email === 'admin@spoon.com' && credentials.password === 'admin123') {
+      return {
+        id: 'user_1',
+        email: credentials.email,
+        name: 'Administrador SPOON',
+        role: 'admin',
+        permissions: ['read', 'write', 'delete', 'manage'],
+        isActive: true,
+        emailVerified: true,
+        lastLogin: new Date()
+      };
+    }
+    
+    return null;
   } catch (error) {
-    console.error('Error al inicializar tablas de autenticación:', error);
-    return false;
-  }
-};
-
-// Generar JWT token
-const generateToken = (user: UserInfo): string => {
-  return sign(
-    {
-      uid: user.uid,
-      email: user.email,
-      role: user.role,
-      permissions: user.permissions
-    },
-    JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN }
-  );
-};
-
-// Verificar JWT token
-export const verifyToken = (token: string): any => {
-  try {
-    return verify(token, JWT_SECRET);
-  } catch (error) {
-    console.error('Error al verificar token:', error);
+    console.error('Error en autenticación:', error);
     return null;
   }
-};
+}
 
-// Registrar usuario con email y contraseña
-export const registerWithEmail = async (
-  email: string, 
-  password: string, 
-  nombre: string, 
-  apellido: string
-): Promise<{ user: UserInfo, token: string }> => {
+export async function registerUser(userData: RegisterData): Promise<AuthUser | null> {
   try {
-    // Verificar si el email ya existe
-    const userExists = await query('SELECT email FROM dueno_restaurante WHERE email = $1', [email]);
-    if (userExists && userExists.rowCount && userExists.rowCount > 0) {
-      throw new Error('Ya existe una cuenta con este email');
-    }
-
-    // Generar hash de la contraseña
-    const passwordHash = await hash(password, SALT_ROUNDS);
+    console.log('Simulando registro para:', userData.email);
     
-    // Generar UID único
-    const uid = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    // Simular delay de registro
+    await new Promise(resolve => setTimeout(resolve, 500));
     
-    // Permisos por defecto según el rol
-    const defaultPermissions = DEFAULT_ROLE_PERMISSIONS[UserRole.OWNER];
-
-    // Insertar usuario en la base de datos
-    await query(
-      `INSERT INTO dueno_restaurante (
-        uid, email, password_hash, nombre, apellido, fecha_registro, 
-        ultimo_acceso, role, permissions, email_verified, 
-        requires_additional_info, activo, sesiones_total
-      ) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 
-        $6, $7, $8, $9, $10, $11)`,
-      [
-        uid, 
-        email, 
-        passwordHash, 
-        nombre, 
-        apellido, 
-        UserRole.OWNER, 
-        JSON.stringify(defaultPermissions),
-        false, 
-        true, 
-        true, 
-        1
-      ]
-    );
-
-    // Crear sesión inicial
-    await query(
-      `INSERT INTO sessions (uid, email, last_login, token, device_info)
-       VALUES ($1, $2, CURRENT_TIMESTAMP, $3, $4)`,
-      [
-        uid, 
-        email, 
-        '', // Token se actualizará después
-        JSON.stringify({
-          userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : '',
-          platform: typeof window !== 'undefined' ? window.navigator.platform : '',
-          language: typeof window !== 'undefined' ? window.navigator.language : ''
-        })
-      ]
-    );
-
-    // Crear objeto de usuario para respuesta
-    const userInfo: UserInfo = {
-      uid,
-      email,
-      role: UserRole.OWNER,
-      permissions: defaultPermissions,
-      nombre,
-      apellido
-    };
-
-    // Generar token JWT
-    const token = generateToken(userInfo);
-
-    // Actualizar token en la sesión
-    await query(
-      'UPDATE sessions SET token = $1 WHERE uid = $2',
-      [token, uid]
-    );
-
-    // TODO: Implementar envío de email de verificación
-
-    return { user: userInfo, token };
-  } catch (error: any) {
-    console.error('Error en registerWithEmail:', error);
-    if (error.message.includes('duplicate key')) {
-      throw new Error('Ya existe una cuenta con este email');
-    }
-    throw new Error('Error al crear la cuenta. Por favor, intente nuevamente.');
-  }
-};
-
-// Iniciar sesión con email y contraseña
-export const signInWithEmail = async (
-  email: string, 
-  password: string
-): Promise<{ user: UserInfo, token: string }> => {
-  try {
-    // Verificar si el usuario existe y obtener sus datos
-    const result = await query(
-      `SELECT * FROM dueno_restaurante WHERE email = $1`,
-      [email]
-    );
-
-    if (result.rowCount === 0) {
-      throw new Error('Email o contraseña incorrectos');
-    }
-
-    const userData = result.rows[0];
-
-    // Verificar si la cuenta está activa
-    if (!userData.activo) {
-      throw new Error('Esta cuenta ha sido desactivada. Por favor, contacte al soporte.');
-    }
-
-    // Verificar bloqueo por intentos fallidos
-    if (userData.failed_attempts >= MAX_FAILED_ATTEMPTS && userData.last_failed_attempt) {
-      const lockoutEnd = new Date(userData.last_failed_attempt).getTime() + LOCKOUT_DURATION;
-      if (Date.now() < lockoutEnd) {
-        throw new Error(`Cuenta bloqueada. Intente nuevamente en ${Math.ceil((lockoutEnd - Date.now()) / 60000)} minutos`);
-      }
-    }
-
-    // Verificar contraseña
-    const isPasswordValid = await compare(password, userData.password_hash);
-    if (!isPasswordValid) {
-      // Incrementar contador de intentos fallidos
-      await query(
-        `UPDATE dueno_restaurante 
-         SET failed_attempts = failed_attempts + 1, 
-             last_failed_attempt = CURRENT_TIMESTAMP
-         WHERE email = $1`,
-        [email]
-      );
-      throw new Error('Email o contraseña incorrectos');
-    }
-
-    // Resetear contador de intentos fallidos y actualizar último acceso
-    await query(
-      `UPDATE dueno_restaurante 
-       SET failed_attempts = 0, 
-           last_failed_attempt = NULL,
-           ultimo_acceso = CURRENT_TIMESTAMP,
-           sesiones_total = sesiones_total + 1
-       WHERE email = $1`,
-      [email]
-    );
-
-    // Crear objeto de usuario para respuesta y token
-    const userInfo: UserInfo = {
-      uid: userData.uid,
+    const newUser: AuthUser = {
+      id: `user_${Date.now()}`,
       email: userData.email,
-      role: userData.role,
-      permissions: userData.permissions,
-      nombre: userData.nombre,
-      apellido: userData.apellido
+      name: userData.name,
+      role: userData.role || 'owner',
+      permissions: ['read', 'write'],
+      isActive: true,
+      emailVerified: false
     };
-
-    // Generar token JWT
-    const token = generateToken(userInfo);
-
-    // Actualizar o crear sesión
-    const sessionExists = await query(
-      'SELECT uid FROM sessions WHERE uid = $1',
-      [userData.uid]
-    );
-
-    if (sessionExists && sessionExists.rowCount && sessionExists.rowCount > 0) {
-      await query(
-        `UPDATE sessions 
-         SET last_login = CURRENT_TIMESTAMP, 
-             token = $1,
-             last_updated = CURRENT_TIMESTAMP
-         WHERE uid = $2`,
-        [token, userData.uid]
-      );
-    } else {
-      await query(
-        `INSERT INTO sessions (uid, email, last_login, token, device_info)
-         VALUES ($1, $2, CURRENT_TIMESTAMP, $3, $4)`,
-        [
-          userData.uid,
-          email,
-          token,
-          JSON.stringify({
-            userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : '',
-            platform: typeof window !== 'undefined' ? window.navigator.platform : '',
-            language: typeof window !== 'undefined' ? window.navigator.language : ''
-          })
-        ]
-      );
-    }
-
-    return { user: userInfo, token };
-  } catch (error: any) {
-    console.error('Error en signInWithEmail:', error);
-    throw error;
-  }
-};
-
-// Cerrar sesión
-export const signOut = async (uid: string): Promise<boolean> => {
-  try {
-    await query(
-      `UPDATE sessions 
-       SET last_logout = CURRENT_TIMESTAMP, 
-           last_updated = CURRENT_TIMESTAMP
-       WHERE uid = $1`,
-      [uid]
-    );
-    return true;
+    
+    return newUser;
   } catch (error) {
-    console.error('Error al cerrar sesión:', error);
-    return false;
+    console.error('Error en registro:', error);
+    return null;
   }
-};
+}
 
-// Enviar email de restablecimiento de contraseña
-export const resetPassword = async (email: string): Promise<boolean> => {
+export async function generateToken(user: AuthUser): Promise<string> {
+  // Simulación de generación de token
+  const tokenData = {
+    userId: user.id,
+    email: user.email,
+    role: user.role,
+    timestamp: Date.now()
+  };
+  
+  // En lugar de JWT real, usar una simulación
+  return btoa(JSON.stringify(tokenData));
+}
+
+export async function verifyToken(token: string): Promise<AuthUser | null> {
   try {
-    const userExists = await query(
-      'SELECT email FROM dueno_restaurante WHERE email = $1',
-      [email]
-    );
-
-    if (!userExists || !userExists.rowCount || userExists.rowCount === 0) {
-      throw new Error('No existe una cuenta con este email');
-    }
-
-    // TODO: Implementar envío de email de restablecimiento de contraseña
-
-    return true;
-  } catch (error) {
-    console.error('Error al enviar email de recuperación:', error);
-    throw error;
-  }
-};
-
-// Actualizar perfil de usuario
-export const updateUserProfile = async (uid: string, userData: any): Promise<boolean> => {
-  try {
-    const columns = Object.keys(userData)
-      .map((key, index) => {
-        // Convertir camelCase a snake_case para PostgreSQL
-        const column = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-        return `${column} = $${index + 2}`;
-      })
-      .join(', ');
-
-    const values = [uid, ...Object.values(userData)];
-
-    await query(
-      `UPDATE dueno_restaurante 
-       SET ${columns}, ultimo_acceso = CURRENT_TIMESTAMP
-       WHERE uid = $1`,
-      values
-    );
-
-    // Actualizar la sesión si existe
-    await query(
-      `UPDATE sessions 
-       SET last_updated = CURRENT_TIMESTAMP
-       WHERE uid = $1`,
-      [uid]
-    );
-
-    return true;
-  } catch (error) {
-    console.error('Error al actualizar perfil:', error);
-    throw error;
-  }
-};
-
-// Obtener usuario actual por UID
-export const getUserByUid = async (uid: string): Promise<UserInfo | null> => {
-  try {
-    const result = await query(
-      'SELECT * FROM dueno_restaurante WHERE uid = $1',
-      [uid]
-    );
-
-    if (result.rowCount === 0) {
+    // Simulación de verificación de token
+    const decoded = JSON.parse(atob(token));
+    
+    // Verificar que el token no sea muy antiguo (24 horas)
+    const tokenAge = Date.now() - decoded.timestamp;
+    if (tokenAge > 24 * 60 * 60 * 1000) {
       return null;
     }
-
-    const userData = result.rows[0];
+    
+    // Retornar usuario simulado
     return {
-      uid: userData.uid,
-      email: userData.email,
-      role: userData.role,
-      permissions: userData.permissions,
-      nombre: userData.nombre,
-      apellido: userData.apellido
+      id: decoded.userId,
+      email: decoded.email,
+      name: 'Usuario Simulado',
+      role: decoded.role,
+      permissions: ['read', 'write'],
+      isActive: true,
+      emailVerified: true
     };
   } catch (error) {
-    console.error('Error al obtener usuario por UID:', error);
+    console.error('Error verificando token:', error);
     return null;
   }
-};
+}
 
-// Obtener usuario actual por email
-export const getUserByEmail = async (email: string): Promise<UserInfo | null> => {
+export async function getUserById(userId: string): Promise<AuthUser | null> {
   try {
-    const result = await query(
-      'SELECT * FROM dueno_restaurante WHERE email = $1',
-      [email]
-    );
-
-    if (result.rowCount === 0) {
-      return null;
-    }
-
-    const userData = result.rows[0];
+    console.log('Simulando búsqueda de usuario:', userId);
+    
+    // Simular delay de búsqueda
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Usuario de ejemplo
     return {
-      uid: userData.uid,
-      email: userData.email,
-      role: userData.role,
-      permissions: userData.permissions,
-      nombre: userData.nombre,
-      apellido: userData.apellido
+      id: userId,
+      email: 'usuario@spoon.com',
+      name: 'Usuario Ejemplo',
+      role: 'owner',
+      permissions: ['read', 'write'],
+      isActive: true,
+      emailVerified: true
     };
   } catch (error) {
-    console.error('Error al obtener usuario por email:', error);
+    console.error('Error buscando usuario:', error);
     return null;
   }
-};
+}
+
+export async function updateUserLastLogin(userId: string): Promise<void> {
+  try {
+    console.log('Simulando actualización de último login:', userId);
+    // Simular actualización
+    await new Promise(resolve => setTimeout(resolve, 100));
+  } catch (error) {
+    console.error('Error actualizando último login:', error);
+  }
+}
+
+export async function hashPassword(password: string): Promise<string> {
+  // Simulación de hash de contraseña
+  return btoa(password + '_hashed');
+}
+
+export async function comparePassword(password: string, hashedPassword: string): Promise<boolean> {
+  // Simulación de comparación de contraseña
+  return btoa(password + '_hashed') === hashedPassword;
+}

@@ -3,10 +3,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { Loader2, ChevronLeft, ChevronRight, Plus, Copy, Trash2, Save } from 'lucide-react';
-import { HorariosSemanales } from '../../horario-comercial/types/horarios.types';
+
+interface HorarioDia {
+  abierto: boolean;
+  horaApertura: string;
+  horaCierre: string;
+}
 
 interface HorariosData {
-  horarioRegular: HorariosSemanales;
+  horarioRegular: {
+    lunes: HorarioDia;
+    martes: HorarioDia;
+    miercoles: HorarioDia;
+    jueves: HorarioDia;
+    viernes: HorarioDia;
+    sabado: HorarioDia;
+    domingo: HorarioDia;
+  };
   diasFestivos?: { fecha: string; nombre: string; tipo: string }[];
 }
 
@@ -21,28 +34,21 @@ export default function HorariosComerciales() {
     const cargarHorarios = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/configuracion/horarios');
+        console.log('Cargando horarios (simulación)...');
         
-        if (!response.ok) {
-          throw new Error('Error al cargar los horarios');
-        }
+        // Simular delay de carga
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        const data = await response.json();
-        setHorarios(data);
-      } catch (error) {
-        console.error('Error al cargar horarios:', error);
-        toast.error('Error al cargar los horarios');
-        
-        // Crear horarios por defecto si no se pueden cargar
+        // Crear horarios por defecto
         setHorarios({
           horarioRegular: {
-            lunes: [{ horaApertura: "09:00", horaCierre: "18:00", estaActivo: true }],
-            martes: [{ horaApertura: "09:00", horaCierre: "18:00", estaActivo: true }],
-            miercoles: [{ horaApertura: "09:00", horaCierre: "18:00", estaActivo: true }],
-            jueves: [{ horaApertura: "09:00", horaCierre: "18:00", estaActivo: true }],
-            viernes: [{ horaApertura: "09:00", horaCierre: "18:00", estaActivo: true }],
-            sabado: [{ horaApertura: "09:00", horaCierre: "18:00", estaActivo: true }],
-            domingo: [{ horaApertura: "09:00", horaCierre: "18:00", estaActivo: true }]
+            lunes: { abierto: true, horaApertura: "09:00", horaCierre: "18:00" },
+            martes: { abierto: true, horaApertura: "09:00", horaCierre: "18:00" },
+            miercoles: { abierto: true, horaApertura: "09:00", horaCierre: "18:00" },
+            jueves: { abierto: true, horaApertura: "09:00", horaCierre: "18:00" },
+            viernes: { abierto: true, horaApertura: "09:00", horaCierre: "18:00" },
+            sabado: { abierto: true, horaApertura: "10:00", horaCierre: "16:00" },
+            domingo: { abierto: false, horaApertura: "10:00", horaCierre: "16:00" }
           },
           diasFestivos: [
             { fecha: "2025-01-01", nombre: "Año Nuevo", tipo: "Año Nuevo" },
@@ -52,6 +58,9 @@ export default function HorariosComerciales() {
             { fecha: "2025-12-25", nombre: "Navidad", tipo: "Navidad" }
           ]
         });
+      } catch (error) {
+        console.error('Error al cargar horarios:', error);
+        toast.error('Error al cargar los horarios');
       } finally {
         setIsLoading(false);
       }
@@ -65,17 +74,10 @@ export default function HorariosComerciales() {
     if (!horarios) return;
     
     try {
-      const response = await fetch('/api/configuracion/horarios', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(horarios),
-      });
+      console.log('Guardando horarios (simulación):', horarios);
       
-      if (!response.ok) {
-        throw new Error('Error al guardar los horarios');
-      }
+      // Simular delay de guardado
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       toast.success('Horarios guardados correctamente');
     } catch (error) {
@@ -84,52 +86,12 @@ export default function HorariosComerciales() {
     }
   }, [horarios]);
 
-  // Función para agregar un turno a un día específico
-  const agregarTurno = (dia: string) => {
+  // Función para actualizar un horario específico
+  const actualizarHorario = (dia: keyof HorariosData['horarioRegular'], campo: keyof HorarioDia, valor: string | boolean) => {
     if (!horarios) return;
     
     const nuevosHorarios = { ...horarios };
-    nuevosHorarios.horarioRegular[dia].push({
-      horaApertura: "09:00",
-      horaCierre: "18:00",
-      estaActivo: true
-    });
-    
-    setHorarios(nuevosHorarios);
-  };
-
-  // Función para eliminar un turno
-  const eliminarTurno = (dia: string, index: number) => {
-    if (!horarios) return;
-    
-    const nuevosHorarios = { ...horarios };
-    nuevosHorarios.horarioRegular[dia].splice(index, 1);
-    
-    // Si no quedan turnos, agregar uno por defecto
-    if (nuevosHorarios.horarioRegular[dia].length === 0) {
-      nuevosHorarios.horarioRegular[dia].push({
-        horaApertura: "09:00",
-        horaCierre: "18:00",
-        estaActivo: true
-      });
-    }
-    
-    setHorarios(nuevosHorarios);
-  };
-
-  // Función para duplicar un turno
-  const duplicarTurno = (dia: string, index: number) => {
-    if (!horarios) return;
-    
-    const nuevosHorarios = { ...horarios };
-    const turnoOriginal = nuevosHorarios.horarioRegular[dia][index];
-    
-    nuevosHorarios.horarioRegular[dia].splice(index + 1, 0, {
-      horaApertura: turnoOriginal.horaApertura,
-      horaCierre: turnoOriginal.horaCierre,
-      estaActivo: turnoOriginal.estaActivo
-    });
-    
+    (nuevosHorarios.horarioRegular[dia] as any)[campo] = valor;
     setHorarios(nuevosHorarios);
   };
 
@@ -194,15 +156,6 @@ export default function HorariosComerciales() {
     return horarios.diasFestivos.some(festivo => festivo.fecha === fecha);
   };
 
-  // Obtener el tipo de festivo para un día
-  const obtenerTipoFestivo = (dia: number) => {
-    if (!horarios || !horarios.diasFestivos) return null;
-    
-    const fecha = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
-    const festivo = horarios.diasFestivos.find(f => f.fecha === fecha);
-    return festivo ? festivo.tipo : null;
-  };
-
   // Cambiar al mes anterior
   const mesAnterior = () => {
     if (currentMonth === 0) {
@@ -244,7 +197,7 @@ export default function HorariosComerciales() {
                   Usando horarios predeterminados
                 </span>
                 <span className="text-xs text-neutral-500 ml-4">
-                  • No se encontraron datos guardados
+                  • Datos simulados para desarrollo
                 </span>
               </div>
             </div>
@@ -265,92 +218,51 @@ export default function HorariosComerciales() {
                   <th className="py-2 text-left w-1/4">Día de la semana</th>
                   <th className="py-2 text-left w-1/4">Horario de apertura</th>
                   <th className="py-2 text-left w-1/4">Horario de cierre</th>
-                  <th className="py-2 text-left w-1/4">Acciones</th>
+                  <th className="py-2 text-left w-1/4">Estado</th>
                 </tr>
               </thead>
               <tbody>
-                {horarios && Object.entries(horarios.horarioRegular).map(([dia, rangos]) => (
-                  <React.Fragment key={dia}>
-                    {rangos.map((rango, index) => (
-                      <tr key={`${dia}-${index}`} className="border-b">
-                        <td className="py-3">
-                          <div className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={rango.estaActivo}
-                              onChange={(e) => {
-                                if (!horarios) return;
-                                
-                                const nuevosHorarios = { ...horarios };
-                                nuevosHorarios.horarioRegular[dia][index].estaActivo = e.target.checked;
-                                setHorarios(nuevosHorarios);
-                              }}
-                              className="mr-3"
-                            />
-                            <span className="capitalize">{dia}</span>
-                          </div>
-                        </td>
-                        <td className="py-3">
-                          <input
-                            type="time"
-                            value={rango.horaApertura || ''}
-                            onChange={(e) => {
-                              if (!horarios) return;
-                              
-                              const nuevosHorarios = { ...horarios };
-                              nuevosHorarios.horarioRegular[dia][index].horaApertura = e.target.value;
-                              setHorarios(nuevosHorarios);
-                            }}
-                            className="border rounded px-2 py-1 w-32"
-                          />
-                          <span className="text-xs text-gray-500 ml-1">a. m.</span>
-                        </td>
-                        <td className="py-3">
-                          <input
-                            type="time"
-                            value={rango.horaCierre || ''}
-                            onChange={(e) => {
-                              if (!horarios) return;
-                              
-                              const nuevosHorarios = { ...horarios };
-                              nuevosHorarios.horarioRegular[dia][index].horaCierre = e.target.value;
-                              setHorarios(nuevosHorarios);
-                            }}
-                            className="border rounded px-2 py-1 w-32"
-                          />
-                          <span className="text-xs text-gray-500 ml-1">p. m.</span>
-                        </td>
-                        <td className="py-3">
-                          <div className="flex items-center space-x-2">
-                            <button
-                              onClick={() => duplicarTurno(dia, index)}
-                              className="p-1 rounded hover:bg-gray-100"
-                              title="Duplicar turno"
-                            >
-                              <Copy size={16} className="text-gray-500" />
-                            </button>
-                            <button
-                              onClick={() => eliminarTurno(dia, index)}
-                              className="p-1 rounded hover:bg-gray-100"
-                              title="Eliminar turno"
-                              disabled={rangos.length === 1}
-                            >
-                              <Trash2 size={16} className={rangos.length === 1 ? "text-gray-300" : "text-gray-500"} />
-                            </button>
-                            {index === rangos.length - 1 && (
-                              <button
-                                onClick={() => agregarTurno(dia)}
-                                className="ml-2 text-[#F4821F] hover:text-[#D66A0B] text-sm flex items-center"
-                              >
-                                <Plus size={16} className="mr-1" />
-                                Agregar turno
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </React.Fragment>
+                {horarios && Object.entries(horarios.horarioRegular).map(([dia, horario]) => (
+                  <tr key={dia} className="border-b">
+                    <td className="py-3">
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={horario.abierto}
+                          onChange={(e) => actualizarHorario(dia as keyof HorariosData['horarioRegular'], 'abierto', e.target.checked)}
+                          className="mr-3"
+                        />
+                        <span className="capitalize">{dia}</span>
+                      </div>
+                    </td>
+                    <td className="py-3">
+                      <input
+                        type="time"
+                        value={horario.horaApertura}
+                        onChange={(e) => actualizarHorario(dia as keyof HorariosData['horarioRegular'], 'horaApertura', e.target.value)}
+                        className="border rounded px-2 py-1 w-32"
+                        disabled={!horario.abierto}
+                      />
+                    </td>
+                    <td className="py-3">
+                      <input
+                        type="time"
+                        value={horario.horaCierre}
+                        onChange={(e) => actualizarHorario(dia as keyof HorariosData['horarioRegular'], 'horaCierre', e.target.value)}
+                        className="border rounded px-2 py-1 w-32"
+                        disabled={!horario.abierto}
+                      />
+                    </td>
+                    <td className="py-3">
+                      <span className={`px-2 py-1 rounded text-xs ${
+                        horario.abierto 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {horario.abierto ? 'Abierto' : 'Cerrado'}
+                      </span>
+                    </td>
+                  </tr>
                 ))}
               </tbody>
             </table>
@@ -428,12 +340,6 @@ export default function HorariosComerciales() {
               <div className="flex items-center">
                 <span className="w-3 h-3 bg-blue-100 inline-block mr-2"></span>
                 <span>Los eventos personalizados aparecen en azul</span>
-              </div>
-              <div className="flex items-center">
-                <span>Haz clic en cualquier día para agregar un evento</span>
-              </div>
-              <div className="flex items-center">
-                <span>Los eventos personalizados pueden ser eliminados</span>
               </div>
             </div>
           </div>

@@ -1,5 +1,19 @@
 import { useState } from 'react';
-import { PeriodoTiempo, DatosVenta, DatosGrafico } from '../resumenventas/components/ResumenVentas/types';
+// Tipos locales para evitar dependencias circulares
+type PeriodoTiempo = 'hoy' | 'semana' | 'mes' | 'año';
+
+interface DatosVenta {
+  total: number;
+  cantidad: number;
+  promedio: number;
+  crecimiento: number;
+}
+
+interface DatosGrafico {
+  fecha: string;
+  ventas: number;
+  pedidos: number;
+}
 
 // Datos de ejemplo - Esto vendría de tu backend
 const datosVentas = {
@@ -18,6 +32,12 @@ const datosVentas = {
   mes: {
     total: 22500000,
     totalPedidos: 1200,
+    platoMasVendido: "Pizza Margherita",
+    promedioTicket: 18750,
+  },
+  año: {
+    total: 270000000,
+    totalPedidos: 14400,
     platoMasVendido: "Pizza Margherita",
     promedioTicket: 18750,
   }

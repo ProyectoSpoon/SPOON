@@ -1,4 +1,6 @@
 // src/app/dashboard/carta/utils/filtros.ts
+import { VersionedProduct } from '@/app/dashboard/carta/types/product-versioning.types';
+
 interface FiltrosProducto {
     busqueda?: string;
     categoria?: string;
@@ -8,6 +10,18 @@ interface FiltrosProducto {
     disponible?: boolean;
     estado?: 'activo' | 'inactivo';
   }
+
+// Tipo simplificado para compatibilidad
+interface Producto {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  precio: number;
+  categoriaId: string;
+  alergenos?: string[];
+  disponible?: boolean;
+  estado?: 'activo' | 'inactivo';
+}
   
   export const filtrarProductos = (
     productos: Producto[],

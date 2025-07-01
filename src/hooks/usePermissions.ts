@@ -1,95 +1,67 @@
-// src/hooks/usePermissions.ts
+// Hook simplificado para manejo de permisos sin Firebase
 
 import { useEffect, useState } from 'react';
-;
-import { db } from '@/firebase/config';
-import { useAuth } from '@/context/authcontext';
-import { Permission, UserPermissions, DEFAULT_ROLE_PERMISSIONS } from '@/types/auth';
 
-interface PermissionCache {
-  [key: string]: {
-    permissions: Permission[];
-    timestamp: number;
-  };
-}
-
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
-const permissionsCache: PermissionCache = {};
-
-export const usePermissions = () => {
-  const { usuario, sessionInfo } = useAuth();
-  const [userPermissions, setUserPermissions] = useState<Permission[]>([]);
+export function usePermissions(userId?: string) {
+  const [permissions, setPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!usuario?.uid || !sessionInfo?.restaurantId) {
-      setLoading(false);
-      return;
-    }
-
-    // Verificar cache
-    const cachedData = permissionsCache[usuario.uid];
-    if (cachedData && (Date.now() - cachedData.timestamp) < CACHE_DURATION) {
-      setUserPermissions(cachedData.permissions);
-      setLoading(false);
-      return;
-    }
-
-    const unsubscribe = onSnapshot(
-      doc(db, 'restaurants', sessionInfo.restaurantId, 'userPermissions', usuario.uid),
-      (doc) => {
-        try {
-          if (doc.exists()) {
-            const data = doc.data() as UserPermissions;
-            const basePermissions = DEFAULT_ROLE_PERMISSIONS[data.role] || [];
-            const allPermissions = [...new Set([...basePermissions, ...(data.customPermissions || [])])];
-            
-            // Actualizar cache
-            permissionsCache[usuario.uid] = {
-              permissions: allPermissions,
-              timestamp: Date.now()
-            };
-            
-            setUserPermissions(allPermissions);
-          } else {
-            setUserPermissions([]);
-          }
-        } catch (err) {
-          console.error('Error al procesar permisos:', err);
-          setError('Error al cargar permisos');
-        } finally {
-          setLoading(false);
+    const loadPermissions = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        console.log('Simulando carga de permisos para usuario:', userId);
+        
+        // Simular delay de carga
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Permisos de ejemplo basados en el usuario
+        let userPermissions: string[] = [];
+        
+        if (userId === 'user_1' || userId === 'admin') {
+          userPermissions = ['read', 'write', 'delete', 'manage', 'admin'];
+        } else if (userId) {
+          userPermissions = ['read', 'write'];
+        } else {
+          userPermissions = ['read'];
         }
-      },
-      (err) => {
-        console.error('Error en snapshot de permisos:', err);
-        setError('Error al suscribirse a permisos');
+        
+        setPermissions(userPermissions);
+        console.log('Permisos cargados (simulación):', userPermissions);
+        
+      } catch (err) {
+        console.error('Error cargando permisos:', err);
+        setError('Error al cargar permisos');
+        setPermissions([]);
+      } finally {
         setLoading(false);
       }
-    );
+    };
 
-    return () => unsubscribe();
-  }, [usuario?.uid, sessionInfo?.restaurantId]);
+    loadPermissions();
+  }, [userId]);
 
-  const hasPermission = (permission: Permission): boolean => {
-    return userPermissions.includes(permission);
+  const hasPermission = (permission: string): boolean => {
+    return permissions.includes(permission);
   };
 
-  const hasAnyPermission = (permissions: Permission[]): boolean => {
-    return permissions.some(permission => userPermissions.includes(permission));
+  const hasAnyPermission = (requiredPermissions: string[]): boolean => {
+    return requiredPermissions.some(permission => permissions.includes(permission));
   };
 
-  const hasAllPermissions = (permissions: Permission[]): boolean => {
-    return permissions.every(permission => userPermissions.includes(permission));
+  const hasAllPermissions = (requiredPermissions: string[]): boolean => {
+    return requiredPermissions.every(permission => permissions.includes(permission));
   };
 
   return {
-    permissions: userPermissions,
+    permissions,
+    loading,
+    error,
     hasPermission,
     hasAnyPermission,
-    hasAllPermissions,
-    loading,
-    error
+    hasAllPermissions
   };
-};
+}

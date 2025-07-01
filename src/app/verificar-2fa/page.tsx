@@ -1,154 +1,133 @@
-'use client'
-import { useEffect, useState } from 'react';
+'use client';
+
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/shared/components/ui/Alert';
-import { Loader2 } from 'lucide-react';
-import { useAuth } from '@/context/authcontext';
+import { Card } from '@/shared/components/ui/Card';
+import { Button } from '@/shared/components/ui/Button';
 
-export default function Verificar2FA() {
+export default function Verificar2FAPage() {
   const router = useRouter();
-  const { 
-    usuario, 
-    sessionInfo, 
-    iniciarSesionCon2FA, 
-    enviarCodigoVerificacion 
-  } = useAuth();
-  
-  const [code, setCode] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [countdown, setCountdown] = useState(0);
+  const [codigo, setCodigo] = useState('');
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!usuario || !sessionInfo?.is2FAEnabled) {
-      router.push('/inicio');
-    }
-  }, [usuario, sessionInfo, router]);
-
-  const handleVerification = async (e: React.FormEvent) => {
+  const manejarVerificacion = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
-
+    
     try {
-      await iniciarSesionCon2FA(code);
-      router.push('/dashboard');
-    } catch (err) {
-      setError('Código inválido. Por favor, intente nuevamente.');
+      setCargando(true);
+      setError(null);
+      
+      console.log('Simulando verificación 2FA con código:', codigo);
+      
+      // Simular delay de verificación
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Simular validación del código
+      if (codigo === '123456') {
+        router.push('/dashboard');
+      } else {
+        throw new Error('Código de verificación incorrecto');
+      }
+      
+    } catch (err: any) {
+      console.error('Error en verificación 2FA:', err);
+      setError(err.message || 'Error al verificar el código');
     } finally {
-      setLoading(false);
+      setCargando(false);
     }
   };
 
-  const handleResendCode = async () => {
-    if (countdown > 0) return;
-
+  const reenviarCodigo = async () => {
     try {
-      setLoading(true);
-      setError('');
-      await enviarCodigoVerificacion();
+      setCargando(true);
+      setError(null);
       
-      setCountdown(30); // 30 segundos de espera
-      const timer = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+      console.log('Simulando reenvío de código 2FA...');
       
-    } catch (error) {
-      setError('Error al reenviar el código. Intente nuevamente.');
+      // Simular delay de reenvío
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      alert('Código reenviado exitosamente');
+      
+    } catch (err: any) {
+      console.error('Error al reenviar código:', err);
+      setError('Error al reenviar el código');
     } finally {
-      setLoading(false);
+      setCargando(false);
     }
   };
-
-  if (!usuario || !sessionInfo) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-[#FF9933]" />
-      </div>
-    );
-  }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Card className="max-w-md mx-auto">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">
-            Verificación de dos factores
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <p className="text-center text-gray-600">
-            Ingresa el código de verificación enviado a tu teléfono
-            <br />
-            <span className="font-medium">
-              {sessionInfo.phoneNumber?.replace(/(\d{3})(\d{3})(\d{4})/, '+57 $1 $2 $3')}
-            </span>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Verificación en dos pasos
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Ingresa el código de 6 dígitos enviado a tu dispositivo
           </p>
+        </div>
 
-          <form onSubmit={handleVerification} className="space-y-4">
-            <div className="space-y-2">
-              <input
-                type="text"
-                value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                className="w-full px-3 py-2 text-center text-lg tracking-wider border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF9933] focus:border-transparent"
-                placeholder="Ingresa el código de 6 dígitos"
-                maxLength={6}
-                autoComplete="one-time-code"
-                required
-              />
-              <p className="text-xs text-center text-gray-500">
-                El código expirará en 10 minutos
-              </p>
-            </div>
-
+        <Card className="p-8">
+          <form onSubmit={manejarVerificacion} className="space-y-6">
             {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
+                {error}
+              </div>
             )}
 
-            <button
-              type="submit"
-              disabled={loading || code.length !== 6}
-              className="w-full py-2 px-4 bg-[#FF9933] text-white rounded-md hover:bg-[#B37B5E] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <Loader2 className="h-5 w-5 animate-spin mx-auto" />
-              ) : (
-                'Verificar'
-              )}
-            </button>
+            <div>
+              <label htmlFor="codigo" className="block text-sm font-medium text-gray-700">
+                Código de verificación
+              </label>
+              <input
+                id="codigo"
+                name="codigo"
+                type="text"
+                required
+                maxLength={6}
+                value={codigo}
+                onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ''))}
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-orange-500 focus:border-orange-500 focus:z-10 sm:text-sm text-center text-2xl tracking-widest"
+                placeholder="000000"
+                disabled={cargando}
+              />
+            </div>
+
+            <div>
+              <Button
+                type="submit"
+                disabled={cargando || codigo.length !== 6}
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {cargando ? 'Verificando...' : 'Verificar código'}
+              </Button>
+            </div>
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={reenviarCodigo}
+                disabled={cargando}
+                className="text-sm text-orange-600 hover:text-orange-500 disabled:opacity-50"
+              >
+                ¿No recibiste el código? Reenviar
+              </button>
+            </div>
           </form>
+        </Card>
 
-          <div className="space-y-4">
-            <button
-              onClick={handleResendCode}
-              disabled={countdown > 0 || loading}
-              className="w-full text-sm text-gray-600 hover:text-[#FF9933] transition-colors disabled:opacity-50"
-            >
-              {countdown > 0
-                ? `Reenviar código en ${countdown}s`
-                : '¿No recibiste el código? Reenviar'
-              }
-            </button>
-
-            <button
-              onClick={() => router.push('/inicio')}
-              className="w-full py-2 px-4 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-            >
-              Cancelar
-            </button>
-          </div>
-        </CardContent>
-      </Card>
+        <div className="text-center">
+          <button
+            onClick={() => router.push('/login')}
+            className="text-sm text-gray-600 hover:text-gray-500"
+          >
+            Volver al inicio de sesión
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

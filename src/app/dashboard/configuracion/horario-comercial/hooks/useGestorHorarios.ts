@@ -43,7 +43,7 @@ export const useGestorHorarios = (idRestaurante: string) => {
       
       for (const rango of rangosDelDia) {
         // Validar que la hora de cierre sea posterior a la de apertura
-        if (rango.horaApertura >= rango.horaCierre) {
+        if (rango.horaApertura && rango.horaCierre && rango.horaApertura >= rango.horaCierre) {
           setError(`Horario inválido en ${dia}: la hora de cierre debe ser posterior a la de apertura`);
           return false;
         }
@@ -52,10 +52,14 @@ export const useGestorHorarios = (idRestaurante: string) => {
       // Validar superposición de horarios
       for (let i = 0; i < rangosDelDia.length; i++) {
         for (let j = i + 1; j < rangosDelDia.length; j++) {
-          if (rangosDelDia[i].horaApertura < rangosDelDia[j].horaCierre &&
-              rangosDelDia[j].horaApertura < rangosDelDia[i].horaCierre) {
-            setError(`Horarios superpuestos en ${dia}`);
-            return false;
+          const rango1 = rangosDelDia[i];
+          const rango2 = rangosDelDia[j];
+          
+          if (rango1.horaApertura && rango1.horaCierre && rango2.horaApertura && rango2.horaCierre) {
+            if (rango1.horaApertura < rango2.horaCierre && rango2.horaApertura < rango1.horaCierre) {
+              setError(`Horarios superpuestos en ${dia}`);
+              return false;
+            }
           }
         }
       }

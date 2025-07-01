@@ -87,7 +87,6 @@ export default function ModalNuevoUsuario({
                 id="nombre"
                 placeholder="Juan"
                 {...register('nombre')}
-                error={!!errors.nombre}
               />
               {errors.nombre && (
                 <span className="text-sm text-destructive">
@@ -101,7 +100,6 @@ export default function ModalNuevoUsuario({
                 id="apellido"
                 placeholder="Pérez"
                 {...register('apellido')}
-                error={!!errors.apellido}
               />
               {errors.apellido && (
                 <span className="text-sm text-destructive">
@@ -118,7 +116,6 @@ export default function ModalNuevoUsuario({
               type="email"
               placeholder="juan@ejemplo.com"
               {...register('email')}
-              error={!!errors.email}
             />
             {errors.email && (
               <span className="text-sm text-destructive">
@@ -134,7 +131,6 @@ export default function ModalNuevoUsuario({
               type="password"
               placeholder="••••••"
               {...register('password')}
-              error={!!errors.password}
             />
             {errors.password && (
               <span className="text-sm text-destructive">
@@ -150,7 +146,6 @@ export default function ModalNuevoUsuario({
               type="tel"
               placeholder="+34 600 000 000"
               {...register('telefono')}
-              error={!!errors.telefono}
             />
             {errors.telefono && (
               <span className="text-sm text-destructive">

@@ -29,14 +29,14 @@ const EntradaHorario: React.FC<PropiedadesEntradaHorario> = ({
     <div className="flex items-center gap-4 mb-2">
       <input
         type="time"
-        value={rangoHorario.horaApertura}
+        value={rangoHorario.horaApertura || ''}
         onChange={(e) => manejarCambioHora('horaApertura', e.target.value)}
         className="border rounded-md p-2 bg-white"
       />
       <span className="text-neutral-500">a</span>
       <input
         type="time"
-        value={rangoHorario.horaCierre}
+        value={rangoHorario.horaCierre || ''}
         onChange={(e) => manejarCambioHora('horaCierre', e.target.value)}
         className="border rounded-md p-2 bg-white"
       />

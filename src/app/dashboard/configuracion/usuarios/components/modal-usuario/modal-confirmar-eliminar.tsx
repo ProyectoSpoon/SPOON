@@ -2,15 +2,14 @@ import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/shared/components/ui/AlertDialog';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/components/ui/Dialog/dialog';
+import { Button } from '@/shared/components/ui/Button/button';
 import { Usuario } from '../../types/usuarios.types';
 
 interface ModalConfirmarEliminarProps {
@@ -40,32 +39,34 @@ export default function ModalConfirmarEliminar({
   };
 
   return (
-    <AlertDialog open={abierto} onOpenChange={onClose}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-destructive" />
+    <Dialog open={abierto} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-red-500" />
             Confirmar Eliminación
-          </AlertDialogTitle>
-          <AlertDialogDescription>
+          </DialogTitle>
+          <DialogDescription>
             ¿Estás seguro de que quieres eliminar al usuario{' '}
-            <span className="font-medium text-foreground">
+            <span className="font-medium">
               {usuario.nombre} {usuario.apellido}
             </span>
             ? Esta acción no se puede deshacer.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isLoading}>Cancelar</AlertDialogCancel>
-          <AlertDialogAction
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="flex gap-2">
+          <Button variant="outline" disabled={isLoading} onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
             onClick={handleConfirmar}
             disabled={isLoading}
-            className="bg-destructive hover:bg-destructive/90"
+            className="bg-red-500 hover:bg-red-600 text-white"
           >
             {isLoading ? 'Eliminando...' : 'Eliminar Usuario'}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

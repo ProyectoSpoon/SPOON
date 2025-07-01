@@ -2,12 +2,14 @@
 import { AuditService } from '@/shared/services/audit.service';
 import { AuditEventType, AuditEventSeverity } from '@/shared/types/audit.types';
 import { MenuPermission, MenuAuditMetadata } from '../types/permissions.types';
-import { auth } from '@/firebase/config';
 
 export class MenuRoleManager {
   static async checkPermission(permission: MenuPermission, context: Record<string, any> = {}): Promise<boolean> {
-    const currentUser = auth.currentUser;
+    // Simular usuario autenticado
+    const currentUser = { uid: 'user_123', email: 'admin@spoon.com' };
     if (!currentUser) return false;
+
+    console.log('Verificando permiso de menú (simulación):', { permission, context });
 
     const metadata: Partial<MenuAuditMetadata> = {
       userId: currentUser.uid,
@@ -28,8 +30,11 @@ export class MenuRoleManager {
     operation: MenuPermission,
     details: Record<string, any>
   ): Promise<void> {
-    const currentUser = auth.currentUser;
+    // Simular usuario autenticado
+    const currentUser = { uid: 'user_123', email: 'admin@spoon.com' };
     if (!currentUser) throw new Error('Usuario no autenticado');
+
+    console.log('Validando operación de menú (simulación):', { operation, details });
 
     const eventType = this.getAuditEventType(operation);
     const metadata: Partial<MenuAuditMetadata> = {

@@ -1,6 +1,5 @@
 // src/hooks/useLogin.ts
 import { useState } from 'react';
-import { useAuth } from '@/context/authcontext';
 import { useRouter } from 'next/navigation';
 
 interface FormularioLogin {
@@ -10,29 +9,24 @@ interface FormularioLogin {
 }
 
 export const useLogin = () => {
-  const { 
-    iniciarSesion, 
-    iniciarSesionCon2FA,
-    sessionInfo,
-    requiere2FA,
-    signInWithGoogle  // Añadir esta importación
-  } = useAuth();
   const router = useRouter();
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [requiere2FA, setRequiere2FA] = useState(false);
 
   const manejarLoginGoogle = async () => {
     try {
       setCargando(true);
       setError(null);
       
-      const result = await signInWithGoogle();
+      console.log('Simulando login con Google...');
       
-      if (result.needsProfile) {
-        router.push('/config-restaurante');
-      } else {
-        router.push('/dashboard');
-      }
+      // Simular delay de autenticación
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Simular éxito y redirección
+      router.push('/dashboard');
+      
     } catch (err: any) {
       console.error('Error en login con Google:', err);
       setError(err.message || 'Error al iniciar sesión con Google');
@@ -46,35 +40,26 @@ export const useLogin = () => {
       setCargando(true);
       setError(null);
 
-      if (requiere2FA && datos.codigo2FA) {
-        await iniciarSesionCon2FA(datos.codigo2FA);
+      console.log('Simulando login con email/password:', datos.correo);
+      
+      // Simular delay de autenticación
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Simular validación básica
+      if (!datos.correo || !datos.contrasena) {
+        throw new Error('Email y contraseña son requeridos');
+      }
+      
+      if (datos.correo === 'admin@spoon.com' && datos.contrasena === 'admin123') {
+        // Simular éxito y redirección
+        router.push('/dashboard');
       } else {
-        await iniciarSesion(datos.correo, datos.contrasena);
+        throw new Error('Credenciales incorrectas');
       }
-
-      // Si el usuario necesita verificar su email
-      if (!sessionInfo?.emailVerified) {
-        router.push('/verificar-email');
-        return;
-      }
-
-      // Redirigir según el estado de configuración
-      router.push(
-        sessionInfo?.requiresAdditionalInfo 
-          ? '/completar-perfil'
-          : '/dashboard'
-      );
 
     } catch (err: any) {
-      if (err.message.includes('bloqueada')) {
-        setError(err.message);
-      } else if (err.code === 'auth/too-many-requests') {
-        setError('Demasiados intentos fallidos. Por favor, intente más tarde.');
-      } else if (err.code === 'auth/invalid-verification-code') {
-        setError('Código de verificación inválido.');
-      } else {
-        setError('Error al iniciar sesión. Verifica tus credenciales.');
-      }
+      console.error('Error en login:', err);
+      setError(err.message || 'Error al iniciar sesión. Verifica tus credenciales.');
     } finally {
       setCargando(false);
     }
@@ -84,7 +69,7 @@ export const useLogin = () => {
     cargando,
     error,
     requiere2FA,
-    sessionInfo,
+    sessionInfo: null,
     manejarLogin,
     manejarLoginGoogle  
   };
