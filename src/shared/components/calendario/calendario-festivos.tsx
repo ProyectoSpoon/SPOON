@@ -49,8 +49,10 @@ export default function CalendarioFestivos({ restauranteId }: CalendarioFestivos
   const agregarEvento = async () => {
     if (fechaSeleccionada && nuevoEvento.trim()) {
       await agregarFestivo({
+        nombre: nuevoEvento.trim(),
         fecha: fechaSeleccionada,
         tipo: 'personalizado',
+        activo: true,
         descripcion: nuevoEvento.trim(),
         recurrenciaAnual: false,
         afectaHorario: true
@@ -133,7 +135,7 @@ export default function CalendarioFestivos({ restauranteId }: CalendarioFestivos
         }}
         modifiers={{
           festivo: (date) => eventos.some(ev => 
-            ev.tipo === 'festivo' && 
+            (ev.tipo === 'nacional' || ev.tipo === 'regional' || ev.tipo === 'local') && 
             date.getDate() === ev.fecha.getDate() && 
             date.getMonth() === ev.fecha.getMonth()
           ),
@@ -179,7 +181,7 @@ export default function CalendarioFestivos({ restauranteId }: CalendarioFestivos
                 <div className="flex items-center gap-2">
                   <span className={cn(
                     "inline-flex items-center rounded-md px-2 py-1 text-xs font-medium",
-                    evento.tipo === 'festivo' 
+                    (evento.tipo === 'nacional' || evento.tipo === 'regional' || evento.tipo === 'local')
                       ? `bg-[${spoonTheme.colors.primary.light}] text-[${spoonTheme.colors.primary.dark}]`
                       : 'bg-blue-50 text-blue-800'
                   )}>

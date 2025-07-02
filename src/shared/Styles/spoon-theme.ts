@@ -291,7 +291,7 @@ export const spoonTheme = {
  * // Usar: <motion.div animate={fadeIn}>
  */
 export const getAnimation = (path: string) => {
-  return path.split('.').reduce((obj, key) => obj[key], spoonTheme.animations);
+  return path.split('.').reduce((obj: any, key) => obj[key], spoonTheme.animations);
 };
 
 /**
@@ -303,7 +303,7 @@ export const getAnimation = (path: string) => {
  * // Usar con react-particles-js
  */
 export const getParticlesConfig = (type: string = 'default') => {
-  return spoonTheme.animations.particles[type];
+  return (spoonTheme.animations.particles as any)[type];
 };
 
 /**
@@ -315,7 +315,7 @@ export const getParticlesConfig = (type: string = 'default') => {
  * // Usar con react-tilt
  */
 export const getTiltConfig = (type: string = 'default') => {
-  return spoonTheme.animations.tilt[type];
+  return (spoonTheme.animations.tilt as any)[type];
 };
 
 /**
@@ -391,7 +391,7 @@ export const getTypographySize = (size: keyof typeof spoonTheme.typography.sizes
  * const color = getThemeColor('primary.dark'); // Returns: '#CC6A10'
  */
 export const getThemeColor = (path: string): string => {
-  return path.split('.').reduce((obj, key) => obj[key], spoonTheme.colors);
+  return path.split('.').reduce((obj: any, key) => obj[key], spoonTheme.colors);
 };
 
 /**

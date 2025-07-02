@@ -29,7 +29,7 @@ export class AuditService {
         const safeMetadata = {
           ...metadata,
           userId: metadata.userId ?? currentUserId,
-          timestamp: new Date().toISOString(),
+          timestamp: new Date(),
           path: typeof window !== 'undefined' ? window.location.pathname : '/'
         };
     

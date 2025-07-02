@@ -10,10 +10,10 @@ delete pg.native;
 
 // Configuración de la conexión real a PostgreSQL
 const pool = new Pool({
-  user: process.env.POSTGRES_USER || 'spoon_admin',
+  user: process.env.DB_USER || 'postgres',
   host: process.env.POSTGRES_HOST || 'localhost',
-  database: process.env.POSTGRES_DATABASE || 'spoon',
-  password: process.env.POSTGRES_PASSWORD || 'Carlos0412*',
+  database: process.env.DB_NAME || 'spoon_db',
+  password: process.env.DB_PASSWORD || (process.env.DB_PASSWORD_FILE ? require('fs').readFileSync(process.env.DB_PASSWORD_FILE, 'utf8').trim() : 'password'),
   port: parseInt(process.env.POSTGRES_PORT || '5432'),
   ssl: process.env.NODE_ENV === 'production'
 });

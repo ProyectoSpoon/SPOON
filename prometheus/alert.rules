@@ -1,0 +1,125 @@
+groups:
+  - name: spoon_infrastructure_alerts
+    rules:
+      # Alertas de servicios críticos
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Servicio {{ $labels.job }} está caído"
+          description: "El servicio {{ $labels.job }} en {{ $labels.instance }} ha estado caído por más de 1 minuto."
+
+      # Alertas de base de datos
+      - alert: PostgreSQLDown
+        expr: up{job="postgres-exporter"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL está caído"
+          description: "La base de datos PostgreSQL no está respondiendo."
+
+      - alert: PostgreSQLHighConnections
+        expr: pg_stat_database_numbackends / pg_settings_max_connections > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL tiene muchas conexiones activas"
+          description: "PostgreSQL está usando {{ $value | humanizePercentage }} de las conexiones máximas."
+
+      # Alertas de Redis
+      - alert: RedisDown
+        expr: up{job="redis-exporter"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis está caído"
+          description: "El servicio de caché Redis no está respondiendo."
+
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis está usando mucha memoria"
+          description: "Redis está usando {{ $value | humanizePercentage }} de la memoria máxima."
+
+      # Alertas de sistema
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Alto uso de CPU"
+          description: "El uso de CPU en {{ $labels.instance }} es {{ $value }}%."
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Alto uso de memoria"
+          description: "El uso de memoria en {{ $labels.instance }} es {{ $value }}%."
+
+      - alert: DiskSpaceLow
+        expr: (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Poco espacio en disco"
+          description: "El disco {{ $labels.mountpoint }} en {{ $labels.instance }} está {{ $value }}% lleno."
+
+      # Alertas de aplicación
+      - alert: ApplicationHighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tiempo de respuesta alto en aplicación"
+          description: "El percentil 95 del tiempo de respuesta es {{ $value }}s en {{ $labels.job }}."
+
+      - alert: ApplicationHighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Alta tasa de errores en aplicación"
+          description: "La tasa de errores 5xx es {{ $value | humanizePercentage }} en {{ $labels.job }}."
+
+      # Alertas de contenedores
+      - alert: ContainerHighCPU
+        expr: rate(container_cpu_usage_seconds_total[5m]) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Contenedor usando mucha CPU"
+          description: "El contenedor {{ $labels.name }} está usando {{ $value }}% de CPU."
+
+      - alert: ContainerHighMemory
+        expr: container_memory_usage_bytes / container_spec_memory_limit_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Contenedor usando mucha memoria"
+          description: "El contenedor {{ $labels.name }} está usando {{ $value | humanizePercentage }} de su límite de memoria."
+
+      - alert: ContainerRestarting
+        expr: increase(container_start_time_seconds[1h]) > 3
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Contenedor reiniciando frecuentemente"
+          description: "El contenedor {{ $labels.name }} ha reiniciado {{ $value }} veces en la última hora."

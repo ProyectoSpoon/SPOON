@@ -27,8 +27,7 @@ export const useScrollAnimation = (config: ScrollAnimationConfig = {}) => {
   const transformedValue = useTransform(
     scrollY,
     inputRange,
-    outputRange,
-    { ease: spoonTheme.animations.easing.smooth }
+    outputRange as any
   );
 
   return { scrollY, transformedValue, smoothing };

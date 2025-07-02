@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { VersionedProduct } from '@/app/dashboard/carta/types/product-versioning.types';
 import { Search, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Menu, GripVertical, Coffee, Soup, Beef, Salad, Utensils } from 'lucide-react';
 import { Button } from '@/shared/components/ui/Button';
+import { categoriasService } from '@/services/categorias.service';
 
 // Componentes
 import { MenuDiarioRediseno } from '@/app/dashboard/carta/components/menu-diario/MenuDiarioRediseno';
@@ -79,8 +80,81 @@ export default function MenuDiaPage() {
     updateSeleccion,
     updateSubmenuActivo,
     hasCache,
-    getCacheRemainingTime
+    getCacheRemainingTime,
+    // Nuevas propiedades para categorías desde API
+    loadCategoriasFromAPI,
+    categoriasLoading,
+    categoriasError,
+    categoriasFromAPI,
+    idMapping
   } = useMenuCache();
+
+  // Estados para datos desde la base de datos
+  const [menuDiaDB, setMenuDiaDB] = useState<any>(null);
+  const [categoriasDB, setCategoriasDB] = useState<any[]>([]);
+  const [productosDB, setProductosDB] = useState<any[]>([]);
+  const [loadingDB, setLoadingDB] = useState(true);
+  const [errorDB, setErrorDB] = useState<string | null>(null);
+
+  // Cargar datos desde la base de datos
+  useEffect(() => {
+    const cargarDatosDB = async () => {
+      try {
+        console.log('🔄 Cargando menú del día desde la base de datos...');
+        const response = await fetch('/api/menu-dia');
+        
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('📊 Datos de BD recibidos:', data);
+        
+        setMenuDiaDB(data.menuDia);
+        setCategoriasDB(data.categorias || []);
+        setProductosDB(data.todosLosProductos || []);
+        
+        // Convertir productos de la BD a formato VersionedProduct para el menú
+        const productosMenuBD = (data.menuDia?.productos || []).map((producto: any) => convertToVersionedProduct({
+          id: producto.id,
+          nombre: producto.nombre,
+          descripcion: producto.descripcion,
+          precio: producto.precio || 0,
+          categoriaId: producto.categoriaId,
+          imagen: producto.imagen,
+          cantidad: producto.cantidad || 0,
+          stock: {
+            currentQuantity: producto.cantidad || 0,
+            minQuantity: 0,
+            maxQuantity: 100,
+            status: 'in_stock' as const,
+            lastUpdated: new Date()
+          },
+          status: 'active' as const,
+          currentVersion: '1.0.0',
+          priceHistory: [],
+          versions: [],
+          metadata: {
+            createdAt: new Date(),
+            createdBy: 'system',
+            lastModified: new Date(),
+            lastModifiedBy: 'system'
+          }
+        }));
+        
+        // Actualizar el menú con los datos de la BD
+        updateProductosMenu(productosMenuBD.map(convertToProducto));
+        
+      } catch (err) {
+        console.error('❌ Error al cargar datos de BD:', err);
+        setErrorDB(err instanceof Error ? err.message : 'Error desconocido');
+      } finally {
+        setLoadingDB(false);
+      }
+    };
+
+    cargarDatosDB();
+  }, []); // Solo ejecutar una vez al montar
 
   // Log para inspeccionar menuData - solo una vez al cargar
   useEffect(() => {
@@ -294,43 +368,90 @@ export default function MenuDiaPage() {
     }, 100);
   };
 
-  // Usar las categorías del menuData si están disponibles, sino usar la lista harcoded como fallback
-  const categoriasList = (menuData && Array.isArray(menuData.categorias) && menuData.categorias.length > 0)
-    ? menuData.categorias
-    : [
+  // Usar las categorías desde la API, con fallback a categorías hardcodeadas solo si hay error
+  const categoriasList = useMemo(() => {
+    if (categoriasFromAPI.length > 0) {
+      return categoriasFromAPI;
+    }
+    
+    // Solo usar fallback si hay error de carga
+    if (categoriasError) {
+      console.warn('Usando categorías hardcodeadas debido a error:', categoriasError);
+      return [
         { id: 'CAT_001', nombre: 'Entradas', tipo: 'principal' as const },
         { id: 'CAT_002', nombre: 'Principio', tipo: 'principal' as const },
         { id: 'CAT_003', nombre: 'Proteína', tipo: 'principal' as const },
         { id: 'CAT_004', nombre: 'Acompañamientos', tipo: 'principal' as const },
         { id: 'CAT_005', nombre: 'Bebida', tipo: 'principal' as const }
       ];
+    }
+    
+    // Si está cargando, devolver array vacío
+    return [];
+  }, [categoriasFromAPI, categoriasError]);
 
-  const contarProductosPorCategoria = () => {
+  const contarProductosPorCategoria = () => {
       const conteos: Record<string, number> = {};
+      
       if (menuData && Array.isArray(menuData.productosSeleccionados)) {
         menuData.productosSeleccionados.forEach(producto => {
           if (producto.categoriaId) {
-            conteos[producto.categoriaId] = (conteos[producto.categoriaId] || 0) + 1;
+            // Convertir ID antiguo a nuevo usando el mapeo
+            const idNuevo = categoriasService.obtenerIdNuevo(producto.categoriaId, idMapping);
+            conteos[idNuevo] = (conteos[idNuevo] || 0) + 1;
           }
         });
       }
-      // Si quieres usar los conteos hardcodeados como fallback:
-      // else { return { 'CAT_001': 22, ... } }
+      
       return conteos;
-  };
-  const conteoProductos = contarProductosPorCategoria();
-  const categorias = categoriasList.map(cat => ({
-    ...cat,
-    count: conteoProductos[cat.id] || 0
-  }));
+  };
+  const conteoProductos = contarProductosPorCategoria();
+  const categorias = categoriasList.map(cat => ({
+    ...cat,
+    count: conteoProductos[cat.id] || 0
+  }));
 
-  // Si isLoaded es false, podrías mostrar un indicador de carga.
-  if (!isLoaded) {
-    return <div>Cargando datos del menú...</div>; // O un spinner/skeleton
-  }
+  // Mostrar indicador de carga si los datos no están listos
+  if (!isLoaded || categoriasLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F4821F] mb-4"></div>
+        <p className="text-gray-600">
+          {categoriasLoading ? 'Cargando categorías desde la base de datos...' : 'Cargando datos del menú...'}
+        </p>
+        {categoriasError && (
+          <p className="text-red-500 mt-2 text-sm">
+            Error al cargar categorías: {categoriasError}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // Si no hay categorías disponibles, mostrar mensaje
+  if (categoriasList.length === 0 && !categoriasLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-gray-50">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">No hay categorías disponibles</h2>
+          <p className="text-gray-500 mb-4">
+            {categoriasError 
+              ? 'Error al cargar las categorías desde la base de datos.' 
+              : 'No se encontraron categorías en la base de datos.'}
+          </p>
+          <button 
+            onClick={() => loadCategoriasFromAPI()}
+            className="px-4 py-2 bg-[#F4821F] hover:bg-[#E67812] text-white rounded-md"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    // ... (resto de tu JSX sin cambios) ...
+ 
     <div className="flex flex-col space-y-4 h-screen bg-gray-50">
       {/* Encabezado principal */}
       <div className="flex justify-between items-center bg-gray-50 p-4">
@@ -530,11 +651,6 @@ export default function MenuDiaPage() {
       <div className="space-y-1 overflow-y-auto" style={{maxHeight: 'calc(100vh - 300px)' /* Ajusta según necesidad */}}>
         {categorias
           .filter(categoria => {
-            // Si se ha seleccionado una subcategoría específica, mostrar solo esa subcategoría
-            if (selectedCategoryTab !== 'todas' && selectedCategoryTab !== null) {
-              return categoria.id === selectedCategoryTab;
-            }
-            
             // Filtrar por tipo de comida
             if (selectedTab === 'desayuno') {
               return ['CAT_001', 'CAT_005'].includes(categoria.id);
@@ -572,7 +688,8 @@ export default function MenuDiaPage() {
                 </div>
               </div>
               
-              {(expandedCategory === categoria.id) && (
+              {/* Mostrar productos siempre cuando selectedCategoryTab es 'todas' o cuando la categoría está expandida */}
+              {(expandedCategory === categoria.id || selectedCategoryTab === 'todas') && (
                 <div className="px-4 py-3 bg-gray-50">
                   {/* Tabla de productos con encabezados claros */}
                   <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
@@ -587,7 +704,11 @@ export default function MenuDiaPage() {
                     {/* Contenido de la tabla - Productos */}
                     <div className="divide-y divide-gray-200">
                             {versionedProductosSeleccionados
-                        .filter((producto: VersionedProduct) => producto.categoriaId === categoria.id)
+                        .filter((producto: VersionedProduct) => {
+                          // Convertir ID del producto (antiguo) a nuevo usando el mapeo
+                          const idNuevoProducto = categoriasService.obtenerIdNuevo(producto.categoriaId, idMapping);
+                          return idNuevoProducto === categoria.id;
+                        })
                         .map((producto: VersionedProduct) => (
                           <div key={producto.id} className="grid grid-cols-12 items-center py-2 hover:bg-gray-50">
                             {/* Imagen */}

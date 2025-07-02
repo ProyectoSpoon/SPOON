@@ -36,7 +36,7 @@ const PUBLIC_ROUTES = [
 ] as const;
 
 // Modo desarrollo: Permitir acceso a todas las rutas sin autenticación
-const DEVELOPMENT_MODE = true;
+const DEVELOPMENT_MODE = false; // Cambiado a false para usar autenticación real
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -54,24 +54,56 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Código original para producción (no se usa en modo desarrollo)
-  const idToken = request.cookies.get('Firebase-Auth-Token')?.value;
-  const user = request.cookies.get('userInfo')?.value;
+  // Autenticación JWT real
+  const authToken = request.cookies.get('auth-token')?.value;
+  const userInfo = request.cookies.get('user-info')?.value;
   
-  if (!idToken || !user) {
-    console.log('❌ No hay token o información de usuario.');
+  if (!authToken) {
+    console.log('❌ No hay token de autenticación.');
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  const requiredPermissions = PROTECTED_ROUTES[pathname];
-  console.log('🔒 Permisos requeridos para la ruta:', requiredPermissions);
-
   try {
-    const userInfo = JSON.parse(user);
-    console.log('👤 Info del usuario:', userInfo);
+    // En el middleware, solo verificamos que el token existe
+    // La verificación completa se hace en las APIs
+    console.log('✅ Token de autenticación encontrado');
+    
+    // Decodificar el payload sin verificar (solo para obtener información básica)
+    let decoded: any = {};
+    try {
+      const payload = authToken.split('.')[1];
+      if (payload) {
+        decoded = JSON.parse(atob(payload));
+        console.log('✅ Token decodificado para usuario:', decoded.email);
+      }
+    } catch (decodeError) {
+      console.log('⚠️ No se pudo decodificar el token, pero se permite el acceso');
+    }
+
+    const requiredPermissions = PROTECTED_ROUTES[pathname];
+    console.log('🔒 Permisos requeridos para la ruta:', requiredPermissions);
 
     if (requiredPermissions) {
-      if (!userInfo.permissions) {
+      let user;
+      
+      // Intentar obtener información del usuario desde cookie
+      if (userInfo) {
+        try {
+          user = JSON.parse(userInfo);
+        } catch (parseError) {
+          console.log('❌ Error al parsear información del usuario');
+          return NextResponse.redirect(new URL('/login', request.url));
+        }
+      }
+
+      // Si no hay información del usuario en cookie, usar la del token
+      if (!user) {
+        user = {
+          permissions: decoded.permissions || []
+        };
+      }
+
+      if (!user.permissions || !Array.isArray(user.permissions)) {
         console.log('❌ Usuario sin permisos definidos');
         return NextResponse.redirect(new URL('/unauthorized', request.url));
       }
@@ -83,16 +115,13 @@ export async function middleware(request: NextRequest) {
         return permission;
       };
 
-      const userPermissions = Array.isArray(userInfo.permissions) 
-        ? userInfo.permissions.map((p: string) => normalizePermission(p))
-        : [];
-
+      const userPermissions = user.permissions.map((p: string) => normalizePermission(p));
       const requiredPermissionStrings = requiredPermissions.map(
         (p) => normalizePermission(p.toString())
       );
 
-      console.log('Permisos normalizados del usuario:', userPermissions);
-      console.log('Permisos normalizados requeridos:', requiredPermissionStrings);
+      console.log('Permisos del usuario:', userPermissions);
+      console.log('Permisos requeridos:', requiredPermissionStrings);
 
       const hasAllPermissions = requiredPermissionStrings.every(
         permission => userPermissions.includes(permission)
@@ -108,7 +137,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
 
   } catch (error) {
-    console.log('❌ Error al procesar permisos:', error);
+    console.log('❌ Error al verificar token JWT:', error);
     return NextResponse.redirect(new URL('/login', request.url));
   }
 }

@@ -1,4 +1,6 @@
 // src/shared/components/ui/Card/card-header.tsx
+import { cn } from '@/shared/lib/utils'
+
 export function CardHeader({
     className,
     ...props

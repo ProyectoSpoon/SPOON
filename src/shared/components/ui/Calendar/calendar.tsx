@@ -16,8 +16,8 @@ export const Calendar: React.FC<CalendarProps> = ({
   return (
     <DayPicker
       mode={mode}
-      selected={selected}
-      onSelect={onSelect}
+      selected={selected as any}
+      onSelect={onSelect as any}
       locale={locale}
       className={`p-3 bg-white ${className}`}
       classNames={{

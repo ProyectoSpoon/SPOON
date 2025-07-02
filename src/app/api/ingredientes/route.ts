@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     // Validar campos requeridos
-    if (!body.nombre || !body.unidad_medida || !body.restaurante_id) {
+    if (!body.name || !body.unidad_medida || !body.restaurant_id) {
       return NextResponse.json(
         { error: 'Faltan campos requeridos (nombre, unidad_medida, restaurante_id)' },
         { status: 400 }
@@ -50,11 +50,11 @@ export async function POST(request: NextRequest) {
         nombre, unidad_medida, stock, precio_unitario, restaurante_id
       ) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
       [
-        body.nombre,
+        body.name,
         body.unidad_medida,
         body.stock || 0,
         body.precio_unitario || 0,
-        body.restaurante_id
+        body.restaurant_id
       ]
     );
     

@@ -1,4 +1,6 @@
 // /shared/types/horarios/tipos-festivos.ts
+import { RangoHorario } from '../horarios';
+
 export interface Festivo {
     id: string;
     fecha: Date;

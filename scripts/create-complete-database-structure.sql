@@ -1,44 +1,127 @@
-# Diseño de Base de Datos PostgreSQL para SPOON
-## Sistema Operativo para Restaurantes Independientes
+-- ===================================================================
+-- SPOON - Sistema Operativo para Restaurantes Independientes
+-- Script de Creación Completa de Base de Datos PostgreSQL
+-- Versión: 2.0 - Migración completa con esquemas y UUIDs
+-- ===================================================================
 
-### Resumen Ejecutivo
-Este documento presenta el diseño completo de la base de datos PostgreSQL para SPOON, basado en el análisis exhaustivo del código fuente y la lógica de negocio del sistema. El diseño está completamente normalizado (3FN), optimizado para escalabilidad y preparado para futuras expansiones del sistema.
+-- Habilitar extensiones necesarias
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
----
+-- ===================================================================
+-- CREACIÓN DE ESQUEMAS ORGANIZACIONALES
+-- ===================================================================
 
-## Motor de Base de Datos Recomendado
-
-**PostgreSQL 14+** es la elección óptima por:
-- **Soporte nativo para UUID** como claves primarias
-- **Tipos de datos JSONB** para configuraciones flexibles
-- **Triggers y constraints avanzados** para integridad de datos
-- **Índices parciales y compuestos** para optimización
-- **Extensiones** como pg_crypto para seguridad
-- **Escalabilidad horizontal** con particionado
-- **Soporte para auditoría** con triggers automáticos
-
----
-
-## Esquemas de Base de Datos
-
-```sql
--- Creación de esquemas organizacionales
 CREATE SCHEMA IF NOT EXISTS auth;           -- Autenticación y usuarios
 CREATE SCHEMA IF NOT EXISTS restaurant;     -- Datos del restaurante
 CREATE SCHEMA IF NOT EXISTS menu;           -- Gestión de menús
 CREATE SCHEMA IF NOT EXISTS sales;          -- Ventas y transacciones
 CREATE SCHEMA IF NOT EXISTS audit;          -- Auditoría y logs
 CREATE SCHEMA IF NOT EXISTS config;         -- Configuraciones del sistema
-```
 
----
+-- ===================================================================
+-- CREACIÓN DE TIPOS ENUM
+-- ===================================================================
 
-## Diseño Completo de Tablas
+-- Enums para autenticación
+CREATE TYPE auth_role_enum AS ENUM (
+    'super_admin',    -- Administrador del sistema SPOON
+    'admin',          -- Administrador del restaurante
+    'owner',          -- Dueño del restaurante
+    'manager',        -- Gerente del restaurante
+    'staff',          -- Personal del restaurante
+    'waiter',         -- Mesero
+    'kitchen',        -- Personal de cocina
+    'cashier'         -- Cajero
+);
 
-### **ESQUEMA: auth (Autenticación y Usuarios)**
+CREATE TYPE user_status_enum AS ENUM (
+    'active',         -- Usuario activo
+    'inactive',       -- Usuario inactivo
+    
+    'suspended',      -- Usuario suspendido
+    'pending',        -- Pendiente de verificación
+    'locked'          -- Cuenta bloqueada
+);
 
-#### 1. Tabla: auth.users
-```sql
+-- Enums para restaurantes
+CREATE TYPE price_range_enum AS ENUM ('budget', 'medium', 'expensive', 'luxury');
+CREATE TYPE restaurant_status_enum AS ENUM ('active', 'inactive', 'suspended', 'pending_approval');
+
+-- Enums para menús
+CREATE TYPE category_type_enum AS ENUM (
+    'entrada',        -- CAT_001
+    'principio',      -- CAT_002  
+    'proteina',       -- CAT_003
+    'acompanamiento', -- CAT_004
+    'bebida',         -- CAT_005
+    'postre',
+    'aperitivo',
+    'especial'
+);
+
+CREATE TYPE product_status_enum AS ENUM (
+    'active',         -- Producto activo
+    'inactive',       -- Producto inactivo
+    'draft',          -- Borrador
+    'archived',       -- Archivado
+    'discontinued',   -- Descontinuado
+    'out_of_stock'    -- Sin stock
+);
+
+CREATE TYPE version_status_enum AS ENUM ('draft', 'published', 'archived');
+
+CREATE TYPE stock_movement_enum AS ENUM (
+    'purchase',       -- Compra
+    'sale',          -- Venta
+    'adjustment',    -- Ajuste
+    'waste',         -- Desperdicio
+    'transfer',      -- Transferencia
+    'return',        -- Devolución
+    'production',    -- Producción
+    'consumption'    -- Consumo
+);
+
+CREATE TYPE daily_menu_status_enum AS ENUM (
+    'draft',          -- Borrador
+    'published',      -- Publicado
+    'archived',       -- Archivado
+    'cancelled'       -- Cancelado
+);
+
+-- Enums para ventas
+CREATE TYPE order_type_enum AS ENUM ('dine_in', 'takeout', 'delivery', 'pickup');
+CREATE TYPE order_status_enum AS ENUM (
+    'pending',        -- Pendiente
+    'confirmed',      -- Confirmado
+    'preparing',      -- En preparación
+    'ready',          -- Listo
+    'served',         -- Servido
+    'completed',      -- Completado
+    'cancelled'       -- Cancelado
+);
+CREATE TYPE payment_method_enum AS ENUM (
+    'cash',           -- Efectivo
+    'card',           -- Tarjeta
+    'transfer',       -- Transferencia
+    'digital_wallet', -- Billetera digital
+    'credit'          -- Crédito
+);
+CREATE TYPE payment_status_enum AS ENUM ('pending', 'paid', 'partial', 'refunded', 'failed');
+CREATE TYPE order_item_status_enum AS ENUM ('pending', 'preparing', 'ready', 'served', 'cancelled');
+
+-- Enums para auditoría
+CREATE TYPE log_severity_enum AS ENUM ('debug', 'info', 'warning', 'error', 'critical');
+CREATE TYPE publication_action_enum AS ENUM ('publish', 'unpublish', 'update', 'schedule');
+
+-- Enums para configuración
+CREATE TYPE setting_type_enum AS ENUM ('string', 'number', 'boolean', 'json', 'array');
+
+-- ===================================================================
+-- ESQUEMA: auth (Autenticación y Usuarios)
+-- ===================================================================
+
+-- Tabla: auth.users
 CREATE TABLE auth.users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email VARCHAR(255) UNIQUE NOT NULL,
@@ -69,29 +152,7 @@ CREATE TABLE auth.users (
     updated_by UUID REFERENCES auth.users(id)
 );
 
--- Enums para roles y estados
-CREATE TYPE auth_role_enum AS ENUM (
-    'super_admin',    -- Administrador del sistema SPOON
-    'admin',          -- Administrador del restaurante
-    'owner',          -- Dueño del restaurante
-    'manager',        -- Gerente del restaurante
-    'staff',          -- Personal del restaurante
-    'waiter',         -- Mesero
-    'kitchen',        -- Personal de cocina
-    'cashier'         -- Cajero
-);
-
-CREATE TYPE user_status_enum AS ENUM (
-    'active',         -- Usuario activo
-    'inactive',       -- Usuario inactivo
-    'suspended',      -- Usuario suspendido
-    'pending',        -- Pendiente de verificación
-    'locked'          -- Cuenta bloqueada
-);
-```
-
-#### 2. Tabla: auth.user_sessions
-```sql
+-- Tabla: auth.user_sessions
 CREATE TABLE auth.user_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -106,10 +167,8 @@ CREATE TABLE auth.user_sessions (
     last_activity TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
-```
 
-#### 3. Tabla: auth.permissions
-```sql
+-- Tabla: auth.permissions
 CREATE TABLE auth.permissions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(100) NOT NULL UNIQUE,
@@ -119,10 +178,8 @@ CREATE TABLE auth.permissions (
     conditions JSONB DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
-```
 
-#### 4. Tabla: auth.role_permissions
-```sql
+-- Tabla: auth.role_permissions
 CREATE TABLE auth.role_permissions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     role auth_role_enum NOT NULL,
@@ -131,12 +188,12 @@ CREATE TABLE auth.role_permissions (
     granted_by UUID REFERENCES auth.users(id),
     UNIQUE(role, permission_id)
 );
-```
 
-### **ESQUEMA: restaurant (Datos del Restaurante)**
+-- ===================================================================
+-- ESQUEMA: restaurant (Datos del Restaurante)
+-- ===================================================================
 
-#### 5. Tabla: restaurant.restaurants
-```sql
+-- Tabla: restaurant.restaurants
 CREATE TABLE restaurant.restaurants (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(200) NOT NULL,
@@ -172,12 +229,7 @@ CREATE TABLE restaurant.restaurants (
     updated_by UUID REFERENCES auth.users(id)
 );
 
-CREATE TYPE price_range_enum AS ENUM ('budget', 'medium', 'expensive', 'luxury');
-CREATE TYPE restaurant_status_enum AS ENUM ('active', 'inactive', 'suspended', 'pending_approval');
-```
-
-#### 6. Tabla: restaurant.restaurant_users
-```sql
+-- Tabla: restaurant.restaurant_users
 CREATE TABLE restaurant.restaurant_users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     restaurant_id UUID NOT NULL REFERENCES restaurant.restaurants(id) ON DELETE CASCADE,
@@ -196,10 +248,8 @@ CREATE TABLE restaurant.restaurant_users (
     created_by UUID REFERENCES auth.users(id),
     UNIQUE(restaurant_id, user_id)
 );
-```
 
-#### 7. Tabla: restaurant.business_hours
-```sql
+-- Tabla: restaurant.business_hours
 CREATE TABLE restaurant.business_hours (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     restaurant_id UUID NOT NULL REFERENCES restaurant.restaurants(id) ON DELETE CASCADE,
@@ -215,10 +265,8 @@ CREATE TABLE restaurant.business_hours (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(restaurant_id, day_of_week)
 );
-```
 
-#### 8. Tabla: restaurant.special_hours
-```sql
+-- Tabla: restaurant.special_hours
 CREATE TABLE restaurant.special_hours (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     restaurant_id UUID NOT NULL REFERENCES restaurant.restaurants(id) ON DELETE CASCADE,
@@ -231,12 +279,12 @@ CREATE TABLE restaurant.special_hours (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(restaurant_id, date)
 );
-```
 
-### **ESQUEMA: menu (Gestión de Menús)**
+-- ===================================================================
+-- ESQUEMA: menu (Gestión de Menús)
+-- ===================================================================
 
-#### 9. Tabla: menu.categories
-```sql
+-- Tabla: menu.categories
 CREATE TABLE menu.categories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     restaurant_id UUID NOT NULL REFERENCES restaurant.restaurants(id) ON DELETE CASCADE,
@@ -258,20 +306,7 @@ CREATE TABLE menu.categories (
     UNIQUE(restaurant_id, slug)
 );
 
-CREATE TYPE category_type_enum AS ENUM (
-    'entrada',        -- CAT_001
-    'principio',      -- CAT_002  
-    'proteina',       -- CAT_003
-    'acompanamiento', -- CAT_004
-    'bebida',         -- CAT_005
-    'postre',
-    'aperitivo',
-    'especial'
-);
-```
-
-#### 10. Tabla: menu.products
-```sql
+-- Tabla: menu.products
 CREATE TABLE menu.products (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     restaurant_id UUID NOT NULL REFERENCES restaurant.restaurants(id) ON DELETE CASCADE,
@@ -311,18 +346,7 @@ CREATE TABLE menu.products (
     UNIQUE(restaurant_id, slug)
 );
 
-CREATE TYPE product_status_enum AS ENUM (
-    'active',         -- Producto activo
-    'inactive',       -- Producto inactivo
-    'draft',          -- Borrador
-    'archived',       -- Archivado
-    'discontinued',   -- Descontinuado
-    'out_of_stock'    -- Sin stock
-);
-```
-
-#### 11. Tabla: menu.product_versions
-```sql
+-- Tabla: menu.product_versions
 CREATE TABLE menu.product_versions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     product_id UUID NOT NULL REFERENCES menu.products(id) ON DELETE CASCADE,
@@ -338,11 +362,7 @@ CREATE TABLE menu.product_versions (
     UNIQUE(product_id, version_number)
 );
 
-CREATE TYPE version_status_enum AS ENUM ('draft', 'published', 'archived');
-```
-
-#### 12. Tabla: menu.product_price_history
-```sql
+-- Tabla: menu.product_price_history
 CREATE TABLE menu.product_price_history (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     product_id UUID NOT NULL REFERENCES menu.products(id) ON DELETE CASCADE,
@@ -354,10 +374,8 @@ CREATE TABLE menu.product_price_history (
     created_by UUID NOT NULL REFERENCES auth.users(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
-```
 
-#### 13. Tabla: menu.product_stock
-```sql
+-- Tabla: menu.product_stock
 CREATE TABLE menu.product_stock (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     product_id UUID NOT NULL REFERENCES menu.products(id) ON DELETE CASCADE,
@@ -376,10 +394,8 @@ CREATE TABLE menu.product_stock (
     updated_by UUID REFERENCES auth.users(id),
     UNIQUE(product_id)
 );
-```
 
-#### 14. Tabla: menu.stock_movements
-```sql
+-- Tabla: menu.stock_movements
 CREATE TABLE menu.stock_movements (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     product_id UUID NOT NULL REFERENCES menu.products(id) ON DELETE CASCADE,
@@ -397,20 +413,7 @@ CREATE TABLE menu.stock_movements (
     created_by UUID NOT NULL REFERENCES auth.users(id)
 );
 
-CREATE TYPE stock_movement_enum AS ENUM (
-    'purchase',       -- Compra
-    'sale',          -- Venta
-    'adjustment',    -- Ajuste
-    'waste',         -- Desperdicio
-    'transfer',      -- Transferencia
-    'return',        -- Devolución
-    'production',    -- Producción
-    'consumption'    -- Consumo
-);
-```
-
-#### 15. Tabla: menu.daily_menus
-```sql
+-- Tabla: menu.daily_menus
 CREATE TABLE menu.daily_menus (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     restaurant_id UUID NOT NULL REFERENCES restaurant.restaurants(id) ON DELETE CASCADE,
@@ -430,16 +433,7 @@ CREATE TABLE menu.daily_menus (
     UNIQUE(restaurant_id, menu_date)
 );
 
-CREATE TYPE daily_menu_status_enum AS ENUM (
-    'draft',          -- Borrador
-    'published',      -- Publicado
-    'archived',       -- Archivado
-    'cancelled'       -- Cancelado
-);
-```
-
-#### 16. Tabla: menu.menu_combinations
-```sql
+-- Tabla: menu.menu_combinations
 CREATE TABLE menu.menu_combinations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     daily_menu_id UUID NOT NULL REFERENCES menu.daily_menus(id) ON DELETE CASCADE,
@@ -464,10 +458,8 @@ CREATE TABLE menu.menu_combinations (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
-```
 
-#### 17. Tabla: menu.combination_sides
-```sql
+-- Tabla: menu.combination_sides
 CREATE TABLE menu.combination_sides (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     combination_id UUID NOT NULL REFERENCES menu.menu_combinations(id) ON DELETE CASCADE,
@@ -478,12 +470,12 @@ CREATE TABLE menu.combination_sides (
     sort_order INTEGER DEFAULT 0,
     UNIQUE(combination_id, product_id)
 );
-```
 
-### **ESQUEMA: sales (Ventas y Transacciones)**
+-- ===================================================================
+-- ESQUEMA: sales (Ventas y Transacciones)
+-- ===================================================================
 
-#### 18. Tabla: sales.orders
-```sql
+-- Tabla: sales.orders
 CREATE TABLE sales.orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     restaurant_id UUID NOT NULL REFERENCES restaurant.restaurants(id),
@@ -520,28 +512,7 @@ CREATE TABLE sales.orders (
     UNIQUE(restaurant_id, order_number)
 );
 
-CREATE TYPE order_type_enum AS ENUM ('dine_in', 'takeout', 'delivery', 'pickup');
-CREATE TYPE order_status_enum AS ENUM (
-    'pending',        -- Pendiente
-    'confirmed',      -- Confirmado
-    'preparing',      -- En preparación
-    'ready',          -- Listo
-    'served',         -- Servido
-    'completed',      -- Completado
-    'cancelled'       -- Cancelado
-);
-CREATE TYPE payment_method_enum AS ENUM (
-    'cash',           -- Efectivo
-    'card',           -- Tarjeta
-    'transfer',       -- Transferencia
-    'digital_wallet', -- Billetera digital
-    'credit'          -- Crédito
-);
-CREATE TYPE payment_status_enum AS ENUM ('pending', 'paid', 'partial', 'refunded', 'failed');
-```
-
-#### 19. Tabla: sales.order_items
-```sql
+-- Tabla: sales.order_items
 CREATE TABLE sales.order_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id UUID NOT NULL REFERENCES sales.orders(id) ON DELETE CASCADE,
@@ -564,11 +535,7 @@ CREATE TABLE sales.order_items (
     )
 );
 
-CREATE TYPE order_item_status_enum AS ENUM ('pending', 'preparing', 'ready', 'served', 'cancelled');
-```
-
-#### 20. Tabla: sales.daily_sales_summary
-```sql
+-- Tabla: sales.daily_sales_summary
 CREATE TABLE sales.daily_sales_summary (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     restaurant_id UUID NOT NULL REFERENCES restaurant.restaurants(id),
@@ -592,12 +559,12 @@ CREATE TABLE sales.daily_sales_summary (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(restaurant_id, sales_date)
 );
-```
 
-### **ESQUEMA: audit (Auditoría y Logs)**
+-- ===================================================================
+-- ESQUEMA: audit (Auditoría y Logs)
+-- ===================================================================
 
-#### 21. Tabla: audit.activity_logs
-```sql
+-- Tabla: audit.activity_logs
 CREATE TABLE audit.activity_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     restaurant_id UUID REFERENCES restaurant.restaurants(id),
@@ -616,11 +583,7 @@ CREATE TABLE audit.activity_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TYPE log_severity_enum AS ENUM ('debug', 'info', 'warning', 'error', 'critical');
-```
-
-#### 22. Tabla: audit.menu_publication_logs
-```sql
+-- Tabla: audit.menu_publication_logs
 CREATE TABLE audit.menu_publication_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     restaurant_id UUID NOT NULL REFERENCES restaurant.restaurants(id),
@@ -635,13 +598,11 @@ CREATE TABLE audit.menu_publication_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TYPE publication_action_enum AS ENUM ('publish', 'unpublish', 'update', 'schedule');
-```
+-- ===================================================================
+-- ESQUEMA: config (Configuraciones del Sistema)
+-- ===================================================================
 
-### **ESQUEMA: config (Configuraciones del Sistema)**
-
-#### 23. Tabla: config.system_settings
-```sql
+-- Tabla: config.system_settings
 CREATE TABLE config.system_settings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     restaurant_id UUID REFERENCES restaurant.restaurants(id),
@@ -657,14 +618,10 @@ CREATE TABLE config.system_settings (
     UNIQUE(restaurant_id, setting_key)
 );
 
-CREATE TYPE setting_type_enum AS ENUM ('string', 'number', 'boolean', 'json', 'array');
-```
+-- ===================================================================
+-- ÍNDICES PARA OPTIMIZACIÓN
+-- ===================================================================
 
----
-
-## Índices Recomendados para Optimización
-
-```sql
 -- Índices para autenticación y sesiones
 CREATE INDEX idx_users_email ON auth.users(email);
 CREATE INDEX idx_users_role_status ON auth.users(role, status);
@@ -708,16 +665,12 @@ WHERE status = 'published';
 
 CREATE INDEX idx_pending_orders ON sales.orders(restaurant_id, created_at) 
 WHERE status IN ('pending', 'confirmed', 'preparing');
-```
 
----
+-- ===================================================================
+-- TRIGGERS Y FUNCIONES
+-- ===================================================================
 
-## Triggers y Constraints Recomendados
-
-### **Triggers Automáticos**
-
-```sql
--- Trigger para actualizar updated_at automáticamente
+-- Función para actualizar updated_at automáticamente
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -726,14 +679,41 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Aplicar a todas las tablas con updated_at
+-- Aplicar triggers a todas las tablas con updated_at
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON auth.users
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_restaurants_updated_at BEFORE UPDATE ON restaurant.restaurants
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Trigger para auditoría automática
+CREATE TRIGGER update_restaurant_users_updated_at BEFORE UPDATE ON restaurant.restaurant_users
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_business_hours_updated_at BEFORE UPDATE ON restaurant.business_hours
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_categories_updated_at BEFORE UPDATE ON menu.categories
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON menu.products
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_daily_menus_updated_at BEFORE UPDATE ON menu.daily_menus
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_menu_combinations_updated_at BEFORE UPDATE ON menu.menu_combinations
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON sales.orders
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_daily_sales_summary_updated_at BEFORE UPDATE ON sales.daily_sales_summary
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_system_settings_updated_at BEFORE UPDATE ON config.system_settings
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Función para auditoría automática
 CREATE OR REPLACE FUNCTION audit_trigger_function()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -753,7 +733,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Trigger para actualizar stock automáticamente
+-- Función para actualizar stock automáticamente
 CREATE OR REPLACE FUNCTION update_product_stock()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -766,7 +746,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Trigger para actualizar resumen diario de ventas
+-- Función para actualizar resumen diario de ventas
 CREATE OR REPLACE FUNCTION update_daily_sales_summary()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -781,22 +761,23 @@ BEGIN
     )
     ON CONFLICT (restaurant_id, sales_date) 
     DO UPDATE SET
-        total_orders = daily_sales_summary.total_orders + 1,
-        gross_sales = daily_sales_summary.gross_sales + NEW.total_amount,
-        net_sales = daily_sales_summary.net_sales + (NEW.total_amount - NEW.tax_amount),
+        total_orders = sales.daily_sales_summary.total_orders + 1,
+        gross_sales = sales.daily_sales_summary.gross_sales + NEW.total_amount,
+        net_sales = sales.daily_sales_summary.net_sales + (NEW.total_amount - NEW.tax_amount),
         updated_at = CURRENT_TIMESTAMP;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
+-- Aplicar trigger para actualizar resumen diario de ventas
 CREATE TRIGGER trigger_update_daily_sales 
     AFTER INSERT ON sales.orders
     FOR EACH ROW EXECUTE FUNCTION update_daily_sales_summary();
-```
 
-### **Constraints de Integridad**
+-- ===================================================================
+-- CONSTRAINTS DE INTEGRIDAD
+-- ===================================================================
 
-```sql
 -- Constraint para validar horarios de negocio
 ALTER TABLE restaurant.business_hours 
 ADD CONSTRAINT check_valid_hours 
@@ -824,16 +805,131 @@ CHECK (menu_date >= CURRENT_DATE);
 ALTER TABLE sales.orders 
 ADD CONSTRAINT check_positive_total 
 CHECK (total_amount > 0 AND subtotal > 0);
-```
 
----
+-- ===================================================================
+-- DATOS INICIALES
+-- ===================================================================
 
-## Vistas para Reporting y Apps Móviles
+-- Insertar usuario administrador inicial
+INSERT INTO auth.users (
+    id, email, password_hash, first_name, last_name, role, status, email_verified
+) VALUES (
+    gen_random_uuid(),
+    'admin@spoon.com',
+    '$2b$10$example_hash_here', -- Cambiar por hash real
+    'Admin',
+    'SPOON',
+    'super_admin',
+    'active',
+    true
+) ON CONFLICT (email) DO NOTHING;
 
-### **Vista: Menú Público para Apps Móviles**
+-- Insertar restaurante por defecto
+INSERT INTO restaurant.restaurants (
+    id, name, slug, description, address, phone, email, owner_id, status
+) VALUES (
+    gen_random_uuid(),
+    'SPOON Restaurant Demo',
+    'spoon-demo',
+    'Restaurante de demostración del sistema SPOON',
+    'Calle Principal 123, Bogotá',
+    '+57 300 123 4567',
+    'demo@spoon.com',
+    (SELECT id FROM auth.users WHERE email = 'admin@spoon.com' LIMIT 1),
+    'active'
+) ON CONFLICT (slug) DO NOTHING;
 
-```sql
-CREATE VIEW public_menu_view AS
+-- Insertar categorías iniciales
+WITH restaurant_data AS (
+    SELECT id as restaurant_id FROM restaurant.restaurants WHERE slug = 'spoon-demo' LIMIT 1
+)
+INSERT INTO menu.categories (restaurant_id, name, slug, category_type, sort_order, description) 
+SELECT 
+    restaurant_id,
+    name,
+    slug,
+    category_type::category_type_enum,
+    sort_order,
+    description
+FROM restaurant_data, (VALUES
+    ('Entradas', 'entradas', 'entrada', 1, 'Sopas y entradas'),
+    ('Principios', 'principios', 'principio', 2, 'Platos principales'),
+    ('Proteínas', 'proteinas', 'proteina', 3, 'Carnes y proteínas'),
+    ('Acompañamientos', 'acompanamientos', 'acompanamiento', 4, 'Guarniciones y acompañamientos'),
+    ('Bebidas', 'bebidas', 'bebida', 5, 'Bebidas y jugos')
+) AS categories(name, slug, category_type, sort_order, description)
+ON CONFLICT (restaurant_id, slug) DO NOTHING;
+
+-- Insertar productos de ejemplo
+WITH restaurant_data AS (
+    SELECT id as restaurant_id FROM restaurant.restaurants WHERE slug = 'spoon-demo' LIMIT 1
+),
+category_data AS (
+    SELECT 
+        c.id as category_id,
+        c.category_type,
+        r.restaurant_id
+    FROM menu.categories c
+    CROSS JOIN restaurant_data r
+    WHERE c.restaurant_id = r.restaurant_id
+)
+INSERT INTO menu.products (
+    restaurant_id, category_id, name, slug, description, base_price, current_price, status
+)
+SELECT 
+    cd.restaurant_id,
+    cd.category_id,
+    p.name,
+    p.slug,
+    p.description,
+    p.base_price,
+    p.current_price,
+    'active'::product_status_enum
+FROM category_data cd
+JOIN (VALUES
+    ('entrada', 'Sopa de Guineo', 'sopa-guineo', 'Sopa tradicional con plátano verde', 8500, 8500),
+    ('entrada', 'Ajiaco', 'ajiaco', 'Sopa típica con tres tipos de papa, pollo y guascas', 12000, 12000),
+    ('principio', 'Frijoles', 'frijoles', 'Frijoles rojos cocinados con plátano y costilla', 15000, 15000),
+    ('proteina', 'Pechuga a la Plancha', 'pechuga-plancha', 'Pechuga de pollo a la plancha con especias', 18000, 18000),
+    ('acompanamiento', 'Arroz Blanco', 'arroz-blanco', 'Arroz blanco cocido al vapor', 5000, 5000),
+    ('bebida', 'Jugo de Mora', 'jugo-mora', 'Jugo en agua de mora', 4000, 4000)
+) AS p(category_type, name, slug, description, base_price, current_price) 
+ON cd.category_type = p.category_type::category_type_enum
+ON CONFLICT (restaurant_id, slug) DO NOTHING;
+
+-- Insertar stock inicial para productos
+INSERT INTO menu.product_stock (product_id, current_quantity, min_quantity, max_quantity)
+SELECT 
+    p.id,
+    CASE 
+        WHEN c.category_type = 'acompanamiento' THEN 50
+        WHEN c.category_type = 'bebida' THEN 45
+        WHEN c.category_type = 'proteina' THEN 25
+        ELSE 20
+    END as current_quantity,
+    CASE 
+        WHEN c.category_type = 'acompanamiento' THEN 20
+        WHEN c.category_type = 'bebida' THEN 15
+        WHEN c.category_type = 'proteina' THEN 8
+        ELSE 5
+    END as min_quantity,
+    CASE 
+        WHEN c.category_type = 'acompanamiento' THEN 200
+        WHEN c.category_type = 'bebida' THEN 150
+        WHEN c.category_type = 'proteina' THEN 100
+        ELSE 50
+    END as max_quantity
+FROM menu.products p
+JOIN menu.categories c ON p.category_id = c.id
+WHERE p.restaurant_id = (SELECT id FROM restaurant.restaurants WHERE slug = 'spoon-demo' LIMIT 1)
+ON CONFLICT (product_id) DO NOTHING;
+
+-- ===================================================================
+-- VISTAS PARA REPORTING Y APPS MÓVILES
+-- ===================================================================
+
+-- Vista: Menú Público para Apps Móviles
+CREATE OR REPLACE VIEW public_menu_view AS
 SELECT 
     r.id as restaurant_id,
     r.name as restaurant_name,
@@ -899,12 +995,9 @@ GROUP BY
     pp.name, pp.description, pp.image_url,
     ppr.name, ppr.description, ppr.image_url,
     pb.name, pb.description, pb.image_url;
-```
 
-### **Vista: Dashboard de Ventas**
-
-```sql
-CREATE VIEW sales_dashboard_view AS
+-- Vista: Dashboard de Ventas
+CREATE OR REPLACE VIEW sales_dashboard_view AS
 SELECT 
     r.id as restaurant_id,
     r.name as restaurant_name,
@@ -944,42 +1037,9 @@ FROM restaurant.restaurants r
 JOIN sales.daily_sales_summary dss ON r.id = dss.restaurant_id
 WHERE r.status = 'active'
 ORDER BY r.id, dss.sales_date DESC;
-```
 
-### **Vista: Productos Más Vendidos**
-
-```sql
-CREATE VIEW top_selling_products_view AS
-SELECT 
-    r.id as restaurant_id,
-    r.name as restaurant_name,
-    p.id as product_id,
-    p.name as product_name,
-    c.name as category_name,
-    COUNT(oi.id) as times_ordered,
-    SUM(oi.quantity) as total_quantity_sold,
-    SUM(oi.total_price) as total_revenue,
-    AVG(oi.unit_price) as average_price,
-    RANK() OVER (
-        PARTITION BY r.id 
-        ORDER BY SUM(oi.quantity) DESC
-    ) as sales_rank
-FROM restaurant.restaurants r
-JOIN sales.orders o ON r.id = o.restaurant_id
-JOIN sales.order_items oi ON o.id = oi.order_id
-JOIN menu.products p ON oi.product_id = p.id
-JOIN menu.categories c ON p.category_id = c.id
-WHERE 
-    o.status = 'completed'
-    AND o.created_at >= CURRENT_DATE - INTERVAL '30 days'
-GROUP BY r.id, r.name, p.id, p.name, c.name
-ORDER BY r.id, total_quantity_sold DESC;
-```
-
-### **Vista: Stock Crítico**
-
-```sql
-CREATE VIEW critical_stock_view AS
+-- Vista: Stock Crítico
+CREATE OR REPLACE VIEW critical_stock_view AS
 SELECT 
     r.id as restaurant_id,
     r.name as restaurant_name,
@@ -997,27 +1057,11 @@ SELECT
         WHEN ps.current_quantity >= ps.max_quantity THEN 'OVERSTOCK'
         ELSE 'NORMAL'
     END as stock_status,
-    ps.last_updated,
-    -- Días de stock restante basado en consumo promedio
-    CASE 
-        WHEN avg_daily_consumption.daily_avg > 0 THEN
-            ROUND(ps.current_quantity / avg_daily_consumption.daily_avg, 1)
-        ELSE NULL
-    END as days_remaining
+    ps.last_updated
 FROM restaurant.restaurants r
 JOIN menu.products p ON r.id = p.restaurant_id
 JOIN menu.categories c ON p.category_id = c.id
 JOIN menu.product_stock ps ON p.id = ps.product_id
-LEFT JOIN (
-    SELECT 
-        sm.product_id,
-        AVG(sm.quantity) as daily_avg
-    FROM menu.stock_movements sm
-    WHERE 
-        sm.movement_type = 'sale'
-        AND sm.created_at >= CURRENT_DATE - INTERVAL '30 days'
-    GROUP BY sm.product_id
-) avg_daily_consumption ON p.id = avg_daily_consumption.product_id
 WHERE 
     r.status = 'active'
     AND p.status = 'active'
@@ -1034,226 +1078,19 @@ ORDER BY
         ELSE 3
     END,
     ps.current_quantity ASC;
-```
 
----
+-- ===================================================================
+-- FINALIZACIÓN
+-- ===================================================================
 
-## Migraciones Futuras Recomendadas
+COMMIT;
 
-### **1. Sistema de Pedidos Online**
-
-```sql
--- Tabla para clientes registrados
-CREATE TABLE customers.customer_profiles (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    phone VARCHAR(20),
-    first_name VARCHAR(100),
-    last_name VARCHAR(100),
-    birth_date DATE,
-    preferences JSONB DEFAULT '{}',
-    loyalty_points INTEGER DEFAULT 0,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- Tabla para direcciones de entrega
-CREATE TABLE customers.delivery_addresses (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    customer_id UUID NOT NULL REFERENCES customers.customer_profiles(id),
-    address_line_1 TEXT NOT NULL,
-    address_line_2 TEXT,
-    city VARCHAR(100),
-    postal_code VARCHAR(20),
-    latitude DECIMAL(10, 8),
-    longitude DECIMAL(11, 8),
-    is_default BOOLEAN DEFAULT FALSE,
-    delivery_instructions TEXT
-);
-```
-
-### **2. Sistema de Inventario Avanzado**
-
-```sql
--- Tabla para proveedores
-CREATE TABLE inventory.suppliers (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(200) NOT NULL,
-    contact_person VARCHAR(200),
-    email VARCHAR(255),
-    phone VARCHAR(20),
-    address TEXT,
-    payment_terms JSONB DEFAULT '{}',
-    rating DECIMAL(3, 2),
-    is_active BOOLEAN DEFAULT TRUE
-);
-
--- Tabla para órdenes de compra
-CREATE TABLE inventory.purchase_orders (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    restaurant_id UUID NOT NULL REFERENCES restaurant.restaurants(id),
-    supplier_id UUID NOT NULL REFERENCES inventory.suppliers(id),
-    order_number VARCHAR(50) NOT NULL,
-    status purchase_order_status_enum DEFAULT 'draft',
-    subtotal DECIMAL(10, 2),
-    tax_amount DECIMAL(10, 2),
-    total_amount DECIMAL(10, 2),
-    expected_delivery_date DATE,
-    actual_delivery_date DATE,
-    created_by UUID NOT NULL REFERENCES auth.users(id)
-);
-```
-
-### **3. Sistema de Fidelización**
-
-```sql
--- Tabla para programas de lealtad
-CREATE TABLE loyalty.loyalty_programs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    restaurant_id UUID NOT NULL REFERENCES restaurant.restaurants(id),
-    name VARCHAR(200) NOT NULL,
-    description TEXT,
-    points_per_dollar DECIMAL(5, 2) DEFAULT 1.00,
-    redemption_rate DECIMAL(5, 2) DEFAULT 0.01,
-    is_active BOOLEAN DEFAULT TRUE
-);
-
--- Tabla para transacciones de puntos
-CREATE TABLE loyalty.point_transactions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    customer_id UUID NOT NULL REFERENCES customers.customer_profiles(id),
-    order_id UUID REFERENCES sales.orders(id),
-    transaction_type point_transaction_enum NOT NULL,
-    points INTEGER NOT NULL,
-    description TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### **4. Sistema de Reportes Avanzados**
-
-```sql
--- Tabla para reportes personalizados
-CREATE TABLE reports.custom_reports (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    restaurant_id UUID NOT NULL REFERENCES restaurant.restaurants(id),
-    name VARCHAR(200) NOT NULL,
-    description TEXT,
-    query_template TEXT NOT NULL,
-    parameters JSONB DEFAULT '{}',
-    schedule JSONB DEFAULT '{}',
-    recipients JSONB DEFAULT '[]',
-    is_active BOOLEAN DEFAULT TRUE,
-    created_by UUID NOT NULL REFERENCES auth.users(id)
-);
-```
-
----
-
-## Consideraciones de Seguridad
-
-### **1. Encriptación de Datos Sensibles**
-
-```sql
--- Extensión para encriptación
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
--- Función para encriptar datos sensibles
-CREATE OR REPLACE FUNCTION encrypt_sensitive_data(data TEXT)
-RETURNS TEXT AS $$
+-- Mensaje de confirmación
+DO $$
 BEGIN
-    RETURN encode(
-        encrypt(data::bytea, 'encryption_key', 'aes'),
-        'base64'
-    );
-END;
-$$ LANGUAGE plpgsql;
-```
-
-### **2. Row Level Security (RLS)**
-
-```sql
--- Habilitar RLS en tablas sensibles
-ALTER TABLE restaurant.restaurants ENABLE ROW LEVEL SECURITY;
-ALTER TABLE menu.daily_menus ENABLE ROW LEVEL SECURITY;
-ALTER TABLE sales.orders ENABLE ROW LEVEL SECURITY;
-
--- Política para acceso por restaurante
-CREATE POLICY restaurant_access_policy ON restaurant.restaurants
-    FOR ALL TO authenticated_users
-    USING (owner_id = current_user_id() OR 
-           id IN (SELECT restaurant_id FROM restaurant.restaurant_users 
-                  WHERE user_id = current_user_id()));
-```
-
-### **3. Auditoría Completa**
-
-```sql
--- Aplicar triggers de auditoría a tablas críticas
-CREATE TRIGGER audit_restaurants AFTER INSERT OR UPDATE OR DELETE ON restaurant.restaurants
-    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
-
-CREATE TRIGGER audit_products AFTER INSERT OR UPDATE OR DELETE ON menu.products
-    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
-
-CREATE TRIGGER audit_orders AFTER INSERT OR UPDATE OR DELETE ON sales.orders
-    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
-```
-
----
-
-## Optimizaciones de Rendimiento
-
-### **1. Particionado de Tablas**
-
-```sql
--- Particionado por fecha para logs de auditoría
-CREATE TABLE audit.activity_logs_y2024m01 PARTITION OF audit.activity_logs
-    FOR VALUES FROM ('2024-01-01') TO ('2024-02-01');
-
--- Particionado por restaurante para órdenes
-CREATE TABLE sales.orders_restaurant_1 PARTITION OF sales.orders
-    FOR VALUES WITH (modulus 4, remainder 0);
-```
-
-### **2. Índices Especializados**
-
-```sql
--- Índice GIN para búsquedas en JSONB
-CREATE INDEX idx_products_tags_gin ON menu.products USING GIN (tags);
-CREATE INDEX idx_orders_metadata_gin ON sales.orders USING GIN (metadata);
-
--- Índice para búsquedas de texto completo
-CREATE INDEX idx_products_search ON menu.products 
-USING GIN (to_tsvector('spanish', name || ' ' || description));
-```
-
----
-
-## Conclusiones y Recomendaciones
-
-### **Fortalezas del Diseño:**
-
-1. **Normalización Completa (3FN)** - Elimina redundancia y asegura integridad
-2. **Escalabilidad** - Diseño preparado para millones de registros
-3. **Flexibilidad** - Uso de JSONB para configuraciones dinámicas
-4. **Seguridad** - RLS, auditoría completa y encriptación
-5. **Rendimiento** - Índices optimizados y particionado estratégico
-6. **Trazabilidad** - Logs completos de todas las operaciones críticas
-
-### **Próximos Pasos:**
-
-1. **Implementar en etapas** - Comenzar con esquemas core (auth, restaurant, menu)
-2. **Pruebas de carga** - Validar rendimiento con datos reales
-3. **Monitoreo** - Implementar alertas para métricas críticas
-4. **Backup y Recovery** - Estrategia de respaldo automatizada
-5. **Documentación** - Mantener documentación actualizada del esquema
-
-### **Métricas de Éxito:**
-
-- **Tiempo de respuesta** < 100ms para consultas frecuentes
-- **Disponibilidad** > 99.9% uptime
-- **Integridad** 0% pérdida de datos críticos
-- **Escalabilidad** Soporte para 1000+ restaurantes simultáneos
-- **Seguridad** Cumplimiento con estándares de protección de datos
-
-Este diseño de base de datos proporciona una base sólida y escalable para el crecimiento futuro de SPOON como el sistema operativo líder para restaurantes independientes en Latinoamérica.
+    RAISE NOTICE 'Base de datos SPOON creada exitosamente con esquemas: auth, restaurant, menu, sales, audit, config';
+    RAISE NOTICE 'Total de tablas creadas: 23';
+    RAISE NOTICE 'Total de índices creados: 15+';
+    RAISE NOTICE 'Total de vistas creadas: 3';
+    RAISE NOTICE 'Sistema listo para usar con datos de ejemplo';
+END $$;

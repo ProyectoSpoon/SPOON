@@ -1,7 +1,39 @@
 // src/shared/utils/firebase-error.utils.ts
-import { FirebaseError } from 'firebase/app'
-import { ErrorHandlerService } from '../services/error-handler.service'
-import { AppError, ErrorCategory, ErrorSeverity } from '../types/error.types'
+
+interface FirebaseError extends Error {
+  code: string;
+}
+
+enum ErrorCategory {
+  AUTHENTICATION = 'AUTHENTICATION',
+  AUTHORIZATION = 'AUTHORIZATION',
+  VALIDATION = 'VALIDATION',
+  NETWORK = 'NETWORK',
+  DATABASE = 'DATABASE',
+  BUSINESS_LOGIC = 'BUSINESS_LOGIC'
+}
+
+enum ErrorSeverity {
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
+  CRITICAL = 'CRITICAL'
+}
+
+interface AppError {
+  code: string;
+  category: ErrorCategory;
+  severity: ErrorSeverity;
+  message: string;
+  metadata?: any;
+  originalError?: any;
+}
+
+class ErrorHandlerService {
+  static async handleError(error: any, context?: any): Promise<void> {
+    console.error('Error handled:', error, context);
+  }
+}
 
 interface FirebaseErrorMapping {
  code: string;

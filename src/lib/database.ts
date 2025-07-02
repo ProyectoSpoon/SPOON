@@ -5,7 +5,7 @@ const pool = new Pool({
   user: process.env.DB_USER || 'postgres',
   host: process.env.DB_HOST || 'localhost',
   database: process.env.DB_NAME || 'spoon_db',
-  password: process.env.DB_PASSWORD || 'password',
+  password: process.env.DB_PASSWORD || (process.env.DB_PASSWORD_FILE ? require('fs').readFileSync(process.env.DB_PASSWORD_FILE, 'utf8').trim() : 'password'),
   port: parseInt(process.env.DB_PORT || '5432'),
   max: 20,
   idleTimeoutMillis: 30000,

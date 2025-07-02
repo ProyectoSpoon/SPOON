@@ -9,7 +9,7 @@ import type {
 } from '../types/animation.types';
 
 export const getEasing = (type: EasingType): string => {
-  return spoonTheme.animations.easing[type] || spoonTheme.animations.easing.smooth;
+  return (spoonTheme.animations.easing as any)[type] || spoonTheme.animations.easing.smooth;
 };
 
 export const createTransition = (config: AnimationConfig = {}): any => {
@@ -32,14 +32,14 @@ export const createMotionVariants = (configs: Record<string, MotionConfig>): Rec
   for (const [key, config] of Object.entries(configs)) {
     variants[key] = {
       ...config,
-      transition: createTransition(config.transition)
+      transition: config.transition || { duration: 0.3 }
     };
   }
 
   return variants;
 };
 
-export const createParticlesConfig = (config: ParticlesConfig = {}): any => {
+export const createParticlesConfig = (config: any = {}): any => {
   const { 
     type = 'default',
     color = spoonTheme.colors.primary.main,
@@ -49,9 +49,9 @@ export const createParticlesConfig = (config: ParticlesConfig = {}): any => {
   } = config;
 
   return {
-    ...spoonTheme.animations.particles[type],
+    ...(spoonTheme.animations.particles as any)[type],
     particles: {
-      ...spoonTheme.animations.particles[type].particles,
+      ...(spoonTheme.animations.particles as any)[type].particles,
       color: { value: color },
       opacity: { value: opacity },
       move: { speed },
@@ -60,14 +60,14 @@ export const createParticlesConfig = (config: ParticlesConfig = {}): any => {
   };
 };
 
-export const createGeometricPattern = (config: GeometricPatternConfig = {}): string => {
+export const createGeometricPattern = (config: any = {}): string => {
   const { 
     pattern = 'grid',
     color = spoonTheme.colors.primary.main,
     size = 40 
   } = config;
 
-  const patterns = {
+  const patterns: any = {
     grid: `
       <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
         <pattern id="grid" x="0" y="0" width="${size}" height="${size}" patternUnits="userSpaceOnUse">

@@ -1,19 +1,18 @@
 import { RangoHorario, FechaExcepcion } from '@/shared/types/horarios';
-import { DateTime } from 'luxon';
 
 export class ValidadorHorarios {
   static validarRango(rango: RangoHorario): { 
     valido: boolean; 
     mensaje?: string 
   } {
-    if (!rango.horaApertura || !rango.horaCierre) {
+    if (!rango.inicio || !rango.fin) {
       return {
         valido: false,
         mensaje: 'Las horas de apertura y cierre son requeridas'
       };
     }
 
-    if (rango.horaApertura >= rango.horaCierre) {
+    if (rango.inicio >= rango.fin) {
       return {
         valido: false,
         mensaje: 'La hora de cierre debe ser posterior a la de apertura'
@@ -46,12 +45,12 @@ export class ValidadorHorarios {
   }
 
   private static hayConflicto(rango1: RangoHorario, rango2: RangoHorario): boolean {
-    if (!rango1.horaApertura || !rango1.horaCierre || 
-        !rango2.horaApertura || !rango2.horaCierre) {
+    if (!rango1.inicio || !rango1.fin || 
+        !rango2.inicio || !rango2.fin) {
       return false;
     }
 
-    return rango1.horaApertura < rango2.horaCierre && 
-           rango2.horaApertura < rango1.horaCierre;
+    return rango1.inicio < rango2.fin && 
+           rango2.inicio < rango1.fin;
   }
 }

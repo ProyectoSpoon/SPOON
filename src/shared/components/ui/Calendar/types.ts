@@ -4,7 +4,7 @@ export interface CalendarProps {
     selected?: Date | Date[] | null;
     onSelect?: (date: Date | null) => void;
     className?: string;
-    locale?: Locale;
+    locale?: any;
     modifiers?: {
       [key: string]: Date[];
     };

@@ -37,7 +37,7 @@ export const TimeInput = forwardRef<HTMLInputElement, TimeInputProps>(({
   const { hours, minutes, period: currentPeriod } = to12Hour(value as string);
 
   useEffect(() => {
-    setPeriod(currentPeriod);
+    setPeriod(currentPeriod as 'AM' | 'PM');
   }, [value]);
 
   useEffect(() => {

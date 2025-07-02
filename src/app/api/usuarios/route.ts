@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     const data = await request.json() as NuevoUsuario;
     
     // Validar datos mínimos
-    if (!data.nombre || !data.apellido || !data.email || !data.password || !data.rol) {
+    if (!data.name || !data.apellido || !data.email || !data.password || !data.rol) {
       return NextResponse.json(
         { message: 'Datos incompletos' }, 
         { status: 400 }

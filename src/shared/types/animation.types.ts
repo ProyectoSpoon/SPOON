@@ -37,3 +37,36 @@ export interface MotionTransition {
   staggerChildren?: number;
   delayChildren?: number;
 }
+
+export type EasingType = 'linear' | 'easeIn' | 'easeOut' | 'easeInOut' | 'circIn' | 'circOut' | 'circInOut' | 'backIn' | 'backOut' | 'backInOut' | 'anticipate';
+
+export interface MotionConfig {
+  initial?: object;
+  animate?: object;
+  exit?: object;
+  transition?: MotionTransition;
+}
+
+export interface ParticlesConfig {
+  particles: {
+    number: { value: number; density: { enable: boolean; value_area: number; } };
+    color: { value: string; };
+    opacity: { value: number; random: boolean; };
+    size: { value: number; random: boolean; };
+    move: {
+      enable: boolean;
+      speed: number;
+      direction: string;
+      random: boolean;
+      straight: boolean;
+    };
+  };
+}
+
+export interface GeometricPatternConfig {
+  type: 'grid' | 'dots' | 'lines';
+  size: number;
+  spacing: number;
+  color: string;
+  opacity: number;
+}

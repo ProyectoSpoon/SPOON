@@ -1,84 +1,46 @@
-'use client'
+'use client';
 
 import { useCallback } from 'react';
-import Particles from "react-tsparticles";
-import { loadSlim } from "tsparticles-slim";
-import type { Engine } from "tsparticles-engine";
 
 interface ParticlesBackgroundProps {
-  variant?: 'default' | 'sparse' | 'dense';
+  className?: string;
+  particleColor?: string;
+  particleCount?: number;
 }
 
 export const ParticlesBackground = ({ 
-  variant = 'default' 
+  className = "",
+  particleColor = "#ffffff",
+  particleCount = 50 
 }: ParticlesBackgroundProps) => {
-  const particlesInit = useCallback(async (engine: Engine) => {
-    await loadSlim(engine);
-  }, []);
-
-  const particlesConfig = {
-    fullScreen: false,
-    background: {
-      color: {
-        value: "transparent",
-      },
-    },
-    particles: {
-      number: {
-        value: variant === 'sparse' ? 15 : variant === 'dense' ? 50 : 30,
-        density: {
-          enable: true,
-          value_area: 800
-        }
-      },
-      color: {
-        value: "#F4821F"
-      },
-      opacity: {
-        value: 0.3,
-        random: true
-      },
-      size: {
-        value: 3,
-        random: true
-      },
-      move: {
-        enable: true,
-        speed: 2,
-        direction: "none",
-        random: true,
-        straight: false,
-        outMode: "out",
-        bounce: false
-      }
-    },
-    interactivity: {
-      detectsOn: "window",
-      events: {
-        onHover: {
-          enable: true,
-          mode: "grab"
-        },
-        resize: true
-      },
-      modes: {
-        grab: {
-          distance: 150,
-          links: {
-            opacity: 0.3
-          }
-        }
-      }
-    },
-    detectRetina: true
-  };
-
+  // Componente simplificado sin dependencias externas
   return (
-    <Particles
-      id="tsparticles"
-      init={particlesInit}
-      options={particlesConfig}
-      className="absolute inset-0 pointer-events-none"
-    />
+    <div 
+      className={`absolute inset-0 overflow-hidden pointer-events-none ${className}`}
+      style={{
+        background: `radial-gradient(circle at 20% 50%, ${particleColor}10 0%, transparent 50%), 
+                     radial-gradient(circle at 80% 20%, ${particleColor}10 0%, transparent 50%), 
+                     radial-gradient(circle at 40% 80%, ${particleColor}10 0%, transparent 50%)`
+      }}
+    >
+      {/* Simulación de partículas con CSS */}
+      <div className="absolute inset-0 opacity-20">
+        {Array.from({ length: Math.min(particleCount, 20) }).map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-1 h-1 rounded-full animate-pulse"
+            style={{
+              backgroundColor: particleColor,
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 3}s`,
+              animationDuration: `${2 + Math.random() * 3}s`
+            }}
+          />
+        ))}
+      </div>
+    </div>
   );
 };
+
+export default ParticlesBackground;

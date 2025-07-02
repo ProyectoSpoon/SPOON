@@ -13,51 +13,45 @@ export async function GET(request: NextRequest) {
     let queryText = `
       SELECT 
         p.id,
-        p.nombre,
-        p.descripcion,
-        p.precio_actual as "currentPrice",
-        p.categoria_id as "categoriaId",
-        p.subcategoria_id as "subcategoriaId",
-        p.imagen,
-        p.version_actual as "currentVersion",
-        p.estado as status,
-        p.stock_actual as "currentQuantity",
-        p.stock_minimo as "minQuantity",
-        p.stock_maximo as "maxQuantity",
+        p.name,
+        p.description,
+        p.current_price as "currentPrice",
+        p.category_id as "categoriaId",
+        p.image_url as "imagen",
+        p.current_version as "currentVersion",
+        p.status as status,
+        ps.current_quantity as "currentQuantity",
+        ps.min_quantity as "minQuantity",
+        ps.max_quantity as "maxQuantity",
         p.created_at as "createdAt",
         p.updated_at as "updatedAt",
         p.created_by as "createdBy",
         p.updated_by as "updatedBy"
-      FROM productos p
-      WHERE p.restaurante_id = $1
+      FROM menu.products p
+      LEFT JOIN menu.product_stock ps ON p.id = ps.product_id
+      WHERE p.restaurant_id = $1
     `;
     
     const params = [restauranteId];
     let paramIndex = 2;
 
     if (categoriaId) {
-      queryText += ` AND p.categoria_id = $${paramIndex}`;
+      queryText += ` AND p.category_id = $${paramIndex}`;
       params.push(categoriaId);
       paramIndex++;
     }
 
-    if (subcategoriaId) {
-      queryText += ` AND p.subcategoria_id = $${paramIndex}`;
-      params.push(subcategoriaId);
-      paramIndex++;
-    }
-
-    queryText += ' ORDER BY p.nombre ASC';
+    queryText += ' ORDER BY p.name ASC';
 
     const result = await query(queryText, params);
     
     // Transformar los datos al formato VersionedProduct
     const productos: VersionedProduct[] = result.rows.map(row => ({
       id: row.id,
-      nombre: row.nombre,
-      descripcion: row.descripcion,
+      nombre: row.name,
+      descripcion: row.description,
       currentPrice: parseFloat(row.currentPrice) || 0,
-      categoriaId: row.subcategoriaId || row.categoriaId, // Usar subcategoriaId si existe, sino categoriaId
+      categoriaId: row.categoriaId,
       imagen: row.imagen,
       currentVersion: row.currentVersion || 1,
       priceHistory: [], // Se cargaría por separado si es necesario
@@ -135,12 +129,12 @@ export async function POST(request: NextRequest) {
     }
 
     const queryText = `
-      INSERT INTO productos (
-        nombre, descripcion, precio_actual, categoria_id, subcategoria_id,
-        imagen, stock_actual, stock_minimo, stock_maximo, restaurante_id,
-        estado, version_actual, created_at, updated_at, created_by, updated_by
+      INSERT INTO menu.products (
+        name, description, current_price, category_id,
+        image_url, restaurant_id, status, current_version, 
+        created_at, updated_at, created_by, updated_by
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'active', 1, NOW(), NOW(), 'api', 'api'
+        $1, $2, $3, $4, $5, $6, 'active', 1, NOW(), NOW(), 'api', 'api'
       ) RETURNING *
     `;
 
@@ -149,41 +143,47 @@ export async function POST(request: NextRequest) {
       descripcion,
       precio || 0,
       categoriaId,
-      subcategoriaId,
       imagen,
-      stockInicial,
-      stockMinimo,
-      stockMaximo,
       restauranteId
     ];
 
     const result = await query(queryText, params);
     const newProduct = result.rows[0];
 
+    // Crear registro de stock por separado
+    if (stockInicial > 0 || stockMinimo > 0 || stockMaximo > 0) {
+      await query(`
+        INSERT INTO menu.product_stock (
+          product_id, current_quantity, min_quantity, max_quantity,
+          available_quantity, reserved_quantity, last_updated
+        ) VALUES ($1, $2, $3, $4, $2, 0, NOW())
+      `, [newProduct.id, stockInicial, stockMinimo, stockMaximo]);
+    }
+
     // Transformar al formato VersionedProduct
     const producto: VersionedProduct = {
       id: newProduct.id,
-      nombre: newProduct.nombre,
-      descripcion: newProduct.descripcion,
-      currentPrice: parseFloat(newProduct.precio_actual) || 0,
-      categoriaId: newProduct.subcategoria_id || newProduct.categoria_id, // Usar subcategoriaId si existe, sino categoriaId
-      imagen: newProduct.imagen,
+      nombre: newProduct.name,
+      descripcion: newProduct.description,
+      currentPrice: parseFloat(newProduct.current_price) || 0,
+      categoriaId: newProduct.category_id,
+      imagen: newProduct.image_url,
       currentVersion: 1,
       priceHistory: [],
       versions: [],
       status: 'active',
       stock: {
-        currentQuantity: parseInt(newProduct.stock_actual) || 0,
-        minQuantity: parseInt(newProduct.stock_minimo) || 0,
-        maxQuantity: parseInt(newProduct.stock_maximo) || 100,
+        currentQuantity: stockInicial || 0,
+        minQuantity: stockMinimo || 0,
+        maxQuantity: stockMaximo || 100,
         status: 'in_stock',
         lastUpdated: new Date(),
         alerts: {
           lowStock: false,
           overStock: false,
           thresholds: {
-            low: parseInt(newProduct.stock_minimo) || 10,
-            high: parseInt(newProduct.stock_maximo) || 90
+            low: stockMinimo || 10,
+            high: stockMaximo || 90
           }
         }
       },

@@ -1,4 +1,7 @@
 // /shared/types/horarios/tipos-programacion.ts
+import { RangoHorario, FechaExcepcion } from '../horarios';
+import { Festivo } from './tipos-festivos';
+
 export interface Programacion {
     id: string;
     restauranteId: string;
@@ -11,8 +14,8 @@ export interface Programacion {
     estado: 'activa' | 'inactiva' | 'borrador';
     metadata: {
       creadoPor: string;
-      fechaCreacion: Timestamp;
-      ultimaModificacion: Timestamp;
+      fechaCreacion: Date;
+      ultimaModificacion: Date;
       version: number;
     };
   }

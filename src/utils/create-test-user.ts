@@ -70,6 +70,7 @@ export function createTestUser() {
     id,
     nombre,
     descripcion,
+    precio: Math.floor(Math.random() * 20000) + 5000, // Precio aleatorio entre 5000 y 25000
     categoriaId,
     currentVersion: 1,
     priceHistory: [],

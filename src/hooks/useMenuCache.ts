@@ -6,7 +6,8 @@ import {
   Categoria, 
   Producto 
 } from '@/utils/menuCache.utils';
-import { todasLasCategoriasBase, todosLosProductosBase } from '@/data/staticMenuData';
+import { todosLosProductosBase } from '@/data/staticMenuData';
+import { categoriasService } from '@/services/categorias.service';
 
 // Clave para almacenar el estado de activación del caché en localStorage
 const CACHE_ENABLED_KEY = 'menu_cache_enabled';
@@ -38,6 +39,12 @@ export const useMenuCache = () => {
   // Estado para controlar si el caché está habilitado o deshabilitado
   const [isCacheEnabled, setIsCacheEnabled] = useState<boolean>(true); // Valor predeterminado: true
   
+  // Estados para categorías desde API
+  const [categoriasLoading, setCategoriasLoading] = useState<boolean>(false);
+  const [categoriasError, setCategoriesError] = useState<string | null>(null);
+  const [categoriasFromAPI, setCategoriasFromAPI] = useState<Categoria[]>([]);
+  const [idMapping, setIdMapping] = useState<Record<string, string>>({});
+  
   // Inicializar el estado desde localStorage (solo en el cliente)
   useEffect(() => {
     const savedState = safeLocalStorage.getItem(CACHE_ENABLED_KEY);
@@ -49,7 +56,7 @@ export const useMenuCache = () => {
   // Función para obtener el estado inicial con datos base importados directamente
   const getInitialState = useCallback((): MenuCrearMenuData => {
     return {
-      categorias: todasLasCategoriasBase,
+      categorias: categoriasFromAPI.length > 0 ? categoriasFromAPI : [],
       productosSeleccionados: todosLosProductosBase,
       productosMenu: [],
       productosFavoritos: [],
@@ -58,7 +65,7 @@ export const useMenuCache = () => {
       subcategoriaSeleccionada: null,
       submenuActivo: 'menu-dia'
     };
-  }, []);
+  }, [categoriasFromAPI]);
 
   // Estado para almacenar los datos del menú
   const [menuData, setMenuData] = useState<MenuCrearMenuData>(getInitialState());
@@ -68,6 +75,42 @@ export const useMenuCache = () => {
   
   // Estado para controlar si hay cambios sin guardar
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  /**
+   * Carga las categorías desde la API
+   */
+  const loadCategoriasFromAPI = useCallback(async () => {
+    setCategoriasLoading(true);
+    setCategoriesError(null);
+    
+    try {
+      console.log('🔄 Cargando categorías desde API...');
+      const categorias = await categoriasService.obtenerCategorias();
+      
+      // Crear mapeo de compatibilidad
+      const mapeo = categoriasService.crearMapeoCompatibilidad(categorias);
+      
+      setCategoriasFromAPI(categorias);
+      setIdMapping(mapeo);
+      setCategoriesError(null);
+      
+      console.log('✅ Categorías cargadas exitosamente:', categorias.length);
+      
+      return categorias;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      console.error('❌ Error al cargar categorías:', errorMessage);
+      setCategoriesError(errorMessage);
+      
+      // En caso de error, usar array vacío
+      setCategoriasFromAPI([]);
+      setIdMapping({});
+      
+      throw error;
+    } finally {
+      setCategoriasLoading(false);
+    }
+  }, []);
 
   /**
    * Carga los datos del menú desde el caché
@@ -86,8 +129,8 @@ export const useMenuCache = () => {
       
       // Fusionar datos de sesión del caché con los datos base importados
       const sessionData = {
-        // Usar siempre los datos base importados para categorías y productos seleccionables
-        categorias: todasLasCategoriasBase,
+        // Usar categorías desde API o array vacío si no están cargadas
+        categorias: categoriasFromAPI.length > 0 ? categoriasFromAPI : [],
         productosSeleccionados: todosLosProductosBase,
         
         // Usar datos de sesión del caché o arrays vacíos si no existen
@@ -138,6 +181,24 @@ export const useMenuCache = () => {
     console.log('Guardando datos de sesión del menú en caché');
     menuCacheUtils.set(sessionData);
   }, [isCacheEnabled, menuData]);
+
+  // Cargar categorías desde API al montar el componente
+  useEffect(() => {
+    loadCategoriasFromAPI().catch(error => {
+      console.error('Error inicial al cargar categorías:', error);
+      // Continuar con el flujo normal aunque falle la carga de categorías
+    });
+  }, []); // Solo ejecutar una vez al montar
+
+  // Actualizar menuData cuando se cargan las categorías
+  useEffect(() => {
+    if (categoriasFromAPI.length > 0) {
+      setMenuData(prev => ({
+        ...prev,
+        categorias: categoriasFromAPI
+      }));
+    }
+  }, [categoriasFromAPI]);
 
   // Cargar datos del caché al montar el componente
   useEffect(() => {
@@ -451,6 +512,12 @@ export const useMenuCache = () => {
     hasCache,
     getCacheRemainingTime,
     isCacheEnabled,
-    toggleCache
+    toggleCache,
+    // Nuevas funciones para categorías desde API
+    loadCategoriasFromAPI,
+    categoriasLoading,
+    categoriasError,
+    categoriasFromAPI,
+    idMapping
   };
 };

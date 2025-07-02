@@ -36,7 +36,7 @@ const MenuCard = ({
   onToggleEstado
 }: MenuCardProps) => {
   return (
-    <Card variant="menu" className="h-full flex flex-col">
+    <Card className="h-full flex flex-col">
       {/* Imagen con overlay */}
       <div className="relative h-48">
       <Image
@@ -114,7 +114,7 @@ const MenuCard = ({
             </span>
             <Switch
               checked={estado === 'activo'}
-              onCheckedChange={() => onToggleEstado(id, estado)}
+              onCheckedChange={(checked) => onToggleEstado(id, checked)}
             />
           </div>
           </div>

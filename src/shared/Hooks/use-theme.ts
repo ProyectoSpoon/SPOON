@@ -12,4 +12,3 @@ export const useTheme = () => {
 
 // src/shared/hooks/index.ts
 export * from './use-theme';
-export * from './use-media-query';

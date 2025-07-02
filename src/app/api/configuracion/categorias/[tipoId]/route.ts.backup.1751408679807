@@ -1,0 +1,87 @@
+import { NextRequest, NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
+
+/**
+ * GET: Obtener las categorías de un tipo de restaurante específico
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { tipoId: string } }
+) {
+  try {
+    const tipoId = params.tipoId;
+    
+    // Construir la ruta al archivo JSON
+    const filePath = path.join(
+      process.cwd(),
+      `src/test-data/configuracion/categorias/${tipoId}.json`
+    );
+
+    // Verificar si el archivo existe
+    if (!fs.existsSync(filePath)) {
+      return NextResponse.json(
+        { error: `No se encontraron categorías para el tipo ${tipoId}` },
+        { status: 404 }
+      );
+    }
+
+    // Leer el archivo
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
+    const data = JSON.parse(fileContent);
+
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error(`Error al leer las categorías:`, error);
+    return NextResponse.json(
+      { error: 'Error al leer las categorías' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * POST: Guardar las categorías de un tipo de restaurante específico
+ */
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { tipoId: string } }
+) {
+  try {
+    const tipoId = params.tipoId;
+    
+    // Obtener los datos del request
+    const data = await request.json();
+
+    // Validar los datos
+    if (!data.categorias || !Array.isArray(data.categorias)) {
+      return NextResponse.json(
+        { error: 'Formato de datos inválido' },
+        { status: 400 }
+      );
+    }
+
+    // Construir la ruta al archivo JSON
+    const filePath = path.join(
+      process.cwd(),
+      `src/test-data/configuracion/categorias/${tipoId}.json`
+    );
+
+    // Crear el directorio si no existe
+    const dirPath = path.dirname(filePath);
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
+
+    // Guardar los datos en el archivo
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error(`Error al guardar las categorías:`, error);
+    return NextResponse.json(
+      { error: 'Error al guardar las categorías' },
+      { status: 500 }
+    );
+  }
+}

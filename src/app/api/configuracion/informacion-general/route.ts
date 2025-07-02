@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
 
     // Validar los datos
-    if (!data.nombreRestaurante || !data.direccion || !data.telefono || !data.email) {
+    if (!data.nameRestaurante || !data.direccion || !data.telefono || !data.email) {
       return NextResponse.json(
         { error: 'Faltan campos obligatorios' },
         { status: 400 }

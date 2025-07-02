@@ -25,7 +25,7 @@ export const Hero = () => {
 
       {/* Partículas se mantienen igual */}
       <div className="absolute inset-0 z-20">
-        <ParticlesBackground variant="sparse" />
+        <ParticlesBackground particleCount={30} />
       </div>
       
       {/* Contenido */}
