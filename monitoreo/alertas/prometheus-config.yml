@@ -15,7 +15,7 @@ scrape_configs:
   # SPOON CRM Principal (Next.js)
   - job_name: 'spoon-crm'
     static_configs:
-      - targets: ['localhost:3001']
+      - targets: ['localhost:3000']
     metrics_path: '/api/metrics'
     scrape_interval: 5s
     scrape_timeout: 10s
