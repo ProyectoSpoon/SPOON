@@ -5,47 +5,23 @@ import { query } from '@/lib/database';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    let restauranteId = searchParams.get('restauranteId');
+    const restauranteId = searchParams.get('restauranteId') || 'default';
     const tipo = searchParams.get('tipo'); // 'categoria' o 'subcategoria'
 
-    // Si no se proporciona restauranteId o es 'default', usar el primer restaurante
-    if (!restauranteId || restauranteId === 'default') {
-      console.log('🔍 Buscando restaurante por defecto...');
-      
-      const restaurantQuery = 'SELECT id FROM restaurant.restaurants WHERE status = $1 ORDER BY created_at ASC LIMIT 1';
-      const restaurantResult = await query(restaurantQuery, ['active']);
-      
-      if (restaurantResult.rows.length === 0) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'No hay restaurantes disponibles',
-            message: 'Debe existir al menos un restaurante activo'
-          },
-          { status: 400 }
-        );
-      }
-      
-      restauranteId = restaurantResult.rows[0].id;
-      console.log('✅ Usando restaurante por defecto:', restauranteId);
-    }
-
     let queryText = `
-      SELECT
+      SELECT 
         c.id,
         c.name,
         c.category_type,
         c.sort_order,
         c.description,
-        c.parent_id,
         c.is_active,
         c.created_at as "createdAt",
         c.updated_at as "updatedAt"
       FROM menu.categories c
       WHERE c.restaurant_id = $1
-        AND c.is_active = true
     `;
-
+    
     const params = [restauranteId];
     let paramIndex = 2;
 
@@ -55,42 +31,33 @@ export async function GET(request: NextRequest) {
       paramIndex++;
     }
 
-    queryText += ' ORDER BY c.parent_id NULLS FIRST, c.sort_order ASC, c.name ASC';
+    queryText += ' ORDER BY c.sort_order ASC, c.name ASC';
 
-    console.log('🔍 Ejecutando query para categorías...');
     const result = await query(queryText, params);
-    console.log(`✅ Encontradas ${result.rows.length} categorías`);
-
+    
     const categorias = result.rows.map(row => ({
       id: row.id,
       nombre: row.name,
       tipo: row.category_type,
       orden: row.sort_order || 0,
       descripcion: row.description,
-      parentId: row.parent_id || undefined, // NUEVO: incluir parent_id
       activo: row.is_active,
       restauranteId,
       createdAt: new Date(row.createdAt),
       updatedAt: new Date(row.updatedAt)
     }));
 
-    // Log para debug de la estructura jerárquica
-    const principales = categorias.filter(c => !c.parentId);
-    const subcategorias = categorias.filter(c => c.parentId);
-    console.log(`📊 Estructura: ${principales.length} principales, ${subcategorias.length} subcategorías`);
-
     return NextResponse.json({
       success: true,
       data: categorias,
-      count: categorias.length,
-      restauranteId: restauranteId
+      count: categorias.length
     });
 
   } catch (error) {
-    console.error('❌ Error al obtener categorías:', error);
+    console.error('Error al obtener categorías:', error);
     return NextResponse.json(
-      {
-        success: false,
+      { 
+        success: false, 
         error: 'Error interno del servidor',
         message: error instanceof Error ? error.message : 'Error desconocido'
       },
@@ -103,20 +70,19 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    let {
+    const {
       nombre,
       tipo = 'categoria',
       orden = 0,
       descripcion,
-      parentId, // NUEVO: soporte para parent_id
-      restauranteId
+      restauranteId = 'default'
     } = body;
 
     // Validaciones básicas
     if (!nombre) {
       return NextResponse.json(
-        {
-          success: false,
+        { 
+          success: false, 
           error: 'Datos requeridos faltantes',
           message: 'El nombre es requerido'
         },
@@ -124,31 +90,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Si no se proporciona restauranteId, usar el primer restaurante
-    if (!restauranteId) {
-      const restaurantQuery = 'SELECT id FROM restaurant.restaurants WHERE status = $1 ORDER BY created_at ASC LIMIT 1';
-      const restaurantResult = await query(restaurantQuery, ['active']);
-      
-      if (restaurantResult.rows.length === 0) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'No hay restaurantes disponibles',
-            message: 'Debe existir al menos un restaurante activo'
-          },
-          { status: 400 }
-        );
-      }
-      
-      restauranteId = restaurantResult.rows[0].id;
-    }
-
     const queryText = `
       INSERT INTO menu.categories (
-        name, category_type, sort_order, description, parent_id, restaurant_id,
+        name, category_type, sort_order, description, restaurant_id,
         is_active, created_at, updated_at
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, true, NOW(), NOW()
+        $1, $2, $3, $4, $5, true, NOW(), NOW()
       ) RETURNING *
     `;
 
@@ -157,7 +104,6 @@ export async function POST(request: NextRequest) {
       tipo,
       orden,
       descripcion,
-      parentId || null, // NUEVO: incluir parent_id
       restauranteId
     ];
 
@@ -170,7 +116,6 @@ export async function POST(request: NextRequest) {
       tipo: newCategory.category_type,
       orden: newCategory.sort_order,
       descripcion: newCategory.description,
-      parentId: newCategory.parent_id || undefined, // NUEVO: incluir parent_id
       activo: newCategory.is_active,
       restauranteId: newCategory.restaurant_id,
       createdAt: new Date(newCategory.created_at),
@@ -184,10 +129,10 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
 
   } catch (error) {
-    console.error('❌ Error al crear categoría:', error);
+    console.error('Error al crear categoría:', error);
     return NextResponse.json(
-      {
-        success: false,
+      { 
+        success: false, 
         error: 'Error interno del servidor',
         message: error instanceof Error ? error.message : 'Error desconocido'
       },

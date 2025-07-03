@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { VersionedProduct } from '@/app/dashboard/carta/types/product-versioning.types';
 import { Search, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Menu, GripVertical, Coffee, Soup, Beef, Salad, Utensils } from 'lucide-react';
 import { Button } from '@/shared/components/ui/Button';
-import { categoriasService } from '@/services/categorias.service';
+import { useCategorias } from '@/app/dashboard/carta/hooks/useCategorias';
 
 // Componentes
 import { MenuDiarioRediseno } from '@/app/dashboard/carta/components/menu-diario/MenuDiarioRediseno';
@@ -16,11 +16,11 @@ import ListaProductosRediseno from '@/app/dashboard/carta/components/productos/L
 import { ListaCategoriasRediseno } from '@/app/dashboard/carta/components/categorias/ListaCategoriasRediseno';
 
 /**
- * Función para convertir un Producto a VersionedProduct
- */
+ * Función para convertir un Producto a VersionedProduct
+ */
 const convertToVersionedProduct = (producto: Producto): VersionedProduct => {
-  // Asegurarse de que producto.stock no es undefined antes de acceder a sus propiedades
-  const stockStatus = producto.stock?.status as 'in_stock' | 'low_stock' | 'out_of_stock' | undefined || 'out_of_stock';
+  // Asegurarse de que producto.stock no es undefined antes de acceder a sus propiedades
+  const stockStatus = producto.stock?.status as 'in_stock' | 'low_stock' | 'out_of_stock' | undefined || 'out_of_stock';
   const stockData = producto.stock || { currentQuantity: 0, minQuantity: 0, maxQuantity: 0, status: 'out_of_stock', lastUpdated: new Date() };
 
   return {
@@ -45,8 +45,8 @@ const convertToVersionedProduct = (producto: Producto): VersionedProduct => {
 };
 
 /**
- * Función para convertir un VersionedProduct a Producto
- */
+ * Función para convertir un VersionedProduct a Producto
+ */
 const convertToProducto = (versionedProduct: VersionedProduct): Producto => {
   return {
     id: versionedProduct.id,
@@ -70,8 +70,8 @@ export default function MenuDiaPage() {
   const {
     menuData,
     isLoaded,
-    updateCategorias, // Asegúrate de estar usando estas funciones si modificas localmente
-    updateProductosSeleccionados, // y quieres persistir los cambios.
+    updateCategorias,
+    updateProductosSeleccionados,
     updateProductosMenu,
     addProductoToMenu,
     removeProductoFromMenu,
@@ -80,21 +80,45 @@ export default function MenuDiaPage() {
     updateSeleccion,
     updateSubmenuActivo,
     hasCache,
-    getCacheRemainingTime,
-    // Nuevas propiedades para categorías desde API
-    loadCategoriasFromAPI,
-    categoriasLoading,
-    categoriasError,
-    categoriasFromAPI,
-    idMapping
+    getCacheRemainingTime
   } = useMenuCache();
+
+  // Hook para categorías desde PostgreSQL
+  const {
+    categorias: categoriasPostgreSQL,
+    loading: categoriasLoading,
+    error: categoriasError,
+    obtenerCategorias,
+    obtenerCategoriasPrincipales,
+    obtenerSubcategorias
+  } = useCategorias();
 
   // Estados para datos desde la base de datos
   const [menuDiaDB, setMenuDiaDB] = useState<any>(null);
-  const [categoriasDB, setCategoriasDB] = useState<any[]>([]);
   const [productosDB, setProductosDB] = useState<any[]>([]);
   const [loadingDB, setLoadingDB] = useState(true);
   const [errorDB, setErrorDB] = useState<string | null>(null);
+
+  // Estados de UI
+  const [showCacheIndicator, setShowCacheIndicator] = useState(true);
+  const [cacheTimeRemaining, setCacheTimeRemaining] = useState<number>(60); 
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchSuggestions, setSearchSuggestions] = useState<VersionedProduct[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedTab, setSelectedTab] = useState<string>('almuerzo'); // Iniciar con almuerzo seleccionado
+  const [selectedCategoryTab, setSelectedCategoryTab] = useState<string>('todas');
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<VersionedProduct | null>(null);
+  const [showFavorites, setShowFavorites] = useState(false);
+
+  // Cargar categorías al montar el componente
+  useEffect(() => {
+    obtenerCategorias().catch(error => {
+      console.error('Error al cargar categorías:', error);
+      toast.error('Error al cargar categorías desde PostgreSQL');
+    });
+  }, [obtenerCategorias]);
 
   // Cargar datos desde la base de datos
   useEffect(() => {
@@ -111,7 +135,6 @@ export default function MenuDiaPage() {
         console.log('📊 Datos de BD recibidos:', data);
         
         setMenuDiaDB(data.menuDia);
-        setCategoriasDB(data.categorias || []);
         setProductosDB(data.todosLosProductos || []);
         
         // Convertir productos de la BD a formato VersionedProduct para el menú
@@ -154,55 +177,38 @@ export default function MenuDiaPage() {
     };
 
     cargarDatosDB();
-  }, []); // Solo ejecutar una vez al montar
+  }, [updateProductosMenu]);
 
   // Log para inspeccionar menuData - solo una vez al cargar
   useEffect(() => {
     if (isLoaded) {
-      console.log("MenuDiaPage - menuData RECIBIDO:", JSON.parse(JSON.stringify(menuData))); // Usar JSON.stringify para una copia profunda
+      console.log("MenuDiaPage - menuData RECIBIDO:", JSON.parse(JSON.stringify(menuData)));
       if (menuData) {
         console.log("MenuDiaPage - typeof menuData.productosMenu:", typeof menuData.productosMenu, ", isArray:", Array.isArray(menuData.productosMenu));
         console.log("MenuDiaPage - typeof menuData.productosSeleccionados:", typeof menuData.productosSeleccionados, ", isArray:", Array.isArray(menuData.productosSeleccionados));
       }
     }
-  }, [isLoaded]); // Solo depende de isLoaded para evitar bucles infinitos
+  }, [isLoaded]);
 
-  // ... (otros estados como showCacheIndicator, cacheTimeRemaining, etc.)
-  const [showCacheIndicator, setShowCacheIndicator] = useState(true);
-  const [cacheTimeRemaining, setCacheTimeRemaining] = useState<number>(60); 
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchSuggestions, setSearchSuggestions] = useState<VersionedProduct[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<string>('almuerzo'); // Iniciar con almuerzo seleccionado
-  const [selectedCategoryTab, setSelectedCategoryTab] = useState<string>('todas');
-  const [showProductModal, setShowProductModal] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<VersionedProduct | null>(null);
-  const [showFavorites, setShowFavorites] = useState(false);
-
-  // useEffect para el tiempo de caché y notificación - con dependencias memoizadas
+  // useEffect para el tiempo de caché y notificación
   useEffect(() => {
-    if (!isLoaded) return; // No hacer nada si los datos no están cargados
+    if (!isLoaded) return;
     
-    // Establecer el tiempo inicial
     setCacheTimeRemaining(getCacheRemainingTime()); 
     
-    // Configurar el intervalo para actualizar cada minuto
     const interval = setInterval(() => {
       const remainingTime = getCacheRemainingTime();
       setCacheTimeRemaining(remainingTime);
       
-      // Verificar si el caché ha expirado
       if (remainingTime <= 0) {
         toast.error('El tiempo de caché ha expirado.');
       }
     }, 60000);
     
-    // Limpiar el intervalo al desmontar
     return () => clearInterval(interval);
-  }, [isLoaded, getCacheRemainingTime]); // getCacheRemainingTime está memoizado, es seguro usarlo como dependencia
+  }, [isLoaded, getCacheRemainingTime]);
 
-  // Usar una referencia para evitar múltiples notificaciones toast - con dependencias memoizadas
+  // Usar una referencia para evitar múltiples notificaciones toast
   const toastShownRef = useRef(false);
   
   useEffect(() => {
@@ -221,17 +227,17 @@ export default function MenuDiaPage() {
         );
       }
     }
-  }, [isLoaded, hasCache, getCacheRemainingTime]); // hasCache y getCacheRemainingTime están memoizados
+  }, [isLoaded, hasCache, getCacheRemainingTime]);
 
   // Establecer el submenú activo solo una vez al montar el componente
   useEffect(() => {
     updateSubmenuActivo('menu-dia');
-  }, [updateSubmenuActivo]); // updateSubmenuActivo está memoizado, es seguro usarlo como dependencia
+  }, [updateSubmenuActivo]);
 
-  const handleCategoriaSeleccionada = (categoriaId: string) => {
-    updateSeleccion(categoriaId, null);
-    console.log(`Categoría seleccionada: ${categoriaId}`);
-  };
+  const handleCategoriaSeleccionada = (categoriaId: string) => {
+    updateSeleccion(categoriaId, null);
+    console.log(`Categoría seleccionada: ${categoriaId}`);
+  };
 
   const handleAgregarAlMenu = (versionedProduct: VersionedProduct) => {
     const producto = convertToProducto(versionedProduct);
@@ -250,15 +256,12 @@ export default function MenuDiaPage() {
   const handleToggleFavorite = (versionedProduct: VersionedProduct) => {
     const producto = convertToProducto(versionedProduct);
     
-    // Verificar si ya está en favoritos
     const isFavorite = menuData?.productosFavoritos?.some(p => p.id === producto.id);
     
     if (isFavorite) {
-      // Si ya es favorito, quitarlo
       removeProductoFromFavoritos(producto.id);
       toast.success(`${producto.nombre} eliminado de favoritos`);
     } else {
-      // Si no es favorito, agregarlo
       addProductoToFavoritos(producto);
       toast.success(`${producto.nombre} agregado a favoritos`);
     }
@@ -269,11 +272,10 @@ export default function MenuDiaPage() {
     setShowProductModal(true);
   };
 
-  const toggleCategory = (categoryId: string) => {
-    setExpandedCategory(prev => (prev === categoryId ? null : categoryId));
-  };
+  const toggleCategory = (categoryId: string) => {
+    setExpandedCategory(prev => (prev === categoryId ? null : categoryId));
+  };
 
-  // --- INICIO DE CORRECCIÓN Y VERIFICACIÓN ---
   // Verificar y corregir si menuData.productosMenu no es un array
   useEffect(() => {
     if (menuData && !Array.isArray(menuData.productosMenu)) {
@@ -298,9 +300,7 @@ export default function MenuDiaPage() {
       ? menuData.productosSeleccionados.map(convertToVersionedProduct)
       : []
   , [menuData?.productosSeleccionados]);
-  // --- FIN DE CORRECCIÓN Y VERIFICACIÓN ---
 
-  // Usar useMemo para evitar recreaciones innecesarias
   const todosLosProductos = useMemo(() => versionedProductosSeleccionados, [versionedProductosSeleccionados]);
 
   // Memoizar la función de filtrado para evitar recreaciones innecesarias
@@ -322,7 +322,6 @@ export default function MenuDiaPage() {
       return;
     }
     
-    // Debounce corto (150ms) para dar sensación de inmediatez pero evitar demasiadas actualizaciones
     const debounceTimeout = setTimeout(() => {
       const sugerencias = filtrarProductosPorTermino(searchTerm, todosLosProductos);
       setSearchSuggestions(sugerencias);
@@ -330,36 +329,45 @@ export default function MenuDiaPage() {
     }, 150);
     
     return () => clearTimeout(debounceTimeout);
-  }, [searchTerm, todosLosProductos, filtrarProductosPorTermino]); // Dependencias estables
-  
+  }, [searchTerm, todosLosProductos, filtrarProductosPorTermino]);
+  
   const handleSelectSuggestion = (producto: VersionedProduct) => {
-    // Actualizar el término de búsqueda y ocultar sugerencias
     setSearchTerm(producto.nombre);
     setShowSuggestions(false);
     
-    // Determinar el tipo de comida basado en la categoría
-    let tipoComida = 'almuerzo'; // Valor por defecto
+    // Encontrar la categoría del producto en las categorías reales de PostgreSQL
+    const categoriaProducto = categoriasPostgreSQL.find(cat => cat.id === producto.categoriaId);
     
-    // Mapeo de categorías a tipos de comida
-    if (['CAT_001', 'CAT_005'].includes(producto.categoriaId)) {
-      tipoComida = 'desayuno';
-    } else if (['CAT_001', 'CAT_002', 'CAT_003', 'CAT_004', 'CAT_005'].includes(producto.categoriaId)) {
-      tipoComida = 'almuerzo';
-    } else if (['CAT_002', 'CAT_003', 'CAT_004'].includes(producto.categoriaId)) {
-      tipoComida = 'cena';
-    } else if (['CAT_003', 'CAT_004'].includes(producto.categoriaId)) {
-      tipoComida = 'rapidas';
+    if (categoriaProducto) {
+      // Si es una subcategoría, encontrar su categoría padre
+      const categoriaPadre = categoriaProducto.parentId 
+        ? categoriasPostgreSQL.find(cat => cat.id === categoriaProducto.parentId)
+        : categoriaProducto;
+      
+      if (categoriaPadre) {
+        // Determinar el tipo de comida basado en el nombre de la categoría padre
+        let tipoComida = 'almuerzo'; // Valor por defecto
+        
+        const nombreCategoriaPadre = categoriaPadre.nombre.toLowerCase();
+        if (nombreCategoriaPadre.includes('desayuno')) {
+          tipoComida = 'desayuno';
+        } else if (nombreCategoriaPadre.includes('cena')) {
+          tipoComida = 'cena';
+        } else if (nombreCategoriaPadre.includes('rapida')) {
+          tipoComida = 'rapidas';
+        }
+        
+        // Actualizar la UI
+        setSelectedTab(tipoComida);
+        setSelectedCategoryTab(categoriaProducto.id);
+        setExpandedCategory(categoriaProducto.id);
+        
+        // Actualizar la selección en el contexto del menú
+        updateSeleccion(categoriaProducto.id, null);
+      }
     }
     
-    // Actualizar la UI para mostrar la categoría correcta
-    setSelectedTab(tipoComida);
-    setSelectedCategoryTab(producto.categoriaId);
-    setExpandedCategory(producto.categoriaId);
-    
-    // Actualizar la selección en el contexto del menú
-    updateSeleccion(producto.categoriaId, null);
-    
-    // Hacer scroll hacia la categoría del producto (opcional)
+    // Hacer scroll hacia la categoría del producto
     setTimeout(() => {
       const categoriaElement = document.getElementById(`categoria-${producto.categoriaId}`);
       if (categoriaElement) {
@@ -368,48 +376,79 @@ export default function MenuDiaPage() {
     }, 100);
   };
 
-  // Usar las categorías desde la API, con fallback a categorías hardcodeadas solo si hay error
+  // Usar las categorías desde PostgreSQL
   const categoriasList = useMemo(() => {
-    if (categoriasFromAPI.length > 0) {
-      return categoriasFromAPI;
+    if (categoriasPostgreSQL.length > 0) {
+      return categoriasPostgreSQL;
     }
-    
-    // Solo usar fallback si hay error de carga
-    if (categoriasError) {
-      console.warn('Usando categorías hardcodeadas debido a error:', categoriasError);
-      return [
-        { id: 'CAT_001', nombre: 'Entradas', tipo: 'principal' as const },
-        { id: 'CAT_002', nombre: 'Principio', tipo: 'principal' as const },
-        { id: 'CAT_003', nombre: 'Proteína', tipo: 'principal' as const },
-        { id: 'CAT_004', nombre: 'Acompañamientos', tipo: 'principal' as const },
-        { id: 'CAT_005', nombre: 'Bebida', tipo: 'principal' as const }
-      ];
-    }
-    
-    // Si está cargando, devolver array vacío
     return [];
-  }, [categoriasFromAPI, categoriasError]);
+  }, [categoriasPostgreSQL]);
 
-  const contarProductosPorCategoria = () => {
-      const conteos: Record<string, number> = {};
-      
-      if (menuData && Array.isArray(menuData.productosSeleccionados)) {
-        menuData.productosSeleccionados.forEach(producto => {
-          if (producto.categoriaId) {
-            // Convertir ID antiguo a nuevo usando el mapeo
-            const idNuevo = categoriasService.obtenerIdNuevo(producto.categoriaId, idMapping);
-            conteos[idNuevo] = (conteos[idNuevo] || 0) + 1;
-          }
-        });
-      }
-      
-      return conteos;
-  };
+  // Función para contar productos por categoría usando las categorías reales
+  const contarProductosPorCategoria = useCallback(() => {
+    const conteos: Record<string, number> = {};
+    
+    if (menuData && Array.isArray(menuData.productosSeleccionados)) {
+      menuData.productosSeleccionados.forEach(producto => {
+        if (producto.categoriaId) {
+          conteos[producto.categoriaId] = (conteos[producto.categoriaId] || 0) + 1;
+        }
+      });
+    }
+    
+    return conteos;
+  }, [menuData]);
+
   const conteoProductos = contarProductosPorCategoria();
-  const categorias = categoriasList.map(cat => ({
-    ...cat,
-    count: conteoProductos[cat.id] || 0
-  }));
+  
+  // Crear categorías con conteo usando las categorías reales de PostgreSQL
+  const categorias = useMemo(() => {
+    return categoriasList.map(cat => ({
+      ...cat,
+      count: conteoProductos[cat.id] || 0
+    }));
+  }, [categoriasList, conteoProductos]);
+
+  // Obtener subcategorías que corresponden al tipo de comida seleccionado
+  const getSubcategoriasParaTab = useCallback((tab: string) => {
+    const categoriasPrincipales = categorias.filter(cat => cat.tipo === 'principal');
+    
+    // Encontrar la categoría principal correspondiente al tab
+    let categoriaPrincipal;
+    switch (tab) {
+      case 'desayuno':
+        categoriaPrincipal = categoriasPrincipales.find(cat => 
+          cat.nombre.toLowerCase().includes('desayuno')
+        );
+        break;
+      case 'almuerzo':
+        categoriaPrincipal = categoriasPrincipales.find(cat => 
+          cat.nombre.toLowerCase().includes('almuerzo')
+        );
+        break;
+      case 'cena':
+        categoriaPrincipal = categoriasPrincipales.find(cat => 
+          cat.nombre.toLowerCase().includes('cena')
+        );
+        break;
+      case 'rapidas':
+        categoriaPrincipal = categoriasPrincipales.find(cat => 
+          cat.nombre.toLowerCase().includes('rapida')
+        );
+        break;
+      default:
+        // Para almuerzo como default
+        categoriaPrincipal = categoriasPrincipales.find(cat => 
+          cat.nombre.toLowerCase().includes('almuerzo')
+        );
+    }
+    
+    if (categoriaPrincipal) {
+      return categorias.filter(cat => cat.parentId === categoriaPrincipal.id);
+    }
+    
+    return [];
+  }, [categorias]);
 
   // Mostrar indicador de carga si los datos no están listos
   if (!isLoaded || categoriasLoading) {
@@ -417,7 +456,7 @@ export default function MenuDiaPage() {
       <div className="flex flex-col items-center justify-center h-screen bg-gray-50">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F4821F] mb-4"></div>
         <p className="text-gray-600">
-          {categoriasLoading ? 'Cargando categorías desde la base de datos...' : 'Cargando datos del menú...'}
+          {categoriasLoading ? 'Cargando categorías desde PostgreSQL...' : 'Cargando datos del menú...'}
         </p>
         {categoriasError && (
           <p className="text-red-500 mt-2 text-sm">
@@ -436,11 +475,11 @@ export default function MenuDiaPage() {
           <h2 className="text-xl font-semibold text-gray-700 mb-2">No hay categorías disponibles</h2>
           <p className="text-gray-500 mb-4">
             {categoriasError 
-              ? 'Error al cargar las categorías desde la base de datos.' 
+              ? 'Error al cargar las categorías desde PostgreSQL.' 
               : 'No se encontraron categorías en la base de datos.'}
           </p>
           <button 
-            onClick={() => loadCategoriasFromAPI()}
+            onClick={() => obtenerCategorias()}
             className="px-4 py-2 bg-[#F4821F] hover:bg-[#E67812] text-white rounded-md"
           >
             Reintentar
@@ -450,101 +489,95 @@ export default function MenuDiaPage() {
     );
   }
 
-  return (
- 
-    <div className="flex flex-col space-y-4 h-screen bg-gray-50">
-      {/* Encabezado principal */}
-      <div className="flex justify-between items-center bg-gray-50 p-4">
-        <h1 className="text-2xl font-bold text-gray-700">Menu - Almuerzos</h1>
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Buscar producto"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-3 pr-10 py-2 border border-gray-200 rounded-md w-64 text-sm"
-            />
-            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            
-            {showSuggestions && (
-              <div className="absolute z-10 mt-1 w-96 bg-white border border-gray-200 rounded-md shadow-lg max-h-80 overflow-auto">
-                {searchSuggestions.length > 0 ? (
-                  searchSuggestions.map((producto) => (
-                    <div
-                      key={producto.id}
-                      id={`sugerencia-${producto.id}`}
-                      className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                      onClick={() => handleSelectSuggestion(producto)}
-                    >
-                      <div className="flex items-start space-x-3">
-                        {/* Imagen del producto */}
-                        <div className="flex-shrink-0 w-16 h-16 rounded-md overflow-hidden bg-gray-100">
-                          {producto.imagen ? (
-                            <img 
-                              src={producto.imagen} 
-                              alt={producto.nombre} 
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              {producto.categoriaId === 'CAT_001' && <Soup className="h-8 w-8 text-orange-500" />}
-                              {producto.categoriaId === 'CAT_002' && <Utensils className="h-8 w-8 text-yellow-500" />}
-                              {producto.categoriaId === 'CAT_003' && <Beef className="h-8 w-8 text-red-500" />}
-                              {producto.categoriaId === 'CAT_004' && <Salad className="h-8 w-8 text-green-500" />}
-                              {producto.categoriaId === 'CAT_005' && <Coffee className="h-8 w-8 text-blue-500" />}
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Información del producto */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex justify-between">
-                            <p className="text-sm font-medium text-gray-900 truncate">
-                              {producto.nombre}
-                            </p>
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                              {categoriasList.find(c => c.id === producto.categoriaId)?.nombre || 'Categoría'}
-                            </span>
+  // Obtener subcategorías para el tab seleccionado
+  const subcategoriasParaTab = getSubcategoriasParaTab(selectedTab);
+
+  return (
+    <div className="flex flex-col space-y-4 h-screen bg-gray-50">
+      {/* Encabezado principal */}
+      <div className="flex justify-between items-center bg-gray-50 p-4">
+        <h1 className="text-2xl font-bold text-gray-700">Menu - Almuerzos</h1>
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Buscar producto"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-3 pr-10 py-2 border border-gray-200 rounded-md w-64 text-sm"
+          />
+          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          
+          {showSuggestions && (
+            <div className="absolute z-10 mt-1 w-96 bg-white border border-gray-200 rounded-md shadow-lg max-h-80 overflow-auto">
+              {searchSuggestions.length > 0 ? (
+                searchSuggestions.map((producto) => (
+                  <div
+                    key={producto.id}
+                    className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                    onClick={() => handleSelectSuggestion(producto)}
+                  >
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0 w-16 h-16 rounded-md overflow-hidden bg-gray-100">
+                        {producto.imagen ? (
+                          <img 
+                            src={producto.imagen} 
+                            alt={producto.nombre} 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Soup className="h-8 w-8 text-gray-400" />
                           </div>
-                          <p className="mt-1 text-xs text-gray-500 line-clamp-2">
-                            {producto.descripcion}
+                        )}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {producto.nombre}
                           </p>
-                          
-                          {/* Acciones rápidas */}
-                          <div className="mt-2 flex justify-between items-center">
-                            <div className="text-xs text-gray-500">
-                              {producto.stock.status === 'in_stock' ? (
-                                <span className="text-green-600">Disponible</span>
-                              ) : producto.stock.status === 'low_stock' ? (
-                                <span className="text-yellow-600">Stock bajo</span>
-                              ) : (
-                                <span className="text-red-600">No disponible</span>
-                              )}
-                            </div>
-                            <button
-                              className="text-xs bg-[#F4821F] hover:bg-[#E67812] text-white px-2 py-1 rounded"
-                              onClick={(e) => {
-                                e.stopPropagation(); // Evitar que se active el onClick del div padre
-                                handleAgregarAlMenu(producto);
-                                setShowSuggestions(false);
-                              }}
-                            >
-                              Agregar al menú
-                            </button>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                            {categoriasList.find(c => c.id === producto.categoriaId)?.nombre || 'Categoría'}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs text-gray-500 line-clamp-2">
+                          {producto.descripcion}
+                        </p>
+                        
+                        <div className="mt-2 flex justify-between items-center">
+                          <div className="text-xs text-gray-500">
+                            {producto.stock.status === 'in_stock' ? (
+                              <span className="text-green-600">Disponible</span>
+                            ) : producto.stock.status === 'low_stock' ? (
+                              <span className="text-yellow-600">Stock bajo</span>
+                            ) : (
+                              <span className="text-red-600">No disponible</span>
+                            )}
                           </div>
+                          <button
+                            className="text-xs bg-[#F4821F] hover:bg-[#E67812] text-white px-2 py-1 rounded"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAgregarAlMenu(producto);
+                              setShowSuggestions(false);
+                            }}
+                          >
+                            Agregar al menú
+                          </button>
                         </div>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="p-4 text-center text-gray-500">
-                    No se encontraron productos
                   </div>
-                )}
-              </div>
-            )}
-          </div>
-      </div>
+                ))
+              ) : (
+                <div className="p-4 text-center text-gray-500">
+                  No se encontraron productos
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Navegación principal - Tipo de comida */}
       <div className="flex items-center border-b border-gray-200 bg-white shadow-sm">
@@ -610,182 +643,147 @@ export default function MenuDiaPage() {
       {/* Barra de pestañas de subcategorías */}
       <div className="flex items-center border-b border-gray-200 bg-white shadow-sm">
         <div className="flex space-x-4 overflow-x-auto py-2 px-4 w-full">
-          {/* Mostrar subcategorías para Almuerzo */}
-          {selectedTab === 'almuerzo' && (
-            <>
-              <button 
-                className={`px-3 py-1 text-sm ${selectedCategoryTab === 'todas' 
-                  ? 'text-[#F4821F] border-b-2 border-[#F4821F]' 
-                  : 'text-gray-700 hover:text-[#F4821F]'}`}
-                onClick={() => {
-                  setSelectedCategoryTab('todas');
-                  // No necesitamos expandir categorías aquí, lo haremos en el renderizado
-                }}
-              >
-                Todas
-              </button>
-              
-              {categorias
-                .filter(categoria => ['CAT_001', 'CAT_002', 'CAT_003', 'CAT_004', 'CAT_005'].includes(categoria.id))
-                .map((cat) => (
-                  <button 
-                    key={cat.id}
-                    className={`px-3 py-1 text-sm ${selectedCategoryTab === cat.id 
-                      ? 'text-[#F4821F] border-b-2 border-[#F4821F]' 
-                      : 'text-gray-700 hover:text-[#F4821F]'}`}
-                    onClick={() => {
-                      setSelectedCategoryTab(cat.id);
-                      setExpandedCategory(cat.id);
-                      handleCategoriaSeleccionada(cat.id);
-                    }}
-                  >
-                    {cat.nombre}
-                  </button>
-                ))}
-            </>
-          )}
+          <button 
+            className={`px-3 py-1 text-sm ${selectedCategoryTab === 'todas' 
+              ? 'text-[#F4821F] border-b-2 border-[#F4821F]' 
+              : 'text-gray-700 hover:text-[#F4821F]'}`}
+            onClick={() => {
+              setSelectedCategoryTab('todas');
+            }}
+          >
+            Todas
+          </button>
+          
+          {subcategoriasParaTab.map((cat) => (
+            <button 
+              key={cat.id}
+              className={`px-3 py-1 text-sm ${selectedCategoryTab === cat.id 
+                ? 'text-[#F4821F] border-b-2 border-[#F4821F]' 
+                : 'text-gray-700 hover:text-[#F4821F]'}`}
+              onClick={() => {
+                setSelectedCategoryTab(cat.id);
+                setExpandedCategory(cat.id);
+                handleCategoriaSeleccionada(cat.id);
+              }}
+            >
+              {cat.nombre}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Sección de acordeón/lista de categorías */}
-      <div className="space-y-1 overflow-y-auto" style={{maxHeight: 'calc(100vh - 300px)' /* Ajusta según necesidad */}}>
-        {categorias
-          .filter(categoria => {
-            // Filtrar por tipo de comida
-            if (selectedTab === 'desayuno') {
-              return ['CAT_001', 'CAT_005'].includes(categoria.id);
-            }
-            if (selectedTab === 'almuerzo') {
-              return ['CAT_001', 'CAT_002', 'CAT_003', 'CAT_004', 'CAT_005'].includes(categoria.id);
-            }
-            if (selectedTab === 'cena') {
-              return ['CAT_002', 'CAT_003', 'CAT_004'].includes(categoria.id);
-            }
-            if (selectedTab === 'rapidas') {
-              return ['CAT_003', 'CAT_004'].includes(categoria.id);
-            }
-            
-            return false;
-          })
-          .map((categoria) => (
-            <div key={categoria.id} id={`categoria-${categoria.id}`} className="border-b border-gray-200 bg-white">
-              <div 
-                className="flex items-center justify-between py-3 px-4 cursor-pointer"
-                onClick={() => toggleCategory(categoria.id)}
-              >
-                <div className="flex items-center space-x-3">
-                  <Menu className="h-4 w-4 text-gray-500" />
-                  <span className="font-medium text-sm">{categoria.nombre}</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <GripVertical className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-gray-500">{categoria.count}</span>
-                  {expandedCategory === categoria.id || (selectedCategoryTab === 'todas') ? (
-                    <ChevronUp className="h-4 w-4 text-gray-500" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 text-gray-500" />
-                  )}
-                </div>
+      <div className="space-y-1 overflow-y-auto" style={{maxHeight: 'calc(100vh - 300px)'}}>
+        {subcategoriasParaTab.map((categoria) => (
+          <div key={categoria.id} id={`categoria-${categoria.id}`} className="border-b border-gray-200 bg-white">
+            <div 
+              className="flex items-center justify-between py-3 px-4 cursor-pointer"
+              onClick={() => toggleCategory(categoria.id)}
+            >
+              <div className="flex items-center space-x-3">
+                <Menu className="h-4 w-4 text-gray-500" />
+                <span className="font-medium text-sm">{categoria.nombre}</span>
               </div>
-              
-              {/* Mostrar productos siempre cuando selectedCategoryTab es 'todas' o cuando la categoría está expandida */}
-              {(expandedCategory === categoria.id || selectedCategoryTab === 'todas') && (
-                <div className="px-4 py-3 bg-gray-50">
-                  {/* Tabla de productos con encabezados claros */}
-                  <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-                    {/* Encabezados de la tabla */}
-                    <div className="grid grid-cols-12 bg-gray-50 text-xs font-medium text-gray-500 border-b border-gray-200">
-                      <div className="col-span-2 p-3 text-center">IMAGEN</div>
-                      <div className="col-span-5 p-3">PRODUCTO</div>
-                      <div className="col-span-3 p-3 text-center">AGREGAR A MENU DÍA</div>
-                      <div className="col-span-2 p-3 text-center">ACCIONES</div>
-                    </div>
-                    
-                    {/* Contenido de la tabla - Productos */}
-                    <div className="divide-y divide-gray-200">
-                            {versionedProductosSeleccionados
-                        .filter((producto: VersionedProduct) => {
-                          // Convertir ID del producto (antiguo) a nuevo usando el mapeo
-                          const idNuevoProducto = categoriasService.obtenerIdNuevo(producto.categoriaId, idMapping);
-                          return idNuevoProducto === categoria.id;
-                        })
-                        .map((producto: VersionedProduct) => (
-                          <div key={producto.id} className="grid grid-cols-12 items-center py-2 hover:bg-gray-50">
-                            {/* Imagen */}
-                            <div className="col-span-2 flex justify-center">
-                              <div className="h-12 w-12 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden">
-                                {producto.imagen ? (
-                                  <img 
-                                    src={producto.imagen} 
-                                    alt={producto.nombre} 
-                                    className="h-full w-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="text-gray-400">
-                                    {producto.categoriaId === 'CAT_001' && <Soup className="h-6 w-6" />}
-                                    {producto.categoriaId === 'CAT_002' && <Utensils className="h-6 w-6" />}
-                                    {producto.categoriaId === 'CAT_003' && <Beef className="h-6 w-6" />}
-                                    {producto.categoriaId === 'CAT_004' && <Salad className="h-6 w-6" />}
-                                    {producto.categoriaId === 'CAT_005' && <Coffee className="h-6 w-6" />}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            
-                            {/* Información del producto */}
-                            <div className="col-span-5 px-3">
-                              <div className="font-medium text-sm text-gray-800">{producto.nombre}</div>
-                              <div className="text-xs text-gray-500 mt-1 line-clamp-2">{producto.descripcion}</div>
-                            </div>
-                            
-                            {/* Botón de agregar al menú */}
-                            <div className="col-span-3 flex justify-center">
-                              <button 
-                                className="px-3 py-1 bg-[#F4821F] hover:bg-[#E67812] text-white text-xs rounded-md"
-                                onClick={() => handleAgregarAlMenu(producto)}
-                              >
-                                Agregar
-                              </button>
-                            </div>
-                            
-                            {/* Acciones adicionales */}
-                            <div className="col-span-2 flex justify-center space-x-2">
-                              <button 
-                                className="p-1 rounded-md hover:bg-gray-100"
-                                onClick={() => handleViewProductDetails(producto)}
-                                title="Ver detalles"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                </svg>
-                              </button>
-                              <button 
-                                className={`p-1 rounded-md hover:bg-gray-100 ${
-                                  menuData?.productosFavoritos?.some(p => p.id === producto.id) 
-                                    ? 'text-red-500' 
-                                    : 'text-gray-500'
-                                }`}
-                                onClick={() => handleToggleFavorite(producto)}
-                                title="Agregar/quitar de favoritos"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill={
-                                  menuData?.productosFavoritos?.some(p => p.id === producto.id) 
-                                    ? 'currentColor' 
-                                    : 'none'
-                                } viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                </svg>
-                              </button>
+              <div className="flex items-center space-x-3">
+                <GripVertical className="h-4 w-4 text-gray-400" />
+                <span className="text-sm text-gray-500">{categoria.count}</span>
+                {expandedCategory === categoria.id || (selectedCategoryTab === 'todas') ? (
+                  <ChevronUp className="h-4 w-4 text-gray-500" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-gray-500" />
+                )}
+              </div>
+            </div>
+            
+            {/* Mostrar productos cuando está expandida o cuando selectedCategoryTab es 'todas' */}
+            {(expandedCategory === categoria.id || selectedCategoryTab === 'todas') && (
+              <div className="px-4 py-3 bg-gray-50">
+                <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+                  {/* Encabezados de la tabla */}
+                  <div className="grid grid-cols-12 bg-gray-50 text-xs font-medium text-gray-500 border-b border-gray-200">
+                    <div className="col-span-2 p-3 text-center">IMAGEN</div>
+                    <div className="col-span-5 p-3">PRODUCTO</div>
+                    <div className="col-span-3 p-3 text-center">AGREGAR A MENU DÍA</div>
+                    <div className="col-span-2 p-3 text-center">ACCIONES</div>
+                  </div>
+                  
+                  {/* Contenido de la tabla - Productos */}
+                  <div className="divide-y divide-gray-200">
+                    {versionedProductosSeleccionados
+                      .filter((producto: VersionedProduct) => producto.categoriaId === categoria.id)
+                      .map((producto: VersionedProduct) => (
+                        <div key={producto.id} className="grid grid-cols-12 items-center py-2 hover:bg-gray-50">
+                          {/* Imagen */}
+                          <div className="col-span-2 flex justify-center">
+                            <div className="h-12 w-12 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden">
+                              {producto.imagen ? (
+                                <img 
+                                  src={producto.imagen} 
+                                  alt={producto.nombre} 
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <div className="text-gray-400">
+                                  <Soup className="h-6 w-6" />
+                                </div>
+                              )}
                             </div>
                           </div>
-                        ))}
-                    </div>
+                          
+                          {/* Información del producto */}
+                          <div className="col-span-5 px-3">
+                            <div className="font-medium text-sm text-gray-800">{producto.nombre}</div>
+                            <div className="text-xs text-gray-500 mt-1 line-clamp-2">{producto.descripcion}</div>
+                          </div>
+                          
+                          {/* Botón de agregar al menú */}
+                          <div className="col-span-3 flex justify-center">
+                            <button 
+                              className="px-3 py-1 bg-[#F4821F] hover:bg-[#E67812] text-white text-xs rounded-md"
+                              onClick={() => handleAgregarAlMenu(producto)}
+                            >
+                              Agregar
+                            </button>
+                          </div>
+                          
+                          {/* Acciones adicionales */}
+                          <div className="col-span-2 flex justify-center space-x-2">
+                            <button 
+                              className="p-1 rounded-md hover:bg-gray-100"
+                              onClick={() => handleViewProductDetails(producto)}
+                              title="Ver detalles"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                            </button>
+                            <button 
+                              className={`p-1 rounded-md hover:bg-gray-100 ${
+                                menuData?.productosFavoritos?.some(p => p.id === producto.id) 
+                                  ? 'text-red-500' 
+                                  : 'text-gray-500'
+                              }`}
+                              onClick={() => handleToggleFavorite(producto)}
+                              title="Agregar/quitar de favoritos"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill={
+                                menuData?.productosFavoritos?.some(p => p.id === producto.id) 
+                                  ? 'currentColor' 
+                                  : 'none'
+                              } viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                   </div>
                 </div>
-              )}
-            </div>
-          ))}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
 
       {/* Modal para detalles del producto */}
@@ -814,13 +812,7 @@ export default function MenuDiaPage() {
                   />
                 ) : (
                   <div className="h-64 w-64 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <div className="text-gray-400">
-                      {selectedProduct.categoriaId === 'CAT_001' && <Soup className="h-16 w-16" />}
-                      {selectedProduct.categoriaId === 'CAT_002' && <Utensils className="h-16 w-16" />}
-                      {selectedProduct.categoriaId === 'CAT_003' && <Beef className="h-16 w-16" />}
-                      {selectedProduct.categoriaId === 'CAT_004' && <Salad className="h-16 w-16" />}
-                      {selectedProduct.categoriaId === 'CAT_005' && <Coffee className="h-16 w-16" />}
-                    </div>
+                    <Soup className="h-16 w-16 text-gray-400" />
                   </div>
                 )}
               </div>
@@ -901,20 +893,20 @@ export default function MenuDiaPage() {
         <MenuDiarioRediseno 
           productos={versionedProductosMenu}
           onRemoveProduct={handleRemoveFromMenu}
-          onUpdateCantidad={(productoId: string, cantidad: number) => {
-            const productoOriginal = menuData?.productosMenu?.find(p => p.id === productoId);
-            if (productoOriginal) {
-              const productoActualizado = {
-                ...productoOriginal,
-                stock: { ...productoOriginal.stock, currentQuantity: cantidad }
-              };
-              updateProductosMenu(
-                menuData.productosMenu.map(p => p.id === productoId ? productoActualizado : p)
-              );
-              toast.success(`Cantidad de ${productoOriginal.nombre} actualizada a ${cantidad}`);
-            }
-          }}
-        />
+          onUpdateCantidad={(productoId: string, cantidad: number) => {
+            const productoOriginal = menuData?.productosMenu?.find(p => p.id === productoId);
+            if (productoOriginal) {
+              const productoActualizado = {
+                ...productoOriginal,
+                stock: { ...productoOriginal.stock, currentQuantity: cantidad }
+              };
+              updateProductosMenu(
+                menuData.productosMenu.map(p => p.id === productoId ? productoActualizado : p)
+              );
+              toast.success(`Cantidad de ${productoOriginal.nombre} actualizada a ${cantidad}`);
+            }
+          }}
+        />
         <div className="flex justify-between items-center mt-6">
           <div>
             <button 
@@ -967,7 +959,7 @@ export default function MenuDiaPage() {
             <Button className="bg-[#E67812] hover:bg-[#D56A0F] text-white">Publicar Menu</Button>
           </div>
         </div>
-      </div>
-    </div>
-  );
+      </div>
+    </div>
+  );
 }
