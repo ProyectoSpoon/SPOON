@@ -1,7 +1,7 @@
 // src/hooks/useMenuCache.ts
 import { useState, useEffect, useCallback } from 'react';
 import { 
-  menuCacheUtils, 
+  menuCacheUtils,  
   MenuCrearMenuData, 
   Categoria, 
   Producto 

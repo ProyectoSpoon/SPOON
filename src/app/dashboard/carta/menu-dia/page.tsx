@@ -167,6 +167,8 @@ export default function MenuDiaPage() {
         
         // Actualizar el menú con los datos de la BD
         updateProductosMenu(productosMenuBD.map(convertToProducto));
+
+        // console.log("Productos después de cargar de la BD:", productosMenuBD);
         
       } catch (err) {
         console.error('❌ Error al cargar datos de BD:', err);
@@ -301,7 +303,46 @@ export default function MenuDiaPage() {
       : []
   , [menuData?.productosSeleccionados]);
 
-  const todosLosProductos = useMemo(() => versionedProductosSeleccionados, [versionedProductosSeleccionados]);
+  // Usar productos de la BD en lugar del caché
+  const todosLosProductos = useMemo(() => {
+    // Si tenemos productos de la BD, usarlos (tienen UUIDs correctos)
+    if (productosDB && productosDB.length > 0) {
+      return productosDB.map((prod: any) => convertToVersionedProduct({
+        id: prod.id,
+        nombre: prod.nombre,
+        descripcion: prod.description,
+        precio: prod.current_price || 0,
+        categoriaId: prod.category_id, // ✅ Este tiene UUID real de PostgreSQL
+        imagen: prod.image_url,
+          stock: {
+          currentQuantity: prod.stock_quantity || 0,
+          minQuantity: 0,
+          maxQuantity: 100,
+          status: 'in_stock' as const,
+          lastUpdated: new Date()
+        },
+        status: 'active' as const,
+        currentVersion: '1.0.0',
+        priceHistory: [],
+        versions: [],
+        metadata: {
+          createdAt: new Date(),
+          createdBy: 'system',
+          lastModified: new Date(),
+          lastModifiedBy: 'system'
+        }
+      }));
+    }
+    
+    // Fallback al caché (o un array vacío) si no hay datos de BD
+    return menuData?.productosSeleccionados ? versionedProductosSeleccionados : [];
+  }, [productosDB, versionedProductosSeleccionados]);
+
+  useEffect(() => {
+    if (todosLosProductos.length > 0) {
+      updateProductosSeleccionados(todosLosProductos.map(convertToProducto));
+    }
+  }, [todosLosProductos, updateProductosSeleccionados]);
 
   // Memoizar la función de filtrado para evitar recreaciones innecesarias
   const filtrarProductosPorTermino = useCallback((term: string, productos: VersionedProduct[]) => {

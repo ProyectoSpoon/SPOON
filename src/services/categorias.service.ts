@@ -1,4 +1,4 @@
-// src/services/categorias.service.ts
+// src/services/categorias.service.ts 
 import { Categoria } from '@/utils/menuCache.utils';
 
 // Interfaz actualizada para coincidir con la respuesta de la API (nombres en español)
