@@ -1,6 +1,6 @@
 // src/hooks/useMenuCache.ts
-import { useState, useEffect, useCallback } from 'react';
-import { 
+import { useState, useEffect, useCallback, useRef } from 'react';
+import {
   menuCacheUtils,  
   MenuCrearMenuData, 
   Categoria, 
@@ -54,19 +54,23 @@ export const useMenuCache = () => {
   }, []);
 
   // Función para obtener el estado inicial con datos base importados directamente
-  const getInitialState = useCallback((): MenuCrearMenuData => {
-    return {
-      categorias: categoriasFromAPI.length > 0 ? categoriasFromAPI : [],
-      productosSeleccionados: todosLosProductosBase,
-      productosMenu: [],
-      productosFavoritos: [],
-      productosEspeciales: [],
-      categoriaSeleccionada: null,
-      subcategoriaSeleccionada: null,
-      submenuActivo: 'menu-dia'
-    };
-  }, [categoriasFromAPI]);
-
+const getInitialState = useCallback((): MenuCrearMenuData => {
+  // Devuelve un estado inicial básico. Los productos se cargarán desde la BD.
+  return {
+    categorias: [],
+    productosSeleccionados: [], // Se llenará desde la BD en page.tsx
+    productosMenu: [],
+    productosFavoritos: [],
+    productosEspeciales: [],
+    categoriaSeleccionada: null,
+    subcategoriaSeleccionada: null,
+    submenuActivo: 'menu-dia'
+  };
+}, []); 
+  
+  // Memoizar getInitialState para evitar recreaciones innecesarias
+  const getInitialStateMemoized = useRef(getInitialState()).current;
+  
   // Estado para almacenar los datos del menú
   const [menuData, setMenuData] = useState<MenuCrearMenuData>(getInitialState());
   
@@ -127,13 +131,14 @@ export const useMenuCache = () => {
     if (cachedData) {
       console.log('Cargando datos del menú desde caché');
       
-      // Fusionar datos de sesión del caché con los datos base importados
-      const sessionData = {
-        // Usar categorías desde API o array vacío si no están cargadas
-        categorias: categoriasFromAPI.length > 0 ? categoriasFromAPI : [],
-        productosSeleccionados: todosLosProductosBase,
+      // Fusionar datos de sesión del caché con el estado actual
+      setMenuData(prev => ({
+        // Mantener categorías desde API si ya están cargadas
+        categorias: prev.categorias.length > 0 ? prev.categorias : (categoriasFromAPI.length > 0 ? categoriasFromAPI : []),
+        // Mantener productos seleccionados si ya están cargados desde BD, sino usar caché
+        productosSeleccionados: prev.productosSeleccionados.length > 0 ? prev.productosSeleccionados : (Array.isArray(cachedData.productosSeleccionados) ? cachedData.productosSeleccionados : []),
         
-        // Usar datos de sesión del caché o arrays vacíos si no existen
+        // Usar datos de sesión del caché
         productosMenu: Array.isArray(cachedData.productosMenu) ? cachedData.productosMenu : [],
         productosFavoritos: Array.isArray(cachedData.productosFavoritos) ? cachedData.productosFavoritos : [],
         productosEspeciales: Array.isArray(cachedData.productosEspeciales) ? cachedData.productosEspeciales : [],
@@ -142,15 +147,13 @@ export const useMenuCache = () => {
         categoriaSeleccionada: cachedData.categoriaSeleccionada,
         subcategoriaSeleccionada: cachedData.subcategoriaSeleccionada,
         submenuActivo: cachedData.submenuActivo || 'menu-dia'
-      };
-      
-      setMenuData(sessionData);
+      }));
     } else {
-      console.log('No hay datos en caché, usando estado inicial');
-      setMenuData(getInitialState());
+      console.log('No hay datos en caché, manteniendo estado actual');
+      // No sobrescribir el estado actual si no hay caché
     }
     setIsLoaded(true);
-  }, [isCacheEnabled, getInitialState]);
+  }, [isCacheEnabled, categoriasFromAPI, getInitialStateMemoized]); // Usar la versión memoizada
 
   /**
    * Guarda los datos del menú en el caché
@@ -161,13 +164,14 @@ export const useMenuCache = () => {
       return;
     }
     
-    // Solo guardar los datos de sesión del usuario, no los datos base
+    // Solo guardar los datos de sesión del usuario
     const sessionData = {
-      // No guardar los datos base completos
-      categorias: [], // No guardar en caché, se cargan desde staticMenuData
-      productosSeleccionados: [], // No guardar en caché, se cargan desde staticMenuData
-      
-      // Guardar solo los datos de sesión
+      // No guardar categorías en caché, se cargan desde API
+      categorias: [], 
+      // Guardar productos seleccionados para mantener la lista disponible
+      productosSeleccionados: Array.isArray(menuData.productosSeleccionados) ? menuData.productosSeleccionados : [],
+
+      // Guardar datos de sesión importantes
       productosMenu: Array.isArray(menuData.productosMenu) ? menuData.productosMenu : [],
       productosFavoritos: Array.isArray(menuData.productosFavoritos) ? menuData.productosFavoritos : [],
       productosEspeciales: Array.isArray(menuData.productosEspeciales) ? menuData.productosEspeciales : [],
@@ -190,25 +194,32 @@ export const useMenuCache = () => {
     });
   }, []); // Solo ejecutar una vez al montar
 
-  // Actualizar menuData cuando se cargan las categorías
-  useEffect(() => {
-    if (categoriasFromAPI.length > 0) {
-      setMenuData(prev => ({
-        ...prev,
-        categorias: categoriasFromAPI
-      }));
-    }
-  }, [categoriasFromAPI]);
+  // Reemplazado por getInitialStateMemoized, ya no es necesario este efecto separado
+  // useEffect(() => {
+  //   if (categoriasFromAPI.length > 0) {
+  //     setMenuData(prev => ({
+  //       ...prev,
+  //       categorias: categoriasFromAPI
+  //     }));
+  //   }
+  // }, [categoriasFromAPI]);
+  
+  
 
   // Cargar datos del caché al montar el componente
   useEffect(() => {
-    if (isCacheEnabled) {
-      loadFromCache();
-    } else {
-      setMenuData(getInitialState());
-      setIsLoaded(true);
-    }
-  }, [isCacheEnabled, loadFromCache, getInitialState]);
+    // Retrasar la carga del caché para permitir que los productos de BD se carguen primero
+    const timer = setTimeout(() => {
+      if (isCacheEnabled) {
+        loadFromCache();
+      } else {
+        setMenuData(getInitialState());
+        setIsLoaded(true);
+      }
+    }, 100); // Pequeño retraso para permitir que la BD se cargue primero
+    
+    return () => clearTimeout(timer);
+  }, [isCacheEnabled, loadFromCache, getInitialStateMemoized]); // Usar la versión memoizada
 
   // Guardar en caché cuando hay cambios
   useEffect(() => {
@@ -237,8 +248,15 @@ export const useMenuCache = () => {
    * @param productos Nuevos productos seleccionados
    */
   const updateProductosSeleccionados = useCallback((productos: Producto[]) => {
-    setMenuData(prev => ({ ...prev, productosSeleccionados: productos }));
-    setHasUnsavedChanges(true);
+    setMenuData(prev => {
+      // Solo actualizar si realmente hay productos nuevos o si el array actual está vacío
+      if (productos.length > 0 && (prev.productosSeleccionados.length === 0 || productos.length !== prev.productosSeleccionados.length)) {
+        console.log('🔄 Actualizando productos seleccionados:', productos.length, 'productos');
+        setHasUnsavedChanges(true);
+        return { ...prev, productosSeleccionados: productos };
+      }
+      return prev;
+    });
   }, []);
 
   /**
@@ -273,17 +291,26 @@ export const useMenuCache = () => {
    * @param producto Producto a agregar
    */
   const addProductoToMenu = useCallback((producto: Producto) => {
+    console.log('🍽️ Intentando agregar producto al menú:', producto.nombre || 'Sin nombre', 'ID:', producto.id);
+    
     // Verificar si el producto ya está en el menú
     setMenuData(prev => {
+      console.log('📋 Productos actuales en menú:', prev.productosMenu?.length || 0);
+      console.log('📋 IDs en menú:', prev.productosMenu?.map(p => p.id) || []);
+      
       const exists = Array.isArray(prev.productosMenu) && prev.productosMenu.some(p => p.id === producto.id);
+      
       if (!exists) {
+        console.log('✅ Producto no existe en menú, agregando...');
         setHasUnsavedChanges(true);
+        const newMenu = [...(Array.isArray(prev.productosMenu) ? prev.productosMenu : []), producto];
+        console.log('📋 Nuevo menú tendrá:', newMenu.length, 'productos');
         return {
           ...prev,
-          productosMenu: [...(Array.isArray(prev.productosMenu) ? prev.productosMenu : []), producto]
+          productosMenu: newMenu
         };
       } else {
-        console.log('El producto ya está en el menú');
+        console.log('❌ El producto ya está en el menú - ID duplicado:', producto.id);
         return prev;
       }
     });
@@ -487,7 +514,7 @@ export const useMenuCache = () => {
         return Array.isArray(menuData.productosMenu) ? menuData.productosMenu : [];
     }
   }, [menuData]);
-
+  const getProductosSubmenuActivoMemoized = useRef(getProductosSubmenuActivo).current;
   return {
     menuData,
     isLoaded,
@@ -509,7 +536,6 @@ export const useMenuCache = () => {
     updateSubmenuActivo,
     getProductosSubmenuActivo,
     clearCache,
-    hasCache,
     getCacheRemainingTime,
     isCacheEnabled,
     toggleCache,
@@ -518,6 +544,7 @@ export const useMenuCache = () => {
     categoriasLoading,
     categoriasError,
     categoriasFromAPI,
+        hasCache,
     idMapping
   };
 };

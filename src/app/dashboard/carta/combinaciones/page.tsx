@@ -68,65 +68,100 @@ export default function CombinacionesPage(): JSX.Element {
   // Inicializar productos y combinaciones
   const [productos, setProductos] = useState<Producto[]>(initializeProducts);
   
-  // Cargar combinaciones desde el archivo JSON
-  useEffect(() => {
-    const fetchCombinaciones = async () => {
-      try {
-        setIsLoading(true);
+  // Cargar combinaciones
+useEffect(() => {
+  const fetchCombinaciones = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Primero intentar cargar desde el menú publicado
+      const menuResponse = await fetch('/api/menu-dia/combinaciones');
+      
+      if (menuResponse.ok) {
+        const menuData = await menuResponse.json();
         
-        // Hacer la petición a la API
-        const response = await fetch('/api/combinaciones');
-        
-        if (!response.ok) {
-          throw new Error('Error al obtener las combinaciones');
-        }
-        
-        const data = await response.json();
-        
-        if (data.combinaciones && Array.isArray(data.combinaciones)) {
-          console.log('Combinaciones cargadas desde el archivo JSON:', data.combinaciones.length);
+        if (menuData.combinaciones && menuData.combinaciones.length > 0) {
+          console.log('Combinaciones cargadas desde menú publicado:', menuData.combinaciones.length);
           
-          // Transformar las combinaciones al formato esperado
-          const combinacionesFormateadas = data.combinaciones.map((comb: any, index: number) => {
-            // Extraer productos por categoría
-            const productos = comb.productos || [];
-            const entrada = productos.find((p: any) => p.categoriaId === 'CAT_001');
-            const principio = productos.find((p: any) => p.categoriaId === 'CAT_002');
-            const proteina = productos.find((p: any) => p.categoriaId === 'CAT_003');
-            const acompanamiento = productos.filter((p: any) => p.categoriaId === 'CAT_004');
-            const bebida = productos.find((p: any) => p.categoriaId === 'CAT_005');
-            
-            return {
-              id: comb.id || `COMB_${index + 1}`,
-              nombre: comb.nombre || `Combinación ${index + 1}`,
-              productos: comb.productos || [],
-              entrada: entrada,
-              principio: principio,
-              proteina: proteina,
-              acompanamiento: acompanamiento,
-              bebida: bebida,
-              favorito: comb.esFavorito || false,
-              especial: comb.esEspecial || false,
-              cantidad: comb.cantidad || 1,
-              programacion: comb.programacion || [],
-              fechaCreacion: comb.fechaCreacion || new Date().toISOString()
-            };
-          });
+          // Transformar al formato esperado
+          const combinacionesFormateadas = menuData.combinaciones.map((comb: any, index: number) => ({
+            id: comb.id,
+            nombre: comb.nombre,
+            productos: [], // Mantener para compatibilidad
+            entrada: comb.entrada,
+            principio: comb.principio,
+            proteina: comb.proteina,
+            acompanamiento: comb.acompanamientos || [],
+            bebida: comb.bebida,
+            favorito: comb.esFavorito || false,
+            especial: comb.esEspecial || false,
+            cantidad: comb.cantidad || 1,
+            precioBase: comb.precioBase,
+            precioEspecial: comb.precioEspecial,
+            programacion: [],
+            fechaCreacion: new Date().toISOString()
+          }));
           
           setCombinaciones(combinacionesFormateadas);
           setIsLoading(false);
-        } else {
-          throw new Error('Formato de combinaciones inválido');
+          return;
         }
-      } catch (error) {
-        console.error('Error al cargar combinaciones desde el archivo JSON:', error);
-        setError('Error al cargar combinaciones. Por favor, verifica que el archivo exista en la ruta correcta.');
-        setIsLoading(false);
       }
-    };
-    
-    fetchCombinaciones();
-  }, []);
+      
+      // Si no hay menú publicado, cargar desde archivo JSON (fallback)
+      const response = await fetch('/api/combinaciones');
+      
+      if (!response.ok) {
+        throw new Error('Error al obtener las combinaciones');
+      }
+      
+      const data = await response.json();
+      
+      if (data.combinaciones && Array.isArray(data.combinaciones)) {
+        console.log('Combinaciones cargadas desde archivo JSON:', data.combinaciones.length);
+        
+        // Transformar las combinaciones al formato esperado (código existente)
+        const combinacionesFormateadas = data.combinaciones.map((comb: any, index: number) => {
+          const productos = comb.productos || [];
+          const entrada = productos.find((p: any) => p.categoriaId === 'CAT_001');
+          const principio = productos.find((p: any) => p.categoriaId === 'CAT_002');
+          const proteina = productos.find((p: any) => p.categoriaId === 'CAT_003');
+          const acompanamiento = productos.filter((p: any) => p.categoriaId === 'CAT_004');
+          const bebida = productos.find((p: any) => p.categoriaId === 'CAT_005');
+          
+          return {
+            id: comb.id || `COMB_${index + 1}`,
+            nombre: comb.nombre || `Combinación ${index + 1}`,
+            productos: comb.productos || [],
+            entrada: entrada,
+            principio: principio,
+            proteina: proteina,
+            acompanamiento: acompanamiento,
+            bebida: bebida,
+            favorito: comb.esFavorito || false,
+            especial: comb.esEspecial || false,
+            cantidad: comb.cantidad || 1,
+            programacion: comb.programacion || [],
+            fechaCreacion: comb.fechaCreacion || new Date().toISOString()
+          };
+        });
+        
+        setCombinaciones(combinacionesFormateadas);
+        setIsLoading(false);
+      } else {
+        throw new Error('Formato de combinaciones inválido');
+      }
+    } catch (error) {
+      console.error('Error al cargar combinaciones:', error);
+      setError('Error al cargar combinaciones. Intenta publicar un menú primero.');
+      setIsLoading(false);
+    }
+  };
+  
+  fetchCombinaciones();
+}, []);
+
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -216,30 +251,98 @@ export default function CombinacionesPage(): JSX.Element {
     console.log('Cambiando vista a:', vistaTabla ? 'Tarjetas' : 'Tabla');
   };
 
-  const handleToggleFavorito = (id: string) => {
-    toggleFavorito(id);
-    setCombinaciones(prevCombinaciones => 
-      prevCombinaciones.map(combinacion => 
-        combinacion.id === id 
-          ? { ...combinacion, favorito: !combinacion.favorito }
-          : combinacion
-      )
-    );
-    toast.success('Estado de favorito actualizado');
+  const handleToggleFavorito = async (id: string) => {
+    try {
+      const combinacion = combinaciones.find(c => c.id === id);
+      if (!combinacion) return;
+      
+      const nuevoEstado = !combinacion.favorito;
+      
+      const response = await fetch('/api/combinaciones/favoritos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          combinacionId: id,
+          esFavorito: nuevoEstado
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al actualizar favorito');
+      }
+      
+      setCombinaciones(prevCombinaciones => 
+        prevCombinaciones.map(combinacion => 
+          combinacion.id === id 
+            ? { ...combinacion, favorito: nuevoEstado }
+            : combinacion
+        )
+      );
+      
+      toast.success(`Combinación ${nuevoEstado ? 'agregada a' : 'removida de'} favoritos`);
+    } catch (error) {
+      console.error('Error al actualizar favorito:', error);
+      toast.error('Error al actualizar favorito');
+    }
   };
 
-  const handleToggleEspecial = (id: string) => {
-    toggleEspecial(id);
-    setCombinaciones(prevCombinaciones => 
-      prevCombinaciones.map(combinacion => {
-        if (combinacion.id !== id) return combinacion;
-        return { 
-          ...combinacion, 
-          especial: !combinacion.especial 
-        };
-      })
-    );
-    toast.success('Estado especial actualizado');
+  const handleToggleEspecial = async (id: string) => {
+    try {
+      const combinacion = combinaciones.find(c => c.id === id);
+      if (!combinacion) return;
+      
+      const nuevoEstado = !combinacion.especial;
+      let precioEspecial = null;
+      
+      if (nuevoEstado) {
+        // Si se está marcando como especial, pedir precio especial
+        const precioInput = prompt('Ingrese el precio especial:', combinacion.precioBase?.toString() || '0');
+        if (!precioInput || isNaN(Number(precioInput))) {
+          toast.error('Precio especial inválido');
+          return;
+        }
+        precioEspecial = Number(precioInput);
+        
+        if (precioEspecial >= (combinacion.precioBase || 0)) {
+          toast.error('El precio especial debe ser menor al precio base');
+          return;
+        }
+      }
+      
+      const response = await fetch('/api/combinaciones/especiales', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          combinacionId: id,
+          esEspecial: nuevoEstado,
+          precioEspecial: precioEspecial
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al actualizar especial');
+      }
+      
+      setCombinaciones(prevCombinaciones => 
+        prevCombinaciones.map(combinacion => {
+          if (combinacion.id !== id) return combinacion;
+          return { 
+            ...combinacion, 
+            especial: nuevoEstado,
+            precioEspecial: precioEspecial
+          };
+        })
+      );
+      
+      toast.success(`Combinación ${nuevoEstado ? 'marcada' : 'desmarcada'} como especial`);
+    } catch (error) {
+      console.error('Error al actualizar especial:', error);
+      toast.error('Error al actualizar especial');
+    }
   };
 
   const handleUpdateCantidad = (id: string, cantidad: number) => {

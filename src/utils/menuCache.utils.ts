@@ -1,5 +1,5 @@
 // src/utils/menuCache.utils.ts
-
+ 
 // Función segura para acceder a localStorage (solo en el cliente)
 const safeLocalStorage = {
   getItem: (key: string): string | null => {

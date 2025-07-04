@@ -1,22 +1,10 @@
 import { toast } from 'sonner';
-import { jsonDataService } from '@/services/json-data.service';
 
 export interface FavoritoDoc {
   id: string;
   restauranteId: string;
   combinacionId: string;
   createdAt: Date;
-}
-
-// Definir la interfaz para los favoritos devueltos por jsonDataService
-interface JsonFavorito {
-  id?: string;
-  restauranteId?: string;
-  restaurante_id?: string;
-  combinacionId?: string;
-  combinacion_id?: string;
-  createdAt?: Date;
-  created_at?: Date;
 }
 
 export const favoritosService = {
@@ -28,19 +16,29 @@ export const favoritosService = {
         return [];
       }
       
-      // Usar el servicio JSON para obtener favoritos
-      const jsonFavoritos = await jsonDataService.getFavoritos(restauranteId) as JsonFavorito[];
+      console.log('🔄 Cargando favoritos desde PostgreSQL para restaurante:', restauranteId);
+      
+      // Llamada al endpoint de PostgreSQL
+      const response = await fetch(`/api/favoritos?restauranteId=${restauranteId}`);
+      
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
       
       // Convertir al formato esperado
-      return jsonFavoritos.map(fav => ({
+      const favoritos = (data.favoritos || []).map((fav: any) => ({
         id: fav.id || `fav-${Date.now()}`,
-        restauranteId: fav.restauranteId || fav.restaurante_id || restauranteId,
-        combinacionId: fav.combinacionId || fav.combinacion_id || '',
-        createdAt: fav.createdAt instanceof Date ? fav.createdAt : 
-                  fav.created_at instanceof Date ? fav.created_at : new Date()
+        restauranteId: fav.restaurante_id || fav.restauranteId || restauranteId,
+        combinacionId: fav.combinacion_id || fav.combinacionId || '',
+        createdAt: fav.created_at ? new Date(fav.created_at) : new Date()
       }));
+      
+      console.log('✅ Favoritos cargados desde PostgreSQL:', favoritos.length);
+      return favoritos;
     } catch (error) {
-      console.error('Error al obtener favoritos:', error);
+      console.error('❌ Error al obtener favoritos desde PostgreSQL:', error);
       // En caso de error, devolver un array vacío para no bloquear la aplicación
       return [];
     }
@@ -54,10 +52,30 @@ export const favoritosService = {
         return null;
       }
       
-      // Usar el servicio JSON para toggle favorito
-      return jsonDataService.toggleFavorito(restauranteId, combinacionId);
+      console.log('💫 Toggling favorito en PostgreSQL:', { restauranteId, combinacionId });
+      
+      // Llamada al endpoint de PostgreSQL para toggle
+      const response = await fetch('/api/favoritos/toggle', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          restauranteId,
+          combinacionId
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      
+      console.log('✅ Favorito actualizado en PostgreSQL:', result);
+      return result;
     } catch (error) {
-      console.error('Error al togglear favorito:', error);
+      console.error('❌ Error al togglear favorito en PostgreSQL:', error);
       // En caso de error, notificar al usuario pero permitir que la UI siga funcionando
       toast.error('No se pudo actualizar el favorito. Intente nuevamente.');
       return null;

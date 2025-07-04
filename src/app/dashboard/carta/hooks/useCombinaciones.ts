@@ -4,12 +4,10 @@ import { favoritosService } from '../services/favoritos.service';
 import { combinacionesService } from '@/services/combinaciones.service';
 import { combinacionesServicePostgres } from '@/services/postgres/combinaciones.service';
 import { favoritosServicePostgres } from '@/services/postgres/favoritos.service';
-import { jsonDataService } from '@/services/json-data.service';
 import { toast } from 'sonner';
 
-// Determina si usar archivos JSON, PostgreSQL o Firebase
-const USE_JSON_FILES = true;
-const USE_POSTGRES = false; // Cambiado a false para usar Firebase mientras se resuelven problemas con PostgreSQL
+// Determina si usar PostgreSQL o Firebase
+const USE_POSTGRES = true; // Cambiado a true para usar PostgreSQL
 
 interface UseCombinacionesProps {
   productos: Producto[];
@@ -29,119 +27,101 @@ export function useCombinaciones({ productos, restauranteId }: UseCombinacionesP
   const combService = USE_POSTGRES ? combinacionesServicePostgres : combinacionesService;
   const favService = USE_POSTGRES ? favoritosServicePostgres : favoritosService;
 
-  // Carga datos guardados de la base de datos o archivos JSON
+  // Carga datos guardados de la base de datos
   const cargarDatosGuardados = useCallback(async () => {
     try {
       setLoadingFavoritos(true);
       
-      if (USE_JSON_FILES) {
-        // Usar el servicio JSON para cargar combinaciones
-        console.log('Cargando combinaciones desde archivos JSON...');
-        try {
-          const combinacionesJson = await jsonDataService.getCombinaciones();
-          console.log('Combinaciones cargadas desde JSON:', combinacionesJson);
-          
-          // Actualizar el estado con los datos de JSON
-          setCombinaciones(combinacionesJson);
-          
-          console.log('Datos de combinaciones cargados desde archivos JSON');
-        } catch (jsonError) {
-          console.error('Error al cargar combinaciones desde JSON:', jsonError);
-          toast.error('No se pudieron cargar las combinaciones desde los archivos JSON');
+      // 1. Cargar favoritos con manejo de errores mejorado
+      let favoritos: Record<string, any>[] = [];
+      try {
+        favoritos = await favService.getFavoritos(restauranteId);
+      } catch (err) {
+        console.error('Error al cargar favoritos:', err);
+        // Continuamos con un array vacío en caso de error
+      }
+      
+      const favoritosIds = new Set(favoritos.map(f => {
+        if (USE_POSTGRES) {
+          // Para PostgreSQL usamos combinacion_id
+          return (f as any).combinacion_id;
+        } else {
+          // Para Firebase usamos combinacionId o id
+          return (f as any).combinacionId || f.id;
         }
-      } else {
-        // Usar Firebase o PostgreSQL
-        // 1. Cargar favoritos con manejo de errores mejorado
-        let favoritos: Record<string, any>[] = [];
-        try {
-          favoritos = await favService.getFavoritos(restauranteId);
-        } catch (err) {
-          console.error('Error al cargar favoritos:', err);
-          // Continuamos con un array vacío en caso de error
+      }));
+      
+      // 2. Cargar combinaciones persistidas con manejo de errores mejorado
+      let combinacionesGuardadas: Record<string, any>[] = [];
+      try {
+        combinacionesGuardadas = await combService.getCombinaciones(restauranteId);
+        console.log('Combinaciones cargadas desde la base de datos:', combinacionesGuardadas);
+      } catch (err) {
+        console.error('Error al cargar combinaciones:', err);
+        // Continuamos con un array vacío en caso de error
+      }
+      
+      const mapaCombinaciones = new Map();
+      
+      combinacionesGuardadas.forEach(combo => {
+        if (!combo) return; // Ignorar entradas nulas o indefinidas
+        
+        // Adaptamos la estructura según el origen de datos
+        const comboId = USE_POSTGRES ? combo.combinacionId || combo.id : combo.combinacionId || combo.id;
+        if (!comboId) return; // Ignorar si no hay ID válido
+        
+        // Aseguramos que la programación sea un array y convertimos las fechas a objetos Date si son timestamps
+        let programacion = combo.programacion || [];
+        if (programacion && Array.isArray(programacion)) {
+          programacion = programacion.map(prog => {
+            if (!prog) return null; // Ignorar entradas nulas
+            
+            try {
+              return {
+                ...prog,
+                // Si la fecha es un timestamp (objeto con seconds y nanoseconds) la convertimos a Date
+                fecha: prog.fecha instanceof Date ? 
+                      prog.fecha : 
+                      (prog.fecha?.toDate ? prog.fecha.toDate() : new Date(prog.fecha))
+              };
+            } catch (e) {
+              console.error('Error al procesar fecha de programación:', e);
+              // En caso de error, crear un objeto con la fecha actual
+              return {
+                ...prog,
+                fecha: new Date()
+              };
+            }
+          }).filter(Boolean); // Eliminar entradas nulas
         }
         
-        const favoritosIds = new Set(favoritos.map(f => {
-          if (USE_POSTGRES) {
-            // Para PostgreSQL usamos combinacion_id
-            return (f as any).combinacion_id;
-          } else {
-            // Para Firebase usamos combinacionId o id
-            return (f as any).combinacionId || f.id;
-          }
-        }));
-        
-        // 2. Cargar combinaciones persistidas con manejo de errores mejorado
-        let combinacionesGuardadas: Record<string, any>[] = [];
-        try {
-          combinacionesGuardadas = await combService.getCombinaciones(restauranteId);
-          console.log('Combinaciones cargadas desde la base de datos:', combinacionesGuardadas);
-        } catch (err) {
-          console.error('Error al cargar combinaciones:', err);
-          // Continuamos con un array vacío en caso de error
-        }
-        
-        const mapaCombinaciones = new Map();
-        
-        combinacionesGuardadas.forEach(combo => {
-          if (!combo) return; // Ignorar entradas nulas o indefinidas
-          
-          // Adaptamos la estructura según el origen de datos
-          const comboId = USE_POSTGRES ? combo.combinacionId || combo.id : combo.combinacionId || combo.id;
-          if (!comboId) return; // Ignorar si no hay ID válido
-          
-          // Aseguramos que la programación sea un array y convertimos las fechas a objetos Date si son timestamps
-          let programacion = combo.programacion || [];
-          if (programacion && Array.isArray(programacion)) {
-            programacion = programacion.map(prog => {
-              if (!prog) return null; // Ignorar entradas nulas
-              
-              try {
-                return {
-                  ...prog,
-                  // Si la fecha es un timestamp (objeto con seconds y nanoseconds) la convertimos a Date
-                  fecha: prog.fecha instanceof Date ? 
-                        prog.fecha : 
-                        (prog.fecha?.toDate ? prog.fecha.toDate() : new Date(prog.fecha))
-                };
-              } catch (e) {
-                console.error('Error al procesar fecha de programación:', e);
-                // En caso de error, crear un objeto con la fecha actual
-                return {
-                  ...prog,
-                  fecha: new Date()
-                };
-              }
-            }).filter(Boolean); // Eliminar entradas nulas
-          }
-          
-          mapaCombinaciones.set(comboId, {
-            cantidad: combo.cantidad || 0,
-            especial: combo.especial || false,
-            programacion: programacion
-          });
-          
-          if (programacion.length > 0) {
-            console.log(`Programación cargada para combo ${comboId}:`, programacion);
-          }
+        mapaCombinaciones.set(comboId, {
+          cantidad: combo.cantidad || 0,
+          especial: combo.especial || false,
+          programacion: programacion
         });
         
-        // 3. Actualizar el estado con los datos recuperados
-        setCombinaciones(prevCombinaciones => 
-          prevCombinaciones.map(combinacion => {
-            const datosGuardados = mapaCombinaciones.get(combinacion.id);
-            
-            return {
-              ...combinacion,
-              favorito: favoritosIds.has(combinacion.id),
-              cantidad: datosGuardados?.cantidad || combinacion.cantidad || 0,
-              especial: datosGuardados?.especial || combinacion.especial || false,
-              programacion: datosGuardados?.programacion || combinacion.programacion || []
-            };
-          })
-        );
-        
-        console.log(`Datos de combinaciones cargados desde ${USE_POSTGRES ? 'PostgreSQL' : 'Firebase'}`);
-      }
+        if (programacion.length > 0) {
+          console.log(`Programación cargada para combo ${comboId}:`, programacion);
+        }
+      });
+      
+      // 3. Actualizar el estado con los datos recuperados
+      setCombinaciones(prevCombinaciones => 
+        prevCombinaciones.map(combinacion => {
+          const datosGuardados = mapaCombinaciones.get(combinacion.id);
+          
+          return {
+            ...combinacion,
+            favorito: favoritosIds.has(combinacion.id),
+            cantidad: datosGuardados?.cantidad || combinacion.cantidad || 0,
+            especial: datosGuardados?.especial || combinacion.especial || false,
+            programacion: datosGuardados?.programacion || combinacion.programacion || []
+          };
+        })
+      );
+      
+      console.log(`Datos de combinaciones cargados desde ${USE_POSTGRES ? 'PostgreSQL' : 'Firebase'}`);
       
     } catch (error) {
       console.error('Error al cargar datos guardados:', error);
@@ -164,23 +144,18 @@ export function useCombinaciones({ productos, restauranteId }: UseCombinacionesP
         // Persistir la combinación actualizada
         const combinacionActualizada = nuevasCombinaciones.find(c => c.id === id);
         if (combinacionActualizada) {
-          if (USE_JSON_FILES) {
-            // Simulación de guardar en archivos JSON
-            console.log('Simulando guardar favorito en archivos JSON:', { id, favorito: combinacionActualizada.favorito });
-          } else {
-            // Actualizar en el servicio de favoritos
-            favService.toggleFavorito(restauranteId, id).catch(err => 
-              console.error('Error al togglear favorito en el servicio:', err)
-            );
-            
-            // Persistir en la base de datos
-            combService.guardarCombinacion(
-              restauranteId, 
-              combinacionActualizada
-            ).catch(err => 
-              console.error(`Error al guardar favorito en ${USE_POSTGRES ? 'PostgreSQL' : 'Firestore'}:`, err)
-            );
-          }
+          // Actualizar en el servicio de favoritos
+          favService.toggleFavorito(restauranteId, id).catch(err => 
+            console.error('Error al togglear favorito en el servicio:', err)
+          );
+          
+          // Persistir en la base de datos
+          combService.guardarCombinacion(
+            restauranteId, 
+            combinacionActualizada
+          ).catch(err => 
+            console.error(`Error al guardar favorito en ${USE_POSTGRES ? 'PostgreSQL' : 'Firestore'}:`, err)
+          );
         }
         
         return nuevasCombinaciones;
@@ -215,19 +190,13 @@ export function useCombinaciones({ productos, restauranteId }: UseCombinacionesP
           };
         }
         
-        // Persistir la combinación actualizada
-        if (USE_JSON_FILES) {
-          // Simulación de guardar en archivos JSON
-          console.log('Simulando guardar estado especial en archivos JSON:', { id, especial: combinacionActualizada.especial });
-        } else {
-          // Persistir en la base de datos
-          combService.guardarCombinacion(
-            restauranteId, 
-            combinacionActualizada
-          ).catch(err => 
-            console.error(`Error al guardar estado especial en ${USE_POSTGRES ? 'PostgreSQL' : 'Firestore'}:`, err)
-          );
-        }
+        // Persistir en la base de datos
+        combService.guardarCombinacion(
+          restauranteId, 
+          combinacionActualizada
+        ).catch(err => 
+          console.error(`Error al guardar estado especial en ${USE_POSTGRES ? 'PostgreSQL' : 'Firestore'}:`, err)
+        );
         
         return combinacionActualizada;
       });
@@ -327,18 +296,13 @@ export function useCombinaciones({ productos, restauranteId }: UseCombinacionesP
       // Persistir la combinación actualizada
       const combinacionActualizada = nuevasCombinaciones.find(c => c.id === id);
       if (combinacionActualizada) {
-        if (USE_JSON_FILES) {
-          // Simulación de guardar en archivos JSON
-          console.log('Simulando guardar cantidad en archivos JSON:', { id, cantidad });
-        } else {
-          // Persistir en la base de datos
-          combService.guardarCombinacion(
-            restauranteId, 
-            combinacionActualizada
-          ).catch(err => 
-            console.error(`Error al guardar cantidad en ${USE_POSTGRES ? 'PostgreSQL' : 'Firestore'}:`, err)
-          );
-        }
+        // Persistir en la base de datos
+        combService.guardarCombinacion(
+          restauranteId, 
+          combinacionActualizada
+        ).catch(err => 
+          console.error(`Error al guardar cantidad en ${USE_POSTGRES ? 'PostgreSQL' : 'Firestore'}:`, err)
+        );
       }
       
       return nuevasCombinaciones;
@@ -376,26 +340,16 @@ export function useCombinaciones({ productos, restauranteId }: UseCombinacionesP
       
       // Luego intentamos persistir
       try {
-        if (USE_JSON_FILES) {
-          // Simulación de guardar en archivos JSON
-          console.log('Simulando guardar programación en archivos JSON:', { 
-            id, 
-            programacion: nuevaProgramacion 
-          });
-        } else {
-          // Persistir en la base de datos
-          await combService.guardarCombinacion(restauranteId, combinacionActualizada);
-          console.log(`Programación guardada exitosamente en ${USE_POSTGRES ? 'PostgreSQL' : 'Firebase'}`);
-        }
+        // Persistir en la base de datos
+        await combService.guardarCombinacion(restauranteId, combinacionActualizada);
+        console.log(`Programación guardada exitosamente en ${USE_POSTGRES ? 'PostgreSQL' : 'Firebase'}`);
       } catch (dbError) {
         console.error(`Error al guardar programación:`, dbError);
         // Si falla la persistencia, intentamos nuevamente en segundo plano
-        if (!USE_JSON_FILES) {
-          setTimeout(() => {
-            combService.guardarCombinacion(restauranteId, combinacionActualizada)
-              .catch(retryError => console.error('Error en segundo intento de guardar programación:', retryError));
-          }, 5000);
-        }
+        setTimeout(() => {
+          combService.guardarCombinacion(restauranteId, combinacionActualizada)
+            .catch(retryError => console.error('Error en segundo intento de guardar programación:', retryError));
+        }, 5000);
       }
     } catch (err) {
       console.error(`Error general al programar combinación en ${USE_POSTGRES ? 'PostgreSQL' : 'Firestore'}:`, err);
@@ -433,27 +387,16 @@ export function useCombinaciones({ productos, restauranteId }: UseCombinacionesP
       
       // Luego intentamos persistir
       try {
-        if (USE_JSON_FILES) {
-          // Simulación de guardar en archivos JSON
-          console.log('Simulando editar programación en archivos JSON:', { 
-            id, 
-            index,
-            programacion: nuevaProgramacion 
-          });
-        } else {
-          // Persistir en la base de datos
-          await combService.guardarCombinacion(restauranteId, combinacionActualizada);
-          console.log(`Programación editada exitosamente en ${USE_POSTGRES ? 'PostgreSQL' : 'Firebase'}`);
-        }
+        // Persistir en la base de datos
+        await combService.guardarCombinacion(restauranteId, combinacionActualizada);
+        console.log(`Programación editada exitosamente en ${USE_POSTGRES ? 'PostgreSQL' : 'Firebase'}`);
       } catch (dbError) {
         console.error(`Error al editar programación:`, dbError);
         // Si falla la persistencia, intentamos nuevamente en segundo plano
-        if (!USE_JSON_FILES) {
-          setTimeout(() => {
-            combService.guardarCombinacion(restauranteId, combinacionActualizada)
-              .catch(retryError => console.error('Error en segundo intento de editar programación:', retryError));
-          }, 5000);
-        }
+        setTimeout(() => {
+          combService.guardarCombinacion(restauranteId, combinacionActualizada)
+            .catch(retryError => console.error('Error en segundo intento de editar programación:', retryError));
+        }, 5000);
       }
     } catch (err) {
       console.error(`Error general al editar programación en ${USE_POSTGRES ? 'PostgreSQL' : 'Firestore'}:`, err);
@@ -490,27 +433,16 @@ export function useCombinaciones({ productos, restauranteId }: UseCombinacionesP
       
       // Luego intentamos persistir
       try {
-        if (USE_JSON_FILES) {
-          // Simulación de guardar en archivos JSON
-          console.log('Simulando eliminar programación en archivos JSON:', { 
-            id, 
-            index,
-            programacionRestante: nuevaProgramacion 
-          });
-        } else {
-          // Persistir en la base de datos
-          await combService.guardarCombinacion(restauranteId, combinacionActualizada);
-          console.log(`Programación eliminada exitosamente en ${USE_POSTGRES ? 'PostgreSQL' : 'Firebase'}`);
-        }
+        // Persistir en la base de datos
+        await combService.guardarCombinacion(restauranteId, combinacionActualizada);
+        console.log(`Programación eliminada exitosamente en ${USE_POSTGRES ? 'PostgreSQL' : 'Firebase'}`);
       } catch (dbError) {
         console.error(`Error al eliminar programación:`, dbError);
         // Si falla la persistencia, intentamos nuevamente en segundo plano
-        if (!USE_JSON_FILES) {
-          setTimeout(() => {
-            combService.guardarCombinacion(restauranteId, combinacionActualizada)
-              .catch(retryError => console.error('Error en segundo intento de eliminar programación:', retryError));
-          }, 5000);
-        }
+        setTimeout(() => {
+          combService.guardarCombinacion(restauranteId, combinacionActualizada)
+            .catch(retryError => console.error('Error en segundo intento de eliminar programación:', retryError));
+        }, 5000);
       }
     } catch (err) {
       console.error(`Error general al eliminar programación en ${USE_POSTGRES ? 'PostgreSQL' : 'Firestore'}:`, err);

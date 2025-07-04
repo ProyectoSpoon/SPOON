@@ -1,9 +1,8 @@
 import { MenuCombinacion } from "@/app/dashboard/carta/types/menu.types";
-import { jsonDataService } from "@/services/json-data.service";
 
 /**
  * Servicio para manejar la persistencia de combinaciones y sus cantidades
- * usando el servicio de datos JSON
+ * usando PostgreSQL a través de endpoints de API
  */
 export const combinacionesService = {
   /**
@@ -13,10 +12,30 @@ export const combinacionesService = {
    */
   async guardarCombinacion(restauranteId: string, combinacion: MenuCombinacion): Promise<void> {
     try {
-      // Usar el servicio JSON para guardar la combinación
-      return jsonDataService.guardarCombinacion(restauranteId, combinacion);
+      console.log('💾 Guardando combinación en PostgreSQL:', { 
+        restauranteId, 
+        combinacionId: combinacion.id 
+      });
+
+      const response = await fetch('/api/combinaciones', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          restauranteId,
+          combinacion
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Combinación guardada en PostgreSQL:', result);
     } catch (error) {
-      console.error('Error al guardar combinación:', error);
+      console.error('❌ Error al guardar combinación en PostgreSQL:', error);
       throw error;
     }
   },
@@ -28,10 +47,30 @@ export const combinacionesService = {
    */
   async guardarCombinaciones(restauranteId: string, combinaciones: MenuCombinacion[]): Promise<void> {
     try {
-      // Usar el servicio JSON para guardar las combinaciones
-      return jsonDataService.guardarCombinaciones(restauranteId, combinaciones);
+      console.log('💾 Guardando múltiples combinaciones en PostgreSQL:', { 
+        restauranteId, 
+        cantidad: combinaciones.length 
+      });
+
+      const response = await fetch('/api/combinaciones/bulk', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          restauranteId,
+          combinaciones
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Combinaciones guardadas en PostgreSQL:', result);
     } catch (error) {
-      console.error('Error al guardar combinaciones:', error);
+      console.error('❌ Error al guardar combinaciones en PostgreSQL:', error);
       throw error;
     }
   },
@@ -42,25 +81,36 @@ export const combinacionesService = {
    */
   async getCombinaciones(restauranteId: string): Promise<Record<string, any>[]> {
     try {
-      // Obtener combinaciones desde el servicio JSON
-      const combinaciones = await jsonDataService.getCombinaciones();
+      console.log('🔄 Obteniendo combinaciones desde PostgreSQL para restaurante:', restauranteId);
+
+      const response = await fetch(`/api/combinaciones?restauranteId=${restauranteId}`);
+      
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
       
       // Transformar las combinaciones al formato esperado
-      return combinaciones.map((combinacion: any) => ({
+      const combinaciones = (data.combinaciones || []).map((combinacion: any) => ({
         id: combinacion.id,
         combinacionId: combinacion.id,
-        restauranteId: restauranteId,
+        restauranteId: combinacion.restaurante_id || combinacion.restauranteId || restauranteId,
         cantidad: combinacion.cantidad || 0,
         nombre: combinacion.nombre || `Combinación ${combinacion.id}`,
         favorito: combinacion.favorito || false,
         especial: combinacion.especial || false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: combinacion.created_at ? new Date(combinacion.created_at) : new Date(),
+        updatedAt: combinacion.updated_at ? new Date(combinacion.updated_at) : new Date(),
         programacion: combinacion.programacion || []
       }));
+
+      console.log('✅ Combinaciones obtenidas desde PostgreSQL:', combinaciones.length);
+      return combinaciones;
     } catch (error) {
-      console.error('Error al obtener combinaciones:', error);
-      throw error;
+      console.error('❌ Error al obtener combinaciones desde PostgreSQL:', error);
+      // Retornar array vacío en caso de error para no bloquear la aplicación
+      return [];
     }
   },
 
@@ -78,16 +128,34 @@ export const combinacionesService = {
     fecha: Date = new Date()
   ): Promise<void> {
     try {
-      // En la implementación JSON, simplemente registramos en la consola
-      console.log('Simulando registro de venta:', {
+      console.log('📊 Registrando venta en PostgreSQL:', {
         restauranteId,
         combinacionId,
         cantidad,
         fecha
       });
-      return Promise.resolve();
+
+      const response = await fetch('/api/combinaciones/ventas', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          restauranteId,
+          combinacionId,
+          cantidad,
+          fecha: fecha.toISOString()
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Venta registrada en PostgreSQL:', result);
     } catch (error) {
-      console.error('Error al registrar venta de combinación:', error);
+      console.error('❌ Error al registrar venta de combinación en PostgreSQL:', error);
       throw error;
     }
   },
@@ -104,16 +172,30 @@ export const combinacionesService = {
     fechaFin: Date
   ): Promise<Record<string, any>[]> {
     try {
-      // En la implementación JSON, devolvemos un array vacío
-      console.log('Simulando obtención de estadísticas:', {
+      console.log('📈 Obteniendo estadísticas desde PostgreSQL:', {
         restauranteId,
         fechaInicio,
         fechaFin
       });
-      return [];
+
+      const response = await fetch(`/api/combinaciones/estadisticas?` + new URLSearchParams({
+        restauranteId,
+        fechaInicio: fechaInicio.toISOString(),
+        fechaFin: fechaFin.toISOString()
+      }));
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      console.log('✅ Estadísticas obtenidas desde PostgreSQL:', data.estadisticas?.length || 0);
+      return data.estadisticas || [];
     } catch (error) {
-      console.error('Error al obtener estadísticas de ventas:', error);
-      throw error;
+      console.error('❌ Error al obtener estadísticas de ventas desde PostgreSQL:', error);
+      // Retornar array vacío en caso de error
+      return [];
     }
   }
 };

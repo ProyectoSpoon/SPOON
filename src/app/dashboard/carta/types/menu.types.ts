@@ -231,6 +231,10 @@ export interface ProgramacionCombinacion {
 export interface MenuCombinacion {
   /** Identificador único de la combinación */
   id: string;
+  /** Nombre de la combinación */
+  nombre?: string;
+  /** Lista de productos para compatibilidad */
+  productos?: Producto[];
   /** Plato de entrada */
   entrada: Producto;
   /** Plato principal */
@@ -247,8 +251,10 @@ export interface MenuCombinacion {
   favorito?: boolean;
   /** Cantidad disponible actualmente */
   cantidad?: number;
+  /** Precio base de la combinación */
+  precioBase?: number;
   /** Precio especial si aplica */
-  precioEspecial?: number;
+  precioEspecial?: number | null;
   /** Período de disponibilidad especial */
   disponibilidadEspecial?: {
     /** Fecha de inicio de disponibilidad */
@@ -258,4 +264,6 @@ export interface MenuCombinacion {
   };
   /** Programaciones futuras */
   programacion?: ProgramacionCombinacion[];
+  /** Fecha de creación */
+  fechaCreacion?: string;
 }
