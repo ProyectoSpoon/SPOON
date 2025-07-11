@@ -7,187 +7,145 @@ import { Alert, AlertDescription } from '@/shared/components/ui/Alert';
 import { TablaCombinaciones } from '../components/tabla-combinaciones/TablaCombinaciones';
 import { TarjetasCombinaciones } from '../components/tarjetas-combinaciones/TarjetasCombinaciones';
 import { CacheTimer } from '@/shared/components/ui/CacheTimer/cacheTimer';
-import { useCombinaciones } from '../hooks/useCombinaciones';
-import { Producto, MenuCombinacion, CategoriaMenu } from '../types/menu.types';
-import { useRouter } from 'next/navigation';
+import { MenuCombinacion } from '../types/menu.types';
 import { toast } from 'sonner';
-import { cacheUtils } from '@/utils/cache.utils';
-import { combinacionesService } from '@/services/combinaciones.service';
+import { RESTAURANTE_ID } from '../constants/categorias';
 
-// ID de restaurante de prueba
-const RESTAURANTE_ID_PRUEBA = 'rest-test-001';
+interface CombinacionDB {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  precioBase: number;
+  precioEspecial?: number | null;
+  esFavorito: boolean;
+  esEspecial: boolean;
+  disponible: boolean;
+  cantidadMaxima: number;
+  cantidadActual: number;
+  cantidadVendida: number;
+  fechaCreacion: string;
+  entrada?: {
+    id: string;
+    nombre: string;
+    descripcion: string;
+    precio: number;
+  } | null;
+  principio?: {
+    id: string;
+    nombre: string;
+    descripcion: string;
+    precio: number;
+  } | null;
+  proteina?: {
+    id: string;
+    nombre: string;
+    descripcion: string;
+    precio: number;
+  } | null;
+  bebida?: {
+    id: string;
+    nombre: string;
+    descripcion: string;
+    precio: number;
+  } | null;
+}
 
 export default function CombinacionesPage(): JSX.Element {
-  const router = useRouter();
   const [vistaTabla, setVistaTabla] = useState(true);
   const [mostrarFavoritos, setMostrarFavoritos] = useState(false);
   const [mostrarEspeciales, setMostrarEspeciales] = useState(false);
   const [combinaciones, setCombinaciones] = useState<MenuCombinacion[]>([]);
-
-  const initializeProducts = (): Producto[] => {
-    try {
-      // En el servidor, no tenemos acceso a localStorage
-      if (typeof window === 'undefined') {
-        console.log('Ejecutando en el servidor, no hay acceso a localStorage');
-        return [];
-      }
-      
-      // Primero intentar cargar combinaciones generadas directamente
-      const combinacionesGuardadas = window.localStorage.getItem('combinacionesGeneradas');
-      if (combinacionesGuardadas) {
-        console.log('Combinaciones encontradas en localStorage');
-        // Si hay combinaciones, no necesitamos productos
-        // Estableceremos las combinaciones directamente más adelante
-        return [];
-      }
-      
-      // Si no hay combinaciones, intentar cargar productos del caché
-      const cachedData = cacheUtils.get();
-      if (cachedData) {
-        console.log('Productos encontrados en caché');
-        return cachedData;
-      }
-
-      // Finalmente, intentar cargar productos de localStorage
-      const productosGuardados = window.localStorage.getItem('productosParaCombinar');
-      if (!productosGuardados) {
-        console.log('No se encontraron productos en localStorage');
-        return [];
-      }
-
-      console.log('Productos encontrados en localStorage');
-      const productosParseados = JSON.parse(productosGuardados);
-      window.localStorage.removeItem('productosParaCombinar');
-      return productosParseados;
-    } catch (error) {
-      console.error('Error al obtener productos:', error);
-      return [];
-    }
-  };
-
-  // Inicializar productos y combinaciones
-  const [productos, setProductos] = useState<Producto[]>(initializeProducts);
-  
-  // Cargar combinaciones
-useEffect(() => {
-  const fetchCombinaciones = async () => {
-    try {
-      setIsLoading(true);
-      
-      // Primero intentar cargar desde el menú publicado
-      const menuResponse = await fetch('/api/menu-dia/combinaciones');
-      
-      if (menuResponse.ok) {
-        const menuData = await menuResponse.json();
-        
-        if (menuData.combinaciones && menuData.combinaciones.length > 0) {
-          console.log('Combinaciones cargadas desde menú publicado:', menuData.combinaciones.length);
-          
-          // Transformar al formato esperado
-          const combinacionesFormateadas = menuData.combinaciones.map((comb: any, index: number) => ({
-            id: comb.id,
-            nombre: comb.nombre,
-            productos: [], // Mantener para compatibilidad
-            entrada: comb.entrada,
-            principio: comb.principio,
-            proteina: comb.proteina,
-            acompanamiento: comb.acompanamientos || [],
-            bebida: comb.bebida,
-            favorito: comb.esFavorito || false,
-            especial: comb.esEspecial || false,
-            cantidad: comb.cantidad || 1,
-            precioBase: comb.precioBase,
-            precioEspecial: comb.precioEspecial,
-            programacion: [],
-            fechaCreacion: new Date().toISOString()
-          }));
-          
-          setCombinaciones(combinacionesFormateadas);
-          setIsLoading(false);
-          return;
-        }
-      }
-      
-      // Si no hay menú publicado, cargar desde archivo JSON (fallback)
-      const response = await fetch('/api/combinaciones');
-      
-      if (!response.ok) {
-        throw new Error('Error al obtener las combinaciones');
-      }
-      
-      const data = await response.json();
-      
-      if (data.combinaciones && Array.isArray(data.combinaciones)) {
-        console.log('Combinaciones cargadas desde archivo JSON:', data.combinaciones.length);
-        
-        // Transformar las combinaciones al formato esperado (código existente)
-        const combinacionesFormateadas = data.combinaciones.map((comb: any, index: number) => {
-          const productos = comb.productos || [];
-          const entrada = productos.find((p: any) => p.categoriaId === 'CAT_001');
-          const principio = productos.find((p: any) => p.categoriaId === 'CAT_002');
-          const proteina = productos.find((p: any) => p.categoriaId === 'CAT_003');
-          const acompanamiento = productos.filter((p: any) => p.categoriaId === 'CAT_004');
-          const bebida = productos.find((p: any) => p.categoriaId === 'CAT_005');
-          
-          return {
-            id: comb.id || `COMB_${index + 1}`,
-            nombre: comb.nombre || `Combinación ${index + 1}`,
-            productos: comb.productos || [],
-            entrada: entrada,
-            principio: principio,
-            proteina: proteina,
-            acompanamiento: acompanamiento,
-            bebida: bebida,
-            favorito: comb.esFavorito || false,
-            especial: comb.esEspecial || false,
-            cantidad: comb.cantidad || 1,
-            programacion: comb.programacion || [],
-            fechaCreacion: comb.fechaCreacion || new Date().toISOString()
-          };
-        });
-        
-        setCombinaciones(combinacionesFormateadas);
-        setIsLoading(false);
-      } else {
-        throw new Error('Formato de combinaciones inválido');
-      }
-    } catch (error) {
-      console.error('Error al cargar combinaciones:', error);
-      setError('Error al cargar combinaciones. Intenta publicar un menú primero.');
-      setIsLoading(false);
-    }
-  };
-  
-  fetchCombinaciones();
-}, []);
-
-
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [menuDelDia, setMenuDelDia] = useState<any>(null);
 
-  const { 
-    combinaciones: combinacionesIniciales, 
-    loading: loadingCombinaciones, 
-    error: errorCombinaciones,
-    regenerarCombinaciones,
-    toggleFavorito,
-    toggleEspecial,
-    actualizarCantidad,
-    agregarProgramacion,
-    editarProgramacion,
-    eliminarProgramacion
-  } = useCombinaciones({ 
-    productos, 
-    restauranteId: RESTAURANTE_ID_PRUEBA 
-  });
-
+  // Cargar combinaciones desde PostgreSQL
   useEffect(() => {
-    // Solo establecer combinaciones desde el hook si no tenemos combinaciones cargadas desde el archivo JSON
-    if (combinaciones.length === 0 && combinacionesIniciales.length > 0) {
-      setCombinaciones(combinacionesIniciales);
-    }
-  }, [combinacionesIniciales, combinaciones.length]);
+    const fetchCombinaciones = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        console.log('Cargando combinaciones desde PostgreSQL...');
+        const response = await fetch('/api/menu-dia/combinaciones');
+        
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.message || 'Error al cargar combinaciones');
+        }
+        
+        console.log('Datos recibidos:', data);
+        
+        // Transformar datos de PostgreSQL al formato esperado por el frontend
+        const combinacionesFormateadas: MenuCombinacion[] = data.combinaciones.map((comb: CombinacionDB) => ({
+          id: comb.id,
+          nombre: comb.nombre,
+          descripcion: comb.descripcion,
+          productos: [], // Mantener para compatibilidad con componentes existentes
+          entrada: comb.entrada ? {
+            id: comb.entrada.id,
+            nombre: comb.entrada.nombre,
+            descripcion: comb.entrada.descripcion,
+            precio: comb.entrada.precio,
+            categoriaId: 'b4e792ba-b00d-4348-b9e3-f34992315c23' // ID real de Entradas
+          } : undefined,
+          principio: comb.principio ? {
+            id: comb.principio.id,
+            nombre: comb.principio.nombre,
+            descripcion: comb.principio.descripcion,
+            precio: comb.principio.precio,
+            categoriaId: '2d4c3ea8-843e-4312-821e-54d1c4e79dce' // ID real de Principios
+          } : undefined,
+          proteina: comb.proteina ? {
+            id: comb.proteina.id,
+            nombre: comb.proteina.nombre,
+            descripcion: comb.proteina.descripcion,
+            precio: comb.proteina.precio,
+            categoriaId: '342f0c43-7f98-48fb-b0ba-e4c5d3ee72b3' // ID real de Proteínas
+          } : undefined,
+          acompanamiento: [], // Se puede extender si se agregan acompañamientos
+          bebida: comb.bebida ? {
+            id: comb.bebida.id,
+            nombre: comb.bebida.nombre,
+            descripcion: comb.bebida.descripcion,
+            precio: comb.bebida.precio,
+            categoriaId: '6feba136-57dc-4448-8357-6f5533177cfd' // ID real de Bebidas
+          } : undefined,
+          favorito: comb.esFavorito,
+          especial: comb.esEspecial,
+          cantidad: comb.cantidadActual,
+          precioBase: comb.precioBase,
+          precioEspecial: comb.precioEspecial,
+          programacion: [], // Se puede extender si se necesita programación
+          fechaCreacion: comb.fechaCreacion
+        }));
+        
+        setCombinaciones(combinacionesFormateadas);
+        setMenuDelDia(data.menuDelDia);
+        
+        console.log(`✅ Cargadas ${combinacionesFormateadas.length} combinaciones`);
+        
+      } catch (error) {
+        console.error('Error al cargar combinaciones:', error);
+        setError(
+          error instanceof Error 
+            ? error.message 
+            : 'Error desconocido al cargar las combinaciones'
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchCombinaciones();
+  }, []);
 
+  // Filtrar combinaciones
   const combinacionesFiltradas = useMemo(() => {
     let resultado = [...combinaciones];
     
@@ -202,50 +160,6 @@ useEffect(() => {
     return resultado;
   }, [combinaciones, mostrarFavoritos, mostrarEspeciales]);
 
-  const validarProductos = () => {
-    // Si ya tenemos combinaciones cargadas desde el archivo JSON, no necesitamos validar productos
-    if (combinaciones.length > 0) {
-      setIsLoading(false);
-      return;
-    }
-    
-    try {
-      // Solo validamos productos si no hay combinaciones cargadas desde el archivo JSON
-      if (productos.length === 0) {
-        // No lanzamos error, simplemente mostramos un mensaje informativo
-        console.log('No se encontraron productos para generar combinaciones. Usando combinaciones del archivo JSON.');
-        return;
-      }
-
-      const categorias = new Set(productos.map(p => p.categoriaId));
-      const categoriasRequeridas = [
-        CategoriaMenu.ENTRADA,
-        CategoriaMenu.PRINCIPIO,
-        CategoriaMenu.PROTEINA,
-        CategoriaMenu.ACOMPANAMIENTO,
-        CategoriaMenu.BEBIDA
-      ];
-      const categoriasFaltantes = categoriasRequeridas.filter(cat => !categorias.has(cat));
-
-      if (categoriasFaltantes.length > 0) {
-        console.warn(`Faltan productos de las categorías: ${categoriasFaltantes.join(', ')}. Usando combinaciones del archivo JSON.`);
-      }
-
-      if (!cacheUtils.get()) {
-        cacheUtils.set(productos);
-      }
-    } catch (err) {
-      console.error('Error al validar productos:', err);
-      // No redirigimos ni mostramos error, ya que estamos usando combinaciones del archivo JSON
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    validarProductos();
-  }, [productos, router]);
-
   const handleCambiarVista = (): void => {
     setVistaTabla(!vistaTabla);
     console.log('Cambiando vista a:', vistaTabla ? 'Tarjetas' : 'Tabla');
@@ -258,14 +172,15 @@ useEffect(() => {
       
       const nuevoEstado = !combinacion.favorito;
       
-      const response = await fetch('/api/combinaciones/favoritos', {
+      const response = await fetch('/api/menu-dia/combinaciones', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           combinacionId: id,
-          esFavorito: nuevoEstado
+          accion: 'toggle_favorito',
+          datos: { esFavorito: nuevoEstado }
         })
       });
       
@@ -297,7 +212,6 @@ useEffect(() => {
       let precioEspecial = null;
       
       if (nuevoEstado) {
-        // Si se está marcando como especial, pedir precio especial
         const precioInput = prompt('Ingrese el precio especial:', combinacion.precioBase?.toString() || '0');
         if (!precioInput || isNaN(Number(precioInput))) {
           toast.error('Precio especial inválido');
@@ -311,15 +225,18 @@ useEffect(() => {
         }
       }
       
-      const response = await fetch('/api/combinaciones/especiales', {
+      const response = await fetch('/api/menu-dia/combinaciones', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           combinacionId: id,
-          esEspecial: nuevoEstado,
-          precioEspecial: precioEspecial
+          accion: 'toggle_especial',
+          datos: { 
+            esEspecial: nuevoEstado,
+            precioEspecial: precioEspecial
+          }
         })
       });
       
@@ -345,25 +262,65 @@ useEffect(() => {
     }
   };
 
-  const handleUpdateCantidad = (id: string, cantidad: number) => {
-    // Actualizar la cantidad usando el método del hook
-    actualizarCantidad(id, cantidad);
-    
-    // Actualizar también el estado local para reflejar el cambio inmediatamente
-    setCombinaciones(prevCombinaciones => 
-      prevCombinaciones.map(combinacion => 
-        combinacion.id === id 
-          ? { ...combinacion, cantidad }
-          : combinacion
-      )
-    );
+  const handleUpdateCantidad = async (id: string, cantidad: number) => {
+    try {
+      const response = await fetch('/api/menu-dia/combinaciones', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          combinacionId: id,
+          accion: 'actualizar_cantidad',
+          datos: { cantidad }
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al actualizar cantidad');
+      }
+      
+      setCombinaciones(prevCombinaciones => 
+        prevCombinaciones.map(combinacion => 
+          combinacion.id === id 
+            ? { ...combinacion, cantidad }
+            : combinacion
+        )
+      );
+      
+      toast.success('Cantidad actualizada correctamente');
+    } catch (error) {
+      console.error('Error al actualizar cantidad:', error);
+      toast.error('Error al actualizar cantidad');
+    }
   };
 
-
-  if (isLoading || loadingCombinaciones) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-[#F4821F]" />
+        <span className="ml-2 text-gray-600">Cargando combinaciones...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="px-6">
+        <Alert variant="destructive">
+          <AlertDescription>
+            {error}
+            <br />
+            <Button 
+              onClick={() => window.location.reload()} 
+              className="mt-2"
+              variant="outline"
+              size="sm"
+            >
+              Intentar de nuevo
+            </Button>
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
@@ -372,11 +329,17 @@ useEffect(() => {
     <div className="px-6">
       <div className="mb-6">
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold text-[var(--spoon-neutral-800)]">
-            Combinaciones de Menú
-          </h1>
+          <div>
+            <h1 className="text-2xl font-bold text-[var(--spoon-neutral-800)]">
+              Combinaciones de Menú
+            </h1>
+            {menuDelDia && (
+              <p className="text-sm text-gray-600 mt-1">
+                {menuDelDia.nombre} - {new Date(menuDelDia.fecha).toLocaleDateString('es-CO')}
+              </p>
+            )}
+          </div>
           
-          {/* Indicador de caché */}
           <CacheTimer variant="compact" />
         </div>
         
@@ -392,7 +355,7 @@ useEffect(() => {
               onClick={() => setMostrarFavoritos(!mostrarFavoritos)}
             >
               <Star className={`h-4 w-4 mr-2 ${mostrarFavoritos ? "fill-current" : ""}`} />
-              Favoritos
+              Favoritos ({combinaciones.filter(c => c.favorito).length})
             </Button>
             <Button 
               variant="outline"
@@ -404,16 +367,18 @@ useEffect(() => {
               onClick={() => setMostrarEspeciales(!mostrarEspeciales)}
             >
               <Badge className="h-4 w-4 mr-2" />
-              Platos Especiales
+              Especiales ({combinaciones.filter(c => c.especial).length})
             </Button>
           </div>
 
-          {/* Botón de cambio de vista */}
           <div className="flex gap-4 items-center">
+            <span className="text-sm text-gray-600">
+              {combinacionesFiltradas.length} de {combinaciones.length} combinaciones
+            </span>
             <Button 
               onClick={handleCambiarVista}
               variant="outline"
-              className="bg-[var(--spoon-primary)] text-white hover:bg-[var(--spoon-primary-dark)] transition-colors duration-200 px-6 py-2 mx-4"
+              className="bg-[var(--spoon-primary)] text-white hover:bg-[var(--spoon-primary-dark)] transition-colors duration-200 px-6 py-2"
               type="button"
             >
               {vistaTabla ? (
@@ -433,31 +398,48 @@ useEffect(() => {
       </div>
 
       <div key={vistaTabla ? 'tabla' : 'tarjetas'}>
-        {vistaTabla ? (
-          <TablaCombinaciones 
-            combinaciones={combinacionesFiltradas} 
-            isLoading={loadingCombinaciones}
-            onToggleFavorito={handleToggleFavorito}
-            onToggleEspecial={handleToggleEspecial}
-            onUpdateCantidad={handleUpdateCantidad}
-          />
+        {combinacionesFiltradas.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-500 mb-4">
+              {mostrarFavoritos || mostrarEspeciales 
+                ? 'No hay combinaciones que coincidan con los filtros seleccionados'
+                : 'No hay combinaciones disponibles'
+              }
+            </p>
+            {(mostrarFavoritos || mostrarEspeciales) && (
+              <Button 
+                onClick={() => {
+                  setMostrarFavoritos(false);
+                  setMostrarEspeciales(false);
+                }}
+                variant="outline"
+              >
+                Limpiar filtros
+              </Button>
+            )}
+          </div>
         ) : (
-          <TarjetasCombinaciones 
-            combinaciones={combinacionesFiltradas} 
-            isLoading={loadingCombinaciones}
-            onToggleFavorito={handleToggleFavorito}
-            onToggleEspecial={handleToggleEspecial}
-            onUpdateCantidad={handleUpdateCantidad}
-          />
+          <>
+            {vistaTabla ? (
+              <TablaCombinaciones 
+                combinaciones={combinacionesFiltradas} 
+                isLoading={false}
+                onToggleFavorito={handleToggleFavorito}
+                onToggleEspecial={handleToggleEspecial}
+                onUpdateCantidad={handleUpdateCantidad}
+              />
+            ) : (
+              <TarjetasCombinaciones 
+                combinaciones={combinacionesFiltradas} 
+                isLoading={false}
+                onToggleFavorito={handleToggleFavorito}
+                onToggleEspecial={handleToggleEspecial}
+                onUpdateCantidad={handleUpdateCantidad}
+              />
+            )}
+          </>
         )}
       </div>
-
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
     </div>
   );
 }

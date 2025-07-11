@@ -1,14 +1,21 @@
-import { Producto } from '@/utils/menuCache.utils';
+// src/app/dashboard/carta/types/product-versioning.types.ts
+
+/**
+ * Tipos para el sistema de versionado de productos
+ * Definiciones completas para manejo de versiones, precios e inventario
+ */
+
+// ========== INTERFACES PRINCIPALES ==========
 
 export interface PriceHistory {
-  id: string;  // Añadir ID para referencia
+  id: string;  // ID para referencia
   value: number;
   effectiveDate: Date;
   expirationDate?: Date;
   reason?: string;
   createdBy: string;
-  restaurantId: string;  // Añadir para filtraje
-  previousPrice?: number;  // Añadir para tracking de cambios
+  restaurantId: string;  // Para filtraje por restaurante
+  previousPrice?: number;  // Para tracking de cambios
 }
 
 export interface ProductVersion {
@@ -21,30 +28,30 @@ export interface ProductVersion {
     newValue: any;
     changedBy: string;
     timestamp: Date;
-    changeReason?: string;  // Añadir para tracking de cambios
+    changeReason?: string;  // Para tracking de cambios
   }[];
   metadata: {
     createdAt: Date;
     createdBy: string;
     publishedAt?: Date;
     status: 'draft' | 'published' | 'archived';
-    approvedBy?: string;  // Añadir para flujo de aprobación
+    approvedBy?: string;  // Para flujo de aprobación
     approvedAt?: Date;
   };
-  restaurantId: string;  // Añadir para filtraje
+  restaurantId: string;  // Para filtraje por restaurante
 }
 
 export interface StockUpdate {
-  id: string;  // Añadir ID para referencia
+  id: string;  // ID para referencia
   quantity: number;
   type: 'increment' | 'decrement' | 'set';
   reason?: string;
   timestamp: Date;
   updatedBy: string;
   location?: string;
-  batchNumber?: string;  // Añadir para tracking de lotes
+  batchNumber?: string;  // Para tracking de lotes
   productId: string;  // Referencia al producto
-  restaurantId: string;  // Añadir para filtraje
+  restaurantId: string;  // Para filtraje por restaurante
 }
 
 export interface ProductStock {
@@ -54,7 +61,7 @@ export interface ProductStock {
   location?: string;
   lastUpdated: Date;
   status: 'in_stock' | 'low_stock' | 'out_of_stock';
-  alerts?: {  // Añadir sistema de alertas
+  alerts?: {  // Sistema de alertas
     lowStock: boolean;
     overStock: boolean;
     thresholds: {
@@ -81,7 +88,7 @@ export interface VersionedProduct {
     createdBy: string;
     lastModified: Date;
     lastModifiedBy: string;
-    publishHistory?: {  // Añadir historial de publicaciones
+    publishHistory?: {  // Historial de publicaciones
       publishedAt: Date;
       publishedBy: string;
       version: number;
@@ -97,4 +104,295 @@ export interface VersionedProduct {
   imagen?: string;
   esFavorito?: boolean;
   esEspecial?: boolean;
+}
+
+// ========== TIPOS AUXILIARES ==========
+
+/**
+ * Estados posibles de un producto
+ */
+export type ProductStatus = 'active' | 'draft' | 'archived' | 'discontinued';
+
+/**
+ * Estados de stock
+ */
+export type StockStatus = 'in_stock' | 'low_stock' | 'out_of_stock';
+
+/**
+ * Tipos de actualización de stock
+ */
+export type StockUpdateType = 'increment' | 'decrement' | 'set';
+
+/**
+ * Estados de versión
+ */
+export type VersionStatus = 'draft' | 'published' | 'archived';
+
+// ========== INTERFACES PARA OPERACIONES ==========
+
+/**
+ * Request para crear una nueva versión de producto
+ */
+export interface CreateProductVersionRequest {
+  productId: string;
+  changes: ProductVersion['changes'];
+  reason?: string;
+  createdBy: string;
+  restaurantId: string;
+}
+
+/**
+ * Request para actualizar precio
+ */
+export interface UpdatePriceRequest {
+  productId: string;
+  newPrice: number;
+  effectiveDate: Date;
+  expirationDate?: Date;
+  reason?: string;
+  createdBy: string;
+  restaurantId: string;
+}
+
+/**
+ * Request para actualizar stock
+ */
+export interface UpdateStockRequest {
+  productId: string;
+  quantity: number;
+  type: StockUpdateType;
+  reason?: string;
+  updatedBy: string;
+  location?: string;
+  batchNumber?: string;
+  restaurantId: string;
+}
+
+/**
+ * Response para operaciones de versionado
+ */
+export interface VersionOperationResponse {
+  success: boolean;
+  data?: VersionedProduct;
+  version?: number;
+  error?: string;
+  warnings?: string[];
+}
+
+// ========== INTERFACES PARA CONSULTAS ==========
+
+/**
+ * Filtros para consultar productos versionados
+ */
+export interface ProductVersionFilter {
+  restaurantId?: string;
+  status?: ProductStatus[];
+  stockStatus?: StockStatus[];
+  categoryId?: string;
+  tags?: string[];
+  priceRange?: {
+    min: number;
+    max: number;
+  };
+  dateRange?: {
+    from: Date;
+    to: Date;
+  };
+  seasonality?: {
+    includeOutOfSeason: boolean;
+    currentDate?: Date;
+  };
+}
+
+/**
+ * Opciones de ordenamiento
+ */
+export interface ProductSortOptions {
+  field: 'nombre' | 'currentPrice' | 'currentVersion' | 'lastModified' | 'stock.currentQuantity';
+  direction: 'asc' | 'desc';
+}
+
+/**
+ * Resultado paginado de productos
+ */
+export interface PaginatedProductsResponse {
+  products: VersionedProduct[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+  filters: ProductVersionFilter;
+  sort: ProductSortOptions;
+}
+
+// ========== INTERFACES PARA REPORTES ==========
+
+/**
+ * Estadísticas de producto
+ */
+export interface ProductStatistics {
+  productId: string;
+  nombre: string;
+  stats: {
+    totalVersions: number;
+    priceChanges: number;
+    stockUpdates: number;
+    averagePrice: number;
+    currentStock: number;
+    daysInStock: number;
+    lastSaleDate?: Date;
+  };
+  alerts: {
+    lowStock: boolean;
+    priceFluctuation: boolean;
+    outOfSeason: boolean;
+  };
+}
+
+/**
+ * Reporte de inventario
+ */
+export interface InventoryReport {
+  restaurantId: string;
+  generatedAt: Date;
+  summary: {
+    totalProducts: number;
+    inStock: number;
+    lowStock: number;
+    outOfStock: number;
+    totalValue: number;
+  };
+  products: ProductStatistics[];
+  recommendations: {
+    reorder: string[];
+    overstock: string[];
+    priceAdjustment: string[];
+  };
+}
+
+// ========== INTERFACES PARA AUDIT ==========
+
+/**
+ * Log de auditoría para cambios de producto
+ */
+export interface ProductAuditLog {
+  id: string;
+  productId: string;
+  action: 'created' | 'updated' | 'deleted' | 'price_changed' | 'stock_updated' | 'version_created';
+  userId: string;
+  userName: string;
+  timestamp: Date;
+  changes: {
+    field: string;
+    oldValue: any;
+    newValue: any;
+  }[];
+  reason?: string;
+  ip?: string;
+  userAgent?: string;
+  restaurantId: string;
+}
+
+/**
+ * Configuración de alertas de producto
+ */
+export interface ProductAlertConfig {
+  productId: string;
+  restaurantId: string;
+  alerts: {
+    lowStock: {
+      enabled: boolean;
+      threshold: number;
+      recipients: string[];
+    };
+    overStock: {
+      enabled: boolean;
+      threshold: number;
+      recipients: string[];
+    };
+    priceChange: {
+      enabled: boolean;
+      percentageThreshold: number;
+      recipients: string[];
+    };
+    outOfSeason: {
+      enabled: boolean;
+      daysBefore: number;
+      recipients: string[];
+    };
+  };
+}
+
+// ========== CONSTANTES Y ENUMS ==========
+
+/**
+ * Valores por defecto para configuración
+ */
+export const PRODUCT_VERSION_DEFAULTS = {
+  LOW_STOCK_THRESHOLD: 10,
+  HIGH_STOCK_THRESHOLD: 1000,
+  PRICE_CHANGE_ALERT_PERCENTAGE: 20,
+  OUT_OF_SEASON_ALERT_DAYS: 7,
+  MAX_VERSIONS_PER_PRODUCT: 50,
+  DEFAULT_STOCK_LOCATION: 'main'
+} as const;
+
+/**
+ * Campos que pueden ser versionados
+ */
+export const VERSIONABLE_FIELDS = [
+  'nombre',
+  'descripcion',
+  'currentPrice',
+  'categoriaId',
+  'imagen',
+  'tags',
+  'seasonality'
+] as const;
+
+/**
+ * Acciones de auditoría válidas
+ */
+export const AUDIT_ACTIONS = [
+  'created',
+  'updated',
+  'deleted',
+  'price_changed',
+  'stock_updated',
+  'version_created'
+] as const;
+
+// ========== TIPOS DERIVADOS ==========
+
+export type VersionableField = typeof VERSIONABLE_FIELDS[number];
+export type AuditAction = typeof AUDIT_ACTIONS[number];
+
+/**
+ * Diferencia entre dos versiones de producto
+ */
+export interface VersionDiff {
+  field: VersionableField;
+  oldValue: any;
+  newValue: any;
+  changeType: 'added' | 'modified' | 'removed';
+}
+
+/**
+ * Comparación completa entre versiones
+ */
+export interface VersionComparison {
+  fromVersion: number;
+  toVersion: number;
+  productId: string;
+  differences: VersionDiff[];
+  summary: {
+    totalChanges: number;
+    significantChanges: number;
+    priceChange?: {
+      amount: number;
+      percentage: number;
+    };
+  };
 }

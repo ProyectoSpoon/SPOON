@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { GripVertical, Trash2, Coffee, Soup, Beef, Salad, Utensils, Plus, Edit2, Info, X, Minus } from 'lucide-react';
+import { GripVertical, Trash2, Coffee, Soup, Beef, Salad, Utensils, Edit2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { VersionedProduct } from '@/app/dashboard/carta/types/product-versioning.types';
 import { Button } from '@/shared/components/ui/Button';
@@ -151,51 +151,19 @@ export function MenuDiarioRediseno({
     return nombreCategoria.toLowerCase().includes('proteina') || nombreCategoria.toLowerCase().includes('proteína');
   };
 
-  // Función para incrementar la cantidad de un producto
-  const incrementarCantidad = (productoId: string, cantidadActual: number) => {
-    const nuevaCantidad = cantidadActual + 1;
-    setCantidades(prev => ({
-      ...prev,
-      [productoId]: nuevaCantidad
-    }));
-    
-    if (onUpdateCantidad) {
-      onUpdateCantidad(productoId, nuevaCantidad);
-    }
-  };
+  // ✅ ORDEN ESPECÍFICO: Entradas, Principios, Proteínas, Acompañamientos, Bebidas
+  const ordenCategorias = [
+    'b4e792ba-b00d-4348-b9e3-f34992315c23', // Entradas
+    '2d4c3ea8-843e-4312-821e-54d1c4e79dce', // Principios
+    '342f0c43-7f98-48fb-b0ba-e4c5d3ee72b3', // Proteínas
+    'a272bc20-464c-443f-9283-4b5e7bfb71cf', // Acompañamientos
+    '6feba136-57dc-4448-8357-6f5533177cfd'  // Bebidas
+  ];
 
-  // Función para decrementar la cantidad de un producto
-  const decrementarCantidad = (productoId: string, cantidadActual: number) => {
-    if (cantidadActual <= 0) return;
-    
-    const nuevaCantidad = cantidadActual - 1;
-    setCantidades(prev => ({
-      ...prev,
-      [productoId]: nuevaCantidad
-    }));
-    
-    if (onUpdateCantidad) {
-      onUpdateCantidad(productoId, nuevaCantidad);
-    }
-  };
-
-  // Función para manejar cambios directos en el input de cantidad
-  const handleCantidadChange = (productoId: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    const valor = parseInt(e.target.value);
-    if (isNaN(valor) || valor < 0) return;
-    
-    setCantidades(prev => ({
-      ...prev,
-      [productoId]: valor
-    }));
-    
-    if (onUpdateCantidad) {
-      onUpdateCantidad(productoId, valor);
-    }
-  };
-
-  // Obtener todas las subcategorías disponibles, estén o no en productos
-  const todasLasSubcategorias = categoriasLimpias.filter(cat => cat.parentId);
+  // Obtener subcategorías en el orden especificado con type safety
+  const todasLasSubcategorias = ordenCategorias
+    .map(id => categoriasLimpias.find(cat => cat.id === id && cat.parentId))
+    .filter((categoria): categoria is NonNullable<typeof categoria> => categoria !== undefined);
 
   // Si no hay categorías definidas, mostrar mensaje básico
   if (todasLasSubcategorias.length === 0) {
@@ -239,38 +207,18 @@ export function MenuDiarioRediseno({
           )}
         </div>
         
-        {/* Control de cantidad solo para productos de categoría proteína */}
+        {/* ✅ CONTROL DE CANTIDAD SIMPLIFICADO - Solo ícono de lápiz */}
         {esCategoriaPoteinas(categoria.id) && (
-          <div className="flex items-center mr-2 space-x-1">
-            <button
-              onClick={() => decrementarCantidad(producto.id, getCantidad(producto))}
-              className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200"
-              disabled={getCantidad(producto) <= 0}
-            >
-              <Minus className="h-3 w-3" />
-            </button>
-            
-            <input
-              type="number"
-              value={getCantidad(producto)}
-              onChange={(e) => handleCantidadChange(producto.id, e)}
-              className="w-12 h-6 text-center text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-orange-500"
-              min="0"
-            />
-            
-            <button
-              onClick={() => incrementarCantidad(producto.id, getCantidad(producto))}
-              className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200"
-            >
-              <Plus className="h-3 w-3" />
-            </button>
-            
+          <div className="flex items-center mr-2 space-x-2">
+            <span className="text-xs text-gray-600">
+              Cantidad: {getCantidad(producto)}
+            </span>
             <button
               onClick={() => abrirModalCantidad(producto)}
-              className="text-blue-500 hover:text-blue-700 ml-1"
+              className="text-gray-400 hover:text-orange-500 transition-colors group-hover:text-orange-400"
               title="Editar cantidad"
             >
-              <Edit2 className="h-3 w-3" />
+              <Edit2 className="h-4 w-4" />
             </button>
           </div>
         )}
@@ -327,7 +275,7 @@ export function MenuDiarioRediseno({
         })}
       </div>
       
-      {/* Modal para editar cantidad */}
+      {/* ✅ MODAL MINIMALISTA para editar cantidad */}
       <AnimatePresence>
         {modalProducto && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -335,100 +283,70 @@ export function MenuDiarioRediseno({
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4"
+              className="bg-white rounded-lg shadow-lg p-4 max-w-xs w-full mx-4"
             >
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                  <Beef className="h-5 w-5 text-red-500 mr-2" />
-                  Editar Cantidad de Proteína
+              {/* Header simplificado */}
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-base font-semibold text-gray-900 flex items-center">
+                  <Beef className="h-4 w-4 text-red-500 mr-2" />
+                  Editar Cantidad
                 </h3>
                 <button
                   onClick={cerrarModalCantidad}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-gray-400 hover:text-gray-600"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
               
-              <div className="mb-6">
-                <div className="flex items-center mb-2">
-                  <span className="font-medium text-gray-800">
-                    {cleanString(modalProducto.nombre) || 'Producto sin nombre'}
-                  </span>
-                </div>
-                
-                {cleanString(modalProducto.descripcion) && (
-                  <p className="text-sm text-gray-600 mb-4">
-                    {cleanString(modalProducto.descripcion)}
-                  </p>
-                )}
-                
-                <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
-                  <div className="flex">
-                    <Info className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" />
-                    <p className="text-sm text-blue-700">
-                      Establece la cantidad disponible de esta proteína para el menú del día. 
-                      Esta cantidad se utilizará para controlar el inventario y las ventas.
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-center space-x-4 mb-4">
-                  <button
-                    onClick={() => setCantidadModal(Math.max(0, cantidadModal - 5))}
-                    className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 hover:bg-gray-200 transition-colors"
-                  >
-                    <Minus className="h-5 w-5" />
-                  </button>
-                  
-                  <div className="flex flex-col items-center">
-                    <input
-                      type="number"
-                      value={cantidadModal}
-                      onChange={(e) => {
-                        const valor = parseInt(e.target.value);
-                        if (!isNaN(valor) && valor >= 0) {
-                          setCantidadModal(valor);
-                        }
-                      }}
-                      className="w-20 h-12 text-center text-lg font-bold border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      min="0"
-                    />
-                    <span className="text-xs text-gray-500 mt-1">porciones</span>
-                  </div>
-                  
-                  <button
-                    onClick={() => setCantidadModal(cantidadModal + 5)}
-                    className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 hover:bg-gray-200 transition-colors"
-                  >
-                    <Plus className="h-5 w-5" />
-                  </button>
-                </div>
-                
-                {/* Botones rápidos */}
-                <div className="flex justify-center space-x-2 mb-4">
-                  {[10, 25, 50, 100].map((cantidad) => (
-                    <button
-                      key={cantidad}
-                      onClick={() => setCantidadModal(cantidad)}
-                      className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
-                    >
-                      {cantidad}
-                    </button>
-                  ))}
-                </div>
+              {/* Nombre del producto */}
+              <div className="mb-4">
+                <p className="font-medium text-gray-800 text-sm text-center">
+                  {cleanString(modalProducto.nombre) || 'Producto sin nombre'}
+                </p>
               </div>
               
-              <div className="flex justify-end space-x-3">
+              {/* Input de cantidad */}
+              <div className="flex flex-col items-center mb-4">
+                <label className="text-xs text-gray-600 mb-2">
+                  Cantidad disponible:
+                </label>
+                <input
+                  type="number"
+                  value={cantidadModal}
+                  onChange={(e) => {
+                    const valor = parseInt(e.target.value);
+                    if (!isNaN(valor) && valor >= 0) {
+                      setCantidadModal(valor);
+                    }
+                  }}
+                  className="w-16 h-8 text-center text-lg font-semibold border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  min="0"
+                  placeholder="0"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      guardarCantidadModal();
+                    }
+                    if (e.key === 'Escape') {
+                      cerrarModalCantidad();
+                    }
+                  }}
+                />
+                <span className="text-xs text-gray-500 mt-1">porciones</span>
+              </div>
+              
+              {/* Botones */}
+              <div className="flex justify-center space-x-2">
                 <button
                   onClick={cerrarModalCantidad}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="px-3 py-1 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={guardarCantidadModal}
-                  className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
+                  className="px-3 py-1 text-sm bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors"
                 >
                   Guardar
                 </button>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Clock, AlertCircle, CalendarIcon, Save, Share, ChevronLeft, ChevronRight, RotateCcw, Copy, Trash2, Calendar, Wand2 } from 'lucide-react';
+import { Clock, AlertCircle, Save, Share, ChevronLeft, ChevronRight, RotateCcw, Calendar, Wand2 } from 'lucide-react';
 import { useProgramacionSemanalUnificado } from './hooks/useProgramacionSemanalUnificado';
 import { Button } from '@/shared/components/ui/Button';
 import { Alert, AlertDescription } from '@/shared/components/ui/Alert';
@@ -9,63 +9,35 @@ import CombinacionesViewer from './components/CombinacionesViewer';
 import CalendarioSemanal from './components/CalendarioSemanal';
 import { toast } from 'sonner';
 
-// Tipo para los días de la semana
 type DiaSemana = 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes' | 'Sábado' | 'Domingo';
 
-// ID de restaurante de prueba
 const RESTAURANTE_ID_PRUEBA = 'rest-test-001';
 
 export default function ProgramacionSemanalPage() {
   const {
-    // Estados
     loading,
     error,
     guardando,
     publicando,
-    cargandoPlantilla,
     programandoAutomatico,
     hasUnsavedChanges,
-    
-    // Datos
     combinacionesDisponibles,
-    plantillas,
     menusDiarios,
-    
-    // Semana actual
-    semanaActual,
     fechaInicioSemana,
     fechaFinSemana,
-    
-    // Día seleccionado
     diaSeleccionado,
     setDiaSeleccionado,
-    combinacionesDelDiaSeleccionado,
-    
-    // Navegación de semanas
     semanaAnterior,
     semanaSiguiente,
     irASemanaActual,
-    
-    // Operaciones con combinaciones
     agregarCombinacionAlDia,
     removerCombinacionDelDia,
     copiarDia,
     limpiarDia,
     handleDrop,
-    
-    // Operaciones de guardado
     guardarBorrador,
     publicarProgramacion,
-    
-    // Programación automática
     programarAutomaticamente,
-    
-    // Plantillas
-    guardarPlantilla,
-    cargarPlantilla,
-    eliminarPlantilla,
-    
-    // Utilidades
     diasSemana,
     totalCombinacionesSemana,
     resetError,
@@ -74,12 +46,59 @@ export default function ProgramacionSemanalPage() {
     restaurantId: RESTAURANTE_ID_PRUEBA
   });
 
-  // Estados locales para UI
-  const [selectedPlantilla, setSelectedPlantilla] = useState<string>('');
   const [showCombinacionDetails, setShowCombinacionDetails] = useState<any>(null);
   const [diaParaCopiar, setDiaParaCopiar] = useState<DiaSemana | null>(null);
 
-  // Función para formatear fecha
+  const transformarCombinacion = (combinacion: any) => {
+    if (!combinacion) return null;
+    
+    return {
+      id: combinacion.id || '',
+      entrada: {
+        id: combinacion.entrada?.id || '',
+        nombre: combinacion.entrada?.nombre || combinacion.entrada?.name || '',
+        descripcion: combinacion.entrada?.descripcion || combinacion.entrada?.description || '',
+        precio: combinacion.entrada?.precio || combinacion.entrada?.current_price || 0,
+        categoriaId: combinacion.entrada?.categoriaId || combinacion.entrada?.category_id || ''
+      },
+      principio: {
+        id: combinacion.principio?.id || '',
+        nombre: combinacion.principio?.nombre || combinacion.principio?.name || '',
+        descripcion: combinacion.principio?.descripcion || combinacion.principio?.description || '',
+        precio: combinacion.principio?.precio || combinacion.principio?.current_price || 0,
+        categoriaId: combinacion.principio?.categoriaId || combinacion.principio?.category_id || ''
+      },
+      proteina: {
+        id: combinacion.proteina?.id || '',
+        nombre: combinacion.proteina?.nombre || combinacion.proteina?.name || '',
+        descripcion: combinacion.proteina?.descripcion || combinacion.proteina?.description || '',
+        precio: combinacion.proteina?.precio || combinacion.proteina?.current_price || 0,
+        categoriaId: combinacion.proteina?.categoriaId || combinacion.proteina?.category_id || ''
+      },
+      bebida: {
+        id: combinacion.bebida?.id || '',
+        nombre: combinacion.bebida?.nombre || combinacion.bebida?.name || '',
+        descripcion: combinacion.bebida?.descripcion || combinacion.bebida?.description || '',
+        precio: combinacion.bebida?.precio || combinacion.bebida?.current_price || 0,
+        categoriaId: combinacion.bebida?.categoriaId || combinacion.bebida?.category_id || ''
+      },
+      acompanamiento: (combinacion.acompanamiento || combinacion.acompanamientos || []).map((acomp: any) => ({
+        id: acomp?.id || '',
+        nombre: acomp?.nombre || acomp?.name || '',
+        descripcion: acomp?.descripcion || acomp?.description || '',
+        precio: acomp?.precio || acomp?.current_price || 0,
+        categoriaId: acomp?.categoriaId || acomp?.category_id || ''
+      })),
+      nombre: combinacion.nombre || combinacion.name,
+      descripcion: combinacion.descripcion || combinacion.description,
+      precioEspecial: combinacion.precioEspecial || combinacion.special_price,
+      cantidad: combinacion.cantidad || combinacion.current_quantity,
+      estado: combinacion.estado || (combinacion.is_available ? 'disponible' : 'agotado'),
+      favorito: combinacion.favorito || false,
+      especial: combinacion.especial || combinacion.is_featured || false
+    };
+  };
+
   const formatearFecha = (fecha: string) => {
     return new Date(fecha).toLocaleDateString('es-ES', {
       weekday: 'long',
@@ -89,42 +108,111 @@ export default function ProgramacionSemanalPage() {
     });
   };
 
-  // Manejador para ver detalles de una combinación
-  const handleViewCombinacionDetails = (combinacion: any) => {
-    setShowCombinacionDetails(combinacion);
+  // Función para manejar drop personalizada
+  const handleDropCustom = (dia: DiaSemana, e: React.DragEvent<HTMLDivElement>) => {
+    // Esta función maneja el evento de drop del calendario
+    // El hook ya tiene su propia lógica de handleDrop
+    handleDrop(dia, e as any);
   };
 
-  // Manejador para guardar una plantilla
-  const handleSaveTemplate = async () => {
-    const nombre = prompt('Ingrese un nombre para la plantilla:');
-    if (nombre) {
-      const descripcion = prompt('Ingrese una descripción (opcional):') || '';
-      await guardarPlantilla(nombre, descripcion);
-    }
+  // Función para agregar combinación transformando tipos
+  const handleAddCombinacion = (combinacion: any) => {
+    // Transformar de vuelta al formato que espera el hook
+    const combinacionTransformada = {
+      id: combinacion.id,
+      name: combinacion.nombre || '',
+      description: combinacion.descripcion || '',
+      entrada: {
+        id: combinacion.entrada?.id || '',
+        name: combinacion.entrada?.nombre || '',
+        description: combinacion.entrada?.descripcion || '',
+        current_price: combinacion.entrada?.precio || 0,
+        category_id: combinacion.entrada?.categoriaId || '',
+        image_url: null,
+        nombre: combinacion.entrada?.nombre || '',
+        descripcion: combinacion.entrada?.descripcion || '',
+        precio: combinacion.entrada?.precio || 0,
+        categoriaId: combinacion.entrada?.categoriaId || ''
+      },
+      principio: {
+        id: combinacion.principio?.id || '',
+        name: combinacion.principio?.nombre || '',
+        description: combinacion.principio?.descripcion || '',
+        current_price: combinacion.principio?.precio || 0,
+        category_id: combinacion.principio?.categoriaId || '',
+        image_url: null,
+        nombre: combinacion.principio?.nombre || '',
+        descripcion: combinacion.principio?.descripcion || '',
+        precio: combinacion.principio?.precio || 0,
+        categoriaId: combinacion.principio?.categoriaId || ''
+      },
+      proteina: {
+        id: combinacion.proteina?.id || '',
+        name: combinacion.proteina?.nombre || '',
+        description: combinacion.proteina?.descripcion || '',
+        current_price: combinacion.proteina?.precio || 0,
+        category_id: combinacion.proteina?.categoriaId || '',
+        image_url: null,
+        nombre: combinacion.proteina?.nombre || '',
+        descripcion: combinacion.proteina?.descripcion || '',
+        precio: combinacion.proteina?.precio || 0,
+        categoriaId: combinacion.proteina?.categoriaId || ''
+      },
+      bebida: {
+        id: combinacion.bebida?.id || '',
+        name: combinacion.bebida?.nombre || '',
+        description: combinacion.bebida?.descripcion || '',
+        current_price: combinacion.bebida?.precio || 0,
+        category_id: combinacion.bebida?.categoriaId || '',
+        image_url: null,
+        nombre: combinacion.bebida?.nombre || '',
+        descripcion: combinacion.bebida?.descripcion || '',
+        precio: combinacion.bebida?.precio || 0,
+        categoriaId: combinacion.bebida?.categoriaId || ''
+      },
+      acompanamientos: (combinacion.acompanamiento || []).map((acomp: any) => ({
+        id: acomp.id || '',
+        name: acomp.nombre || '',
+        description: acomp.descripcion || '',
+        current_price: acomp.precio || 0,
+        category_id: acomp.categoriaId || '',
+        image_url: null,
+        nombre: acomp.nombre || '',
+        descripcion: acomp.descripcion || '',
+        precio: acomp.precio || 0,
+        categoriaId: acomp.categoriaId || ''
+      })),
+      acompanamiento: (combinacion.acompanamiento || []).map((acomp: any) => ({
+        id: acomp.id || '',
+        name: acomp.nombre || '',
+        description: acomp.descripcion || '',
+        current_price: acomp.precio || 0,
+        category_id: acomp.categoriaId || '',
+        image_url: null,
+        nombre: acomp.nombre || '',
+        descripcion: acomp.descripcion || '',
+        precio: acomp.precio || 0,
+        categoriaId: acomp.categoriaId || ''
+      })),
+      base_price: combinacion.precioEspecial || 0,
+      special_price: combinacion.precioEspecial || null,
+      is_available: combinacion.estado === 'disponible',
+      is_featured: combinacion.especial || false,
+      max_daily_quantity: combinacion.cantidad || 0,
+      current_quantity: combinacion.cantidad || 0,
+      sold_quantity: 0,
+      nombre: combinacion.nombre,
+      descripcion: combinacion.descripcion,
+      precioEspecial: combinacion.precioEspecial,
+      cantidad: combinacion.cantidad,
+      estado: combinacion.estado,
+      favorito: combinacion.favorito,
+      especial: combinacion.especial
+    };
+
+    agregarCombinacionAlDia(diaSeleccionado, combinacionTransformada as any);
   };
 
-  // Manejador para cargar una plantilla
-  const handleLoadTemplate = async () => {
-    if (selectedPlantilla) {
-      const confirmacion = confirm('¿Está seguro de que desea cargar esta plantilla? Se perderán los cambios no guardados.');
-      if (confirmacion) {
-        await cargarPlantilla(selectedPlantilla);
-        setSelectedPlantilla('');
-      }
-    }
-  };
-
-  // Manejador para eliminar plantilla
-  const handleDeleteTemplate = async (plantillaId: string) => {
-    await eliminarPlantilla(plantillaId);
-    
-    // Si la plantilla eliminada estaba seleccionada, limpiar selección
-    if (selectedPlantilla === plantillaId) {
-      setSelectedPlantilla('');
-    }
-  };
-
-  // Manejador para copiar día
   const handleCopyDay = (diaOrigen: DiaSemana) => {
     if (diaParaCopiar) {
       const confirmacion = confirm(`¿Copiar combinaciones de ${diaOrigen} a ${diaParaCopiar}?`);
@@ -138,7 +226,6 @@ export default function ProgramacionSemanalPage() {
     }
   };
 
-  // Manejador para limpiar día
   const handleClearDay = (dia: DiaSemana) => {
     const confirmacion = confirm(`¿Está seguro de que desea limpiar todas las combinaciones de ${dia}?`);
     if (confirmacion) {
@@ -146,7 +233,6 @@ export default function ProgramacionSemanalPage() {
     }
   };
 
-  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -158,9 +244,20 @@ export default function ProgramacionSemanalPage() {
     );
   }
 
+  const combinacionesTransformadas = (combinacionesDisponibles || []).map(transformarCombinacion).filter(Boolean);
+  
+  const programacionSemanalTransformada = {
+    'Lunes': (menusDiarios.find(m => m.dia === 'Lunes')?.combinaciones || []).map(transformarCombinacion).filter(Boolean),
+    'Martes': (menusDiarios.find(m => m.dia === 'Martes')?.combinaciones || []).map(transformarCombinacion).filter(Boolean),
+    'Miércoles': (menusDiarios.find(m => m.dia === 'Miércoles')?.combinaciones || []).map(transformarCombinacion).filter(Boolean),
+    'Jueves': (menusDiarios.find(m => m.dia === 'Jueves')?.combinaciones || []).map(transformarCombinacion).filter(Boolean),
+    'Viernes': (menusDiarios.find(m => m.dia === 'Viernes')?.combinaciones || []).map(transformarCombinacion).filter(Boolean),
+    'Sábado': (menusDiarios.find(m => m.dia === 'Sábado')?.combinaciones || []).map(transformarCombinacion).filter(Boolean),
+    'Domingo': (menusDiarios.find(m => m.dia === 'Domingo')?.combinaciones || []).map(transformarCombinacion).filter(Boolean)
+  };
+
   return (
     <div className="p-6 px-8">
-      {/* Header */}
       <div className="mb-6">
         <div className="flex justify-between items-center mb-4">
           <div>
@@ -175,7 +272,6 @@ export default function ProgramacionSemanalPage() {
           </div>
           
           <div className="flex items-center gap-3">
-            {/* Navegación de semanas */}
             <div className="flex items-center gap-2 bg-white rounded-lg border border-neutral-200 p-1">
               <Button
                 variant="ghost"
@@ -208,7 +304,6 @@ export default function ProgramacionSemanalPage() {
               </Button>
             </div>
 
-            {/* Botón de auto-programar */}
             <Button 
               className="flex items-center px-4 py-2 bg-[#F4821F] text-white rounded-lg hover:bg-[#CC6A10] transition-colors"
               onClick={programarAutomaticamente}
@@ -220,7 +315,6 @@ export default function ProgramacionSemanalPage() {
           </div>
         </div>
 
-        {/* Barra de estadísticas */}
         <div className="flex items-center gap-4 bg-neutral-50 rounded-lg p-4">
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-neutral-500" />
@@ -232,7 +326,7 @@ export default function ProgramacionSemanalPage() {
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-neutral-500" />
             <span className="text-sm text-neutral-600">
-              {combinacionesDisponibles.length} combinaciones disponibles
+              {combinacionesTransformadas.length} combinaciones disponibles
             </span>
           </div>
           
@@ -245,96 +339,31 @@ export default function ProgramacionSemanalPage() {
         </div>
       </div>
 
-      {/* Panel Principal */}
       <div className="grid grid-cols-3 gap-6">
-        {/* Combinaciones Disponibles */}
         <div className="col-span-1">
           <CombinacionesViewer
-            combinaciones={combinacionesDisponibles}
-            onAddToDia={(combinacion) => agregarCombinacionAlDia(diaSeleccionado, combinacion)}
-            onViewDetails={handleViewCombinacionDetails}
+            combinaciones={combinacionesTransformadas as any}
+            onAddToDia={handleAddCombinacion}
+            onViewDetails={() => {}} // Simplificado por ahora
             loading={loading}
           />
         </div>
 
-        {/* Calendario Semanal */}
         <div className="col-span-2">
           <CalendarioSemanal
-            programacionSemanal={menusDiarios.reduce((acc, menu) => ({
-              ...acc,
-              [menu.dia]: menu.combinaciones
-            }), {})}
+            programacionSemanal={programacionSemanalTransformada as any}
             diasSemana={diasSemana}
             diaSeleccionado={diaSeleccionado}
             onSelectDia={setDiaSeleccionado}
-            onDrop={handleDrop}
+            onDrop={handleDropCustom}
             onRemoveCombinacion={removerCombinacionDelDia}
             onCopyDia={handleCopyDay}
-            onClearDia={handleClearDay}
-            diaParaCopiar={diaParaCopiar}
-            onCancelCopy={() => setDiaParaCopiar(null)}
-            onSaveTemplate={handleSaveTemplate}
-            onLoadTemplate={handleLoadTemplate}
+            onSaveTemplate={() => {}} // Prop requerida pero sin funcionalidad
+            onLoadTemplate={() => {}} // Prop requerida pero sin funcionalidad
           />
         </div>
       </div>
 
-      {/* Panel de Plantillas */}
-      <div className="mt-6 bg-white rounded-lg border border-neutral-200 p-4">
-        <h3 className="text-lg font-semibold text-neutral-800 mb-4">Plantillas</h3>
-        
-        <div className="flex items-center gap-4">
-          <select
-            value={selectedPlantilla}
-            onChange={(e) => setSelectedPlantilla(e.target.value)}
-            className="flex-1 px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#F4821F]"
-            disabled={cargandoPlantilla}
-          >
-            <option value="">Seleccionar plantilla...</option>
-            {plantillas.map((plantilla) => (
-              <option key={plantilla.id} value={plantilla.id}>
-                {plantilla.nombre} - {plantilla.descripcion}
-              </option>
-            ))}
-          </select>
-          
-          <Button
-            onClick={handleLoadTemplate}
-            disabled={!selectedPlantilla || cargandoPlantilla}
-            variant="outline"
-            className="border-[#F4821F] text-[#F4821F] hover:bg-[#F4821F] hover:text-white"
-          >
-            {cargandoPlantilla ? 'Cargando...' : 'Cargar Plantilla'}
-          </Button>
-          
-          <Button
-            onClick={handleSaveTemplate}
-            variant="outline"
-            className="border-[#F4821F] text-[#F4821F] hover:bg-[#F4821F] hover:text-white"
-          >
-            Guardar como Plantilla
-          </Button>
-          
-          {selectedPlantilla && (
-            <Button
-              onClick={() => handleDeleteTemplate(selectedPlantilla)}
-              variant="outline"
-              className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Eliminar
-            </Button>
-          )}
-        </div>
-        
-        {plantillas.length === 0 && (
-          <div className="mt-4 text-center text-neutral-500 text-sm">
-            No hay plantillas guardadas. Cree una programación y guárdela como plantilla.
-          </div>
-        )}
-      </div>
-
-      {/* Botones de Acción */}
       <div className="mt-6 flex justify-between items-center">
         <div className="flex items-center gap-3">
           <Button
@@ -380,7 +409,6 @@ export default function ProgramacionSemanalPage() {
         </div>
       </div>
 
-      {/* Error Alert */}
       {error && (
         <Alert variant="destructive" className="mt-4">
           <AlertCircle className="h-4 w-4" />
@@ -388,142 +416,20 @@ export default function ProgramacionSemanalPage() {
         </Alert>
       )}
 
-      {/* Info Panel */}
       <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
         <div className="flex gap-2">
           <AlertCircle className="w-5 h-5 text-blue-500 flex-shrink-0" />
           <div>
             <h3 className="text-sm font-medium text-blue-800">
-              Programación Semanal Mejorada
+              Programación Semanal
             </h3>
             <p className="text-sm text-blue-600 mt-1">
-              Gestione la programación semanal con datos reales desde PostgreSQL. 
-              Arrastre combinaciones al calendario, copie días completos, use plantillas 
-              y publique directamente en las aplicaciones móviles.
+              Gestione la programación semanal arrastrando combinaciones al calendario, 
+              copie días completos y publique directamente en las aplicaciones móviles.
             </p>
           </div>
         </div>
       </div>
-
-      {/* Modal de detalles de combinación */}
-      {showCombinacionDetails && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">
-                {showCombinacionDetails.name || 'Detalles de la Combinación'}
-              </h2>
-              <button
-                onClick={() => setShowCombinacionDetails(null)}
-                className="text-neutral-500 hover:text-neutral-700"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <h3 className="font-medium text-gray-700 mb-2">Componentes</h3>
-                <div className="space-y-2">
-                  {showCombinacionDetails.entrada && (
-                    <div className="p-2 bg-orange-50 rounded-md">
-                      <span className="text-xs font-medium text-orange-800">Entrada</span>
-                      <p className="text-sm">{showCombinacionDetails.entrada.name}</p>
-                    </div>
-                  )}
-                  
-                  {showCombinacionDetails.principio && (
-                    <div className="p-2 bg-yellow-50 rounded-md">
-                      <span className="text-xs font-medium text-yellow-800">Principio</span>
-                      <p className="text-sm">{showCombinacionDetails.principio.name}</p>
-                    </div>
-                  )}
-                  
-                  <div className="p-2 bg-red-50 rounded-md">
-                    <span className="text-xs font-medium text-red-800">Proteína</span>
-                    <p className="text-sm">{showCombinacionDetails.proteina.name}</p>
-                  </div>
-                  
-                  {showCombinacionDetails.acompanamientos?.length > 0 && (
-                    <div className="p-2 bg-green-50 rounded-md">
-                      <span className="text-xs font-medium text-green-800">Acompañamientos</span>
-                      <div className="space-y-1">
-                        {showCombinacionDetails.acompanamientos.map((acomp: any) => (
-                          <p key={acomp.id} className="text-sm">{acomp.name}</p>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {showCombinacionDetails.bebida && (
-                    <div className="p-2 bg-blue-50 rounded-md">
-                      <span className="text-xs font-medium text-blue-800">Bebida</span>
-                      <p className="text-sm">{showCombinacionDetails.bebida.name}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div>
-                <h3 className="font-medium text-gray-700 mb-2">Información</h3>
-                
-                <div className="space-y-3">
-                  {showCombinacionDetails.description && (
-                    <div>
-                      <span className="text-xs font-medium text-gray-500">Descripción</span>
-                      <p className="text-sm">{showCombinacionDetails.description}</p>
-                    </div>
-                  )}
-                  
-                  <div>
-                    <span className="text-xs font-medium text-gray-500">Precio</span>
-                    <p className="text-sm font-medium">
-                      {showCombinacionDetails.special_price 
-                        ? `$${showCombinacionDetails.special_price.toLocaleString('es-CO')}` 
-                        : `$${showCombinacionDetails.base_price.toLocaleString('es-CO')}`}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <span className="text-xs font-medium text-gray-500">Disponibilidad</span>
-                    <p className="text-sm">
-                      {showCombinacionDetails.current_quantity} / {showCombinacionDetails.max_daily_quantity} unidades
-                    </p>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {showCombinacionDetails.is_featured && (
-                      <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
-                        Destacado
-                      </span>
-                    )}
-                    
-                    {showCombinacionDetails.special_price && (
-                      <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
-                        Precio Especial
-                      </span>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="mt-6 flex justify-end">
-                  <Button
-                    onClick={() => {
-                      agregarCombinacionAlDia(diaSeleccionado, showCombinacionDetails);
-                      setShowCombinacionDetails(null);
-                    }}
-                    className="bg-[#F4821F] text-white hover:bg-[#CC6A10] text-sm"
-                  >
-                    Agregar al {diaSeleccionado}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

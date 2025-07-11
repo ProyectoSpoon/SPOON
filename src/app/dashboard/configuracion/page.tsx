@@ -22,7 +22,7 @@ const RolesUsuarios = dynamic(() => import('./components/RolesUsuarios'), {
 });
 
 export default function ConfiguracionPage() {
-  const [activeTab, setActiveTab] = useState('horarios');
+  const [activeTab, setActiveTab] = useState('empresa');
 
   return (
     <div className="container mx-auto py-6">
@@ -36,6 +36,18 @@ export default function ConfiguracionPage() {
       {/* Pestañas de configuración */}
       <div className="flex border-b border-gray-200 mb-6">
         <button
+          onClick={() => setActiveTab('empresa')}
+          className={`flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm ${
+            activeTab === 'empresa'
+              ? 'border-[#F4821F] text-[#F4821F]'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          }`}
+        >
+          <Info className="h-4 w-4" />
+          <span>Empresa</span>
+        </button>
+        
+        <button
           onClick={() => setActiveTab('horarios')}
           className={`flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm ${
             activeTab === 'horarios'
@@ -48,15 +60,15 @@ export default function ConfiguracionPage() {
         </button>
         
         <button
-          onClick={() => setActiveTab('notificaciones')}
+          onClick={() => setActiveTab('usuarios')}
           className={`flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm ${
-            activeTab === 'notificaciones'
+            activeTab === 'usuarios'
               ? 'border-[#F4821F] text-[#F4821F]'
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
           }`}
         >
-          <Bell className="h-4 w-4" />
-          <span>Notificaciones</span>
+          <Users className="h-4 w-4" />
+          <span>Usuarios</span>
         </button>
         
         <button
@@ -72,33 +84,24 @@ export default function ConfiguracionPage() {
         </button>
         
         <button
-          onClick={() => setActiveTab('empresa')}
+          onClick={() => setActiveTab('notificaciones')}
           className={`flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm ${
-            activeTab === 'empresa'
+            activeTab === 'notificaciones'
               ? 'border-[#F4821F] text-[#F4821F]'
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
           }`}
         >
-          <Info className="h-4 w-4" />
-          <span>Empresa</span>
-        </button>
-        
-        <button
-          onClick={() => setActiveTab('usuarios')}
-          className={`flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm ${
-            activeTab === 'usuarios'
-              ? 'border-[#F4821F] text-[#F4821F]'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-          }`}
-        >
-          <Users className="h-4 w-4" />
-          <span>Usuarios</span>
+          <Bell className="h-4 w-4" />
+          <span>Notificaciones</span>
         </button>
       </div>
 
       {/* Contenido de la pestaña activa */}
       <div className="bg-white rounded-lg shadow-sm p-6">
+        {activeTab === 'empresa' && <InformacionGeneral />}
         {activeTab === 'horarios' && <HorariosComerciales />}
+        {activeTab === 'usuarios' && <RolesUsuarios />}
+        {activeTab === 'menu' && <TiposCategoriasMenu />}
         {activeTab === 'notificaciones' && (
           <div className="text-center py-8">
             <Bell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
@@ -106,9 +109,6 @@ export default function ConfiguracionPage() {
             <p className="text-gray-400 mt-2">Esta sección está en desarrollo</p>
           </div>
         )}
-        {activeTab === 'menu' && <TiposCategoriasMenu />}
-        {activeTab === 'empresa' && <InformacionGeneral />}
-        {activeTab === 'usuarios' && <RolesUsuarios />}
       </div>
     </div>
   );
