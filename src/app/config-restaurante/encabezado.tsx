@@ -3,27 +3,46 @@ import React from 'react';
 import { useConfigStore } from './store/config-store';
 
 export default function Encabezado() {
-  const progreso = useConfigStore(state => state.progreso);
+  const { tarjetas, progreso } = useConfigStore();
+
+  const tarjetasCompletas = tarjetas.filter(t => t.estado === 'completo').length;
+  const totalTarjetas = tarjetas.length;
 
   return (
-    <div className="mb-8">
-      <h1 className="text-2xl font-bold mb-2">Configuración de tu Restaurante</h1>
-      <p className="text-gray-600 mb-4">
-        Completa la información necesaria para configurar tu restaurante
-      </p>
-      
-      {/* Barra de progreso principal */}
-      <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
-        <div
-          className="bg-[#FF9933] h-4 rounded-full transition-all duration-500"
-          style={{ width: `${progreso}%` }}
-        />
+    <div className="text-center space-y-4">
+      {/* Título principal */}
+      <div className="space-y-2">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-[#F4821F] to-[#CC6A10] bg-clip-text text-transparent">
+          Configuración de tu Restaurante
+        </h1>
+        <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+          Completa la información necesaria para configurar tu restaurante y comenzar a usar Spoon
+        </p>
       </div>
-      
-      {/* Información del progreso */}
-      <div className="flex justify-between text-sm text-gray-600">
-        <span>{progreso}% completado</span>
-        <span>{Math.round(progreso/16.66)}/6 secciones</span>
+
+      {/* Indicador de progreso */}
+      <div className="bg-white rounded-lg shadow-sm border p-6 max-w-md mx-auto">
+        <div className="space-y-3">
+          {/* Progreso visual */}
+          <div className="flex items-center justify-between text-sm text-gray-600">
+            <span>Progreso general</span>
+            <span className="font-semibold">{tarjetasCompletas}/{totalTarjetas} secciones</span>
+          </div>
+          
+          {/* Barra de progreso */}
+          <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-[#F4821F] to-[#FF9933] transition-all duration-700 ease-out"
+              style={{ width: `${progreso}%` }}
+            />
+          </div>
+          
+          {/* Porcentaje */}
+          <div className="text-center">
+            <span className="text-2xl font-bold text-[#F4821F]">{progreso}%</span>
+            <span className="text-sm text-gray-500 ml-2">completado</span>
+          </div>
+        </div>
       </div>
     </div>
   );

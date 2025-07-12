@@ -1,10 +1,10 @@
+// src/app/config-restaurante/horario-comercial/page.tsx
 'use client';
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useConfigStore } from '../store/config-store';
 import HorarioSemanal, { type HorarioDay } from '@/app/dashboard/horario-comercial/components/HorarioSemanal';
-import ConfigFooter from '../components/ConfigFooter/ConfigFooter';
 import { useToast } from '@/shared/Hooks/use-toast';
 
 const horarioInicial: HorarioDay[] = [
@@ -61,8 +61,7 @@ export default function HorarioComercialPage() {
       // await guardarHorarioInicial(horarios);
 
       // Actualizamos el estado en el store de configuración
-      actualizarCampo('horario-comercial', 'horario-semanal', true);
-      actualizarCampo('horario-comercial', 'excepciones', true);
+      actualizarCampo('/config-restaurante/horario-comercial', 'horarios', true);
 
       toast({
         title: "Horario guardado",
@@ -84,7 +83,7 @@ export default function HorarioComercialPage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 pb-20">
+    <div className="min-h-screen bg-neutral-50">
       <div className="max-w-3xl mx-auto px-4 py-8">
         {/* Encabezado */}
         <div className="mb-8">
@@ -117,8 +116,6 @@ export default function HorarioComercialPage() {
           </div>
         </div>
       </div>
-
-      <ConfigFooter />
     </div>
   );
 }

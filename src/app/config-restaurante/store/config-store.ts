@@ -10,19 +10,8 @@ import {
   CampoRequerido
 } from '@/types/group-config.types';
 
-// Datos iniciales de las tarjetas de configuración
+// Datos iniciales de las tarjetas de configuración - SIN INFO LEGAL
 const datosConfiguracion: TarjetaConfiguracion[] = [
-  {
-    id: 'info-legal',
-    titulo: 'Información Legal',
-    descripcion: 'Configura los datos legales de tu restaurante',
-    ruta: '/config-restaurante/info-legal',
-    estado: 'no_iniciado',
-    camposRequeridos: [
-      { id: 'nit', nombre: 'NIT', completado: false },
-      { id: 'razon-social', nombre: 'Razón Social', completado: false }
-    ]
-  },
   {
     id: 'ubicacion',
     titulo: 'Ubicación',
@@ -61,6 +50,7 @@ interface ConfigActions {
   actualizarEstadoTarjeta: (rutaTarjeta: string, estado: 'no_iniciado' | 'incompleto' | 'completo') => void;
   actualizarCampo: (rutaTarjeta: string, idCampo: string, completado: boolean) => void;
   calcularProgreso: () => void;
+  resetConfig: () => void;
   
   // Gestión de templates
   createTemplate: (template: ConfigTemplate) => Promise<void>;
@@ -92,6 +82,21 @@ export const useConfigStore = create<ConfigStore>()(
       activeConfig: null,
       loading: false,
       error: null,
+
+      // Función para resetear la configuración
+      resetConfig: () => {
+        set({
+          progreso: 0,
+          tarjetas: [...datosConfiguracion],
+          puedeAvanzar: false,
+          templates: [],
+          groupConfigs: [],
+          restaurantConfigs: [],
+          activeConfig: null,
+          loading: false,
+          error: null
+        });
+      },
 
       // Funciones para tarjetas de configuración
       actualizarEstadoTarjeta: (rutaTarjeta, estado) => {

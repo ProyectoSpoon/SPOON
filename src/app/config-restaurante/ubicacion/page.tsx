@@ -11,7 +11,7 @@ import usePlacesAutocomplete, {
 import { useUbicacion } from './hooks/useUbicacion';
 import Mapa from './components/mapa';
 import { GoogleMapsLoader } from './components/GoogleMapsLoader';
-import ConfigFooter from '../components/ConfigFooter/ConfigFooter';
+
 interface Location {
   lat: number;
   lng: number;
@@ -64,13 +64,13 @@ export default function UbicacionPage() {
     if (!usuario) {
       toast({
         title: 'Error',
-        description: 'Debes iniciar sesiรณn para realizar esta acciรณn',
+        description: 'Debes iniciar sesión para realizar esta acción',
         variant: 'destructive'
       });
       return;
     }
 
-    console.log('Intentando guardar direcciรณn:', descripcion);
+    console.log('Intentando guardar dirección:', descripcion);
     setValue(descripcion, false);
     clearSuggestions();
  
@@ -88,18 +88,18 @@ export default function UbicacionPage() {
       );
  
       if (!isInColombia) {
-        throw new Error('Por favor, selecciona una direcciรณn en Colombia');
+        throw new Error('Por favor, selecciona una dirección en Colombia');
       }
  
       const { lat, lng } = await getLatLng(results[0]);
       console.log('Coordenadas obtenidas:', { lat, lng });
  
       await guardarUbicacion(descripcion, { lat, lng });
-      console.log('Ubicaciรณn guardada exitosamente');
+      console.log('Ubicación guardada exitosamente');
       
       toast({
-        title: 'ร�xito',
-        description: 'Ubicaciรณn guardada correctamente',
+        title: 'Éxito',
+        description: 'Ubicación guardada correctamente',
       });
       
     } catch (error) {
@@ -108,7 +108,7 @@ export default function UbicacionPage() {
         title: 'Error',
         description: error instanceof Error 
           ? error.message 
-          : 'Error al obtener la ubicaciรณn. Por favor, intenta con otra direcciรณn en Colombia.',
+          : 'Error al obtener la ubicación. Por favor, intenta con otra dirección en Colombia.',
         variant: 'destructive'
       });
     }
@@ -125,7 +125,7 @@ export default function UbicacionPage() {
     if (!usuario) {
       toast({
         title: 'Error',
-        description: 'Debes iniciar sesiรณn para realizar esta acciรณn',
+        description: 'Debes iniciar sesión para realizar esta acción',
         variant: 'destructive'
       });
       return;
@@ -134,16 +134,16 @@ export default function UbicacionPage() {
     try {
       await actualizarCoordenadas(newPosition);
       toast({
-        title: 'ร�xito',
-        description: 'Posiciรณn actualizada correctamente',
+        title: 'Éxito',
+        description: 'Posición actualizada correctamente',
       });
     } catch (error) {
-      console.error('Error al actualizar posiciรณn:', error);
+      console.error('Error al actualizar posición:', error);
       toast({
         title: 'Error',
         description: error instanceof Error 
           ? error.message 
-          : 'Error al actualizar la posiciรณn del marcador',
+          : 'Error al actualizar la posición del marcador',
         variant: 'destructive'
       });
     }
@@ -157,7 +157,7 @@ export default function UbicacionPage() {
             Acceso no autorizado
           </h2>
           <p className="text-gray-600">
-            Debes iniciar sesiรณn para acceder a esta pรกgina
+            Debes iniciar sesión para acceder a esta página
           </p>
         </div>
       </div>
@@ -166,18 +166,18 @@ export default function UbicacionPage() {
 
   return (
     <GoogleMapsLoader>
-      <div className="min-h-screen bg-gray-50 pb-20">
+      <div className="min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto py-8 px-4">
           <div className="space-y-8">
-            {/* Secciรณn del buscador */}
+            {/* Sección del buscador */}
             <div className="bg-white p-6 rounded-lg shadow-lg">
               <div className="mb-6">
                 <h1 className="text-3xl font-bold text-gray-900 mb-4 text-center">
-                  ยฟDรณnde estรก tu restaurante?
+                  ¿Dónde está tu restaurante?
                 </h1>
                 <p className="text-gray-600 text-center">
-                  La precisiรณn en la ubicaciรณn de tu restaurante es fundamental. Una direcciรณn correcta 
-                  asegura que tus clientes puedan encontrarte fรกcilmente.
+                  La precisión en la ubicación de tu restaurante es fundamental. Una dirección correcta 
+                  asegura que tus clientes puedan encontrarte fácilmente.
                 </p>
               </div>
    
@@ -189,7 +189,7 @@ export default function UbicacionPage() {
                   <input
                     value={value}
                     onChange={(e) => setValue(e.target.value)}
-                    placeholder="Busca la direcciรณn de tu restaurante en Colombia"
+                    placeholder="Busca la dirección de tu restaurante en Colombia"
                     className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
                     disabled={guardando || cargando}
                   />
@@ -220,7 +220,7 @@ export default function UbicacionPage() {
               </form>
             </div>
    
-            {/* Secciรณn del mapa */}
+            {/* Sección del mapa */}
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
               <Mapa
                 center={coordenadas}
@@ -230,7 +230,6 @@ export default function UbicacionPage() {
             </div>
           </div>
         </div>
-        <ConfigFooter />
       </div>
     </GoogleMapsLoader>
   );

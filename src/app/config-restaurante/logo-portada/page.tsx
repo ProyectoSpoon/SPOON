@@ -1,3 +1,4 @@
+// src/app/config-restaurante/logo-portada/page.tsx
 'use client';
 
 import React, { useState } from 'react';
@@ -6,7 +7,6 @@ import { IndicadorProgreso } from '@/shared/components/ui/IndicadorProgreso';
 import SubirLogo from './components/subirlogo';
 import SubirPortada from './components/subirportada';
 import VistaPrevia from './components/vistaprevia';
-import ConfigFooter from '@/app/config-restaurante/components/ConfigFooter/ConfigFooter';
 
 // Tipos TypeScript
 interface PasoFormulario {
@@ -111,7 +111,8 @@ export default function LogoPortadaPage() {
       // const portadaUrl = await subirImagen(portada.archivo, 'portadas');
       
       if (finalizar) {
-        actualizarCampo('logo-portada', 'imagenes', true);
+        actualizarCampo('/config-restaurante/logo-portada', 'logo', logo.estado === 'completado');
+        actualizarCampo('/config-restaurante/logo-portada', 'portada', portada.estado === 'completado');
       }
     } catch (error) {
       console.error('Error al guardar:', error);
@@ -155,7 +156,7 @@ export default function LogoPortadaPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 pb-20">
+    <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-3xl mx-auto px-4">
         {/* Encabezado */}
         <div className="mb-8">
@@ -224,7 +225,6 @@ export default function LogoPortadaPage() {
           </div>
         </div>
       </div>
-      <ConfigFooter />
     </div>
   );
 }

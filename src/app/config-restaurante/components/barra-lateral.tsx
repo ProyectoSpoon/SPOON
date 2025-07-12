@@ -1,52 +1,32 @@
 // src/app/config-restaurante/components/barra-lateral.tsx
 import React from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/shared/components/ui/Button';
-import { Save, LogOut } from 'lucide-react'; // Iconos
 import { useConfigStore } from '../store/config-store';
 
 export default function BarraLateral() {
-  const router = useRouter();
   const { progreso } = useConfigStore();
 
-  const handleSave = () => {
-    // Aquí iría la lógica para guardar
-    console.log('Guardando configuración...');
-  };
-
-  const handleExit = () => {
-    // Aquí podríamos agregar una confirmación antes de salir
-    router.push('/dashboard'); // O la ruta que corresponda
-  };
-
   return (
-    <div className="fixed right-4 top-1/3 transform -translate-y-1/2 z-50">
-      <div className="flex flex-col gap-3 bg-white p-3 rounded-lg shadow-lg border border-gray-200">
-        <Button
-          variant="default"
-          size="sm"
-          onClick={handleSave}
-          className="flex items-center gap-2 w-full"
-        >
-          <Save size={18} />
-          <span className="hidden group-hover:inline">Guardar</span>
-        </Button>
-
-        <div className="w-full h-px bg-gray-200" />
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleExit}
-          className="flex items-center gap-2 w-full text-gray-600 hover:text-gray-800"
-        >
-          <LogOut size={18} />
-          <span className="hidden group-hover:inline">Salir</span>
-        </Button>
-
-        {/* Indicador de progreso */}
-        <div className="text-xs text-center text-gray-500 mt-2">
-          {progreso}%
+    <div className="fixed left-4 top-1/2 transform -translate-y-1/2 z-50 hidden lg:block">
+      <div className="bg-white rounded-lg shadow-lg p-4 w-16">
+        {/* Indicador de progreso vertical */}
+        <div className="flex flex-col items-center space-y-3">
+          {/* Título */}
+          <div className="text-xs font-semibold text-gray-600 writing-mode-vertical text-center">
+            Progreso
+          </div>
+          
+          {/* Barra de progreso vertical */}
+          <div className="w-2 h-32 bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              className="w-full bg-gradient-to-t from-[#F4821F] to-[#FF9933] transition-all duration-500 ease-out"
+              style={{ height: `${progreso}%` }}
+            />
+          </div>
+          
+          {/* Porcentaje */}
+          <div className="text-sm font-bold text-[#F4821F]">
+            {progreso}%
+          </div>
         </div>
       </div>
     </div>
