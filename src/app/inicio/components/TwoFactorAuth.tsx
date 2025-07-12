@@ -2,7 +2,7 @@
 'use client'
 
 import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/shared/components/ui/Card';
 import { Alert, AlertDescription } from '@/shared/components/ui/Alert';
 import { Loader2 } from 'lucide-react';
 

@@ -29,7 +29,8 @@ import {
   FileStack,
   Calendar,
   Star,
-  Award
+  Award,
+  ChefHat
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -48,103 +49,111 @@ interface ElementoMenuProps {
 }
 
 const elementosMenu: ElementoMenuProps[] = [
-  {
-    icono: Home,
-    etiqueta: 'Visión General',
-    ruta: '',
-    descripcion: 'Dashboard principal',
-    subElementos: [
-      {
-        etiqueta: 'Resumen de ventas',
-        ruta: '/dashboard/vision-general/resumenventas', 
-        descripcion: 'Resumen de ventas'
-      },
-      {
-        etiqueta: 'Ventas día',
-        ruta: '/dashboard/vision-general/ventasdia',
-        descripcion: 'Control de ventas diarias'
-      },
-      {
-        etiqueta: 'Notificaciones',
-        ruta: '/dashboard/vision-general/notificaciones',
-        descripcion: 'Centro de notificaciones'
-      }
-    ]
-  },
+{
+  icono: Home,
+  etiqueta: 'Dashboard',
+  ruta: '/dashboard',
+  descripcion: 'Vista general del negocio'
+},
   {
     icono: Receipt,
     etiqueta: 'Registro de Ventas',
     ruta: '/dashboard/registro-ventas',
-    descripcion: 'Registro de ventas diarias',
+    descripcion: 'Registro de ventas diarias',  },
+  {
+    icono: ChefHat,
+    etiqueta: 'Gestión de Órdenes',
+    ruta: '/dashboard/gestion-ordenes',
+    descripcion: 'Administrar comandas y estados de órdenes'
   },
   {
-    icono: Menu,
-    etiqueta: 'Gestión del Menú',
-    ruta: '/dashboard/carta/menu-dia',
-    descripcion: 'Gestión del menú',
-    subElementos: [
-      {
-        etiqueta: 'Menú del Día',
-        ruta: '/dashboard/carta/menu-dia',
-        descripcion: 'Gestión del menú diario'
-      },
-      {
-        etiqueta: 'Platos Favoritos',
-        ruta: '/dashboard/carta/favoritos',
-        descripcion: 'Gestión de platos favoritos'
-      },
-      {
-        etiqueta: 'Platos Especiales',
-        ruta: '/dashboard/carta/especiales',
-        descripcion: 'Gestión de platos especiales'
-      },
-      {
-        etiqueta: 'Combinaciones Existentes',
-        ruta: '/dashboard/carta/combinaciones',
-        descripcion: 'Combinaciones del menú del día'
-      },
-      {
-        etiqueta: 'Programación Semanal',
-        ruta: '/dashboard/carta/programacion-semanal',
-        descripcion: 'Programación del menú semanal'
-      }
-    ]
-  },
+  icono: Utensils,  // 🔄 Cambiar icono
+  etiqueta: 'Mi Menú Digital',
+  descripcion: 'Gestión completa del menú - Producto gratuito principal',  // 🔄 Nueva descripción
+  subElementos: [
+    {
+      etiqueta: 'Menú del Día',
+      ruta: '/dashboard/carta/menu-dia',
+      descripcion: 'Gestión diaria del menú'
+    },
+    {
+      etiqueta: 'Combinaciones',  // 🔄 Renombrar
+      ruta: '/dashboard/carta/combinaciones',
+      descripcion: 'Crear y gestionar combinaciones'
+    },
+    {
+      etiqueta: 'Platos Especiales',
+      ruta: '/dashboard/carta/especiales',
+      descripcion: 'Gestión de platos especiales'
+    },
+    {
+      etiqueta: 'Platos Favoritos',
+      ruta: '/dashboard/carta/favoritos',
+      descripcion: 'Tus platos más populares'
+    },
+    {
+      etiqueta: 'Programación Semanal',
+      ruta: '/dashboard/carta/programacion-semanal',
+      descripcion: 'Planifica tu menú semanal'
+    }
+  ]
+},
 
-  {
-    icono: BarChart2,
-    etiqueta: 'Estadísticas',
-    ruta: '/dashboard/estadisticas',
-    descripcion: 'Estadística',
-    subElementos: [
-      {
-        etiqueta: 'Análisis de Ventas',
-        ruta: '/dashboard/estadisticas/analisis-ventas',
-        descripcion: 'Análisis detallado de ventas'
-      },
-      {
-        etiqueta: 'Rendimiento de Menú',
-        ruta: '/dashboard/estadisticas/rendimiento-menu',
-        descripcion: 'Desempeño por categorías y platos'
-      },
-      {
-        etiqueta: 'Platos más vendidos',
-        ruta: '/dashboard/estadisticas/platosvendidos',
-        descripcion: 'Análisis de platos más vendidos'
-      },
-      {
-        etiqueta: 'Tendencias',
-        ruta: '/dashboard/estadisticas/tendencias',
-        descripcion: 'Análisis de patrones y tendencias'
-      }
-    ]
-  },
-  {
-    icono: Settings,
-    etiqueta: 'Configuración',
-    ruta: '/dashboard/configuracion',
-    descripcion: 'Configuración de horarios comerciales'
-  },
+{
+  icono: BarChart2,
+  etiqueta: 'Analytics & Insights',  // 🔄 Nuevo nombre
+  descripcion: 'Inteligencia para optimizar tu negocio',  // 🔄 Nueva descripción
+  subElementos: [
+    {
+      etiqueta: 'Análisis de Ventas',
+      ruta: '/dashboard/estadisticas/analisis-ventas',
+      descripcion: 'Análisis detallado de ventas'
+    },
+    {
+      etiqueta: 'Rendimiento del Menú',  // 🔄 Quitar "de"
+      ruta: '/dashboard/estadisticas/rendimiento-menu',
+      descripcion: 'Qué platos funcionan mejor'  // 🔄 Descripción más clara
+    },
+    {
+      etiqueta: 'Tendencias',
+      ruta: '/dashboard/estadisticas/tendencias',
+      descripcion: 'Patrones y proyecciones'  // 🔄 Nueva descripción
+    },
+    {
+      etiqueta: 'Dashboard Estadísticas',  // 🔄 Nuevo item
+      ruta: '/dashboard/estadisticas',
+      descripcion: 'Vista general de métricas'
+    }
+  ]
+},
+{
+  icono: Settings,
+  etiqueta: 'Configuración',
+  descripcion: 'Configuración del restaurante',
+  subElementos: [
+    {
+      etiqueta: 'Mi Restaurante',
+      ruta: '/dashboard/configuracion',
+      descripcion: 'Información general del restaurante'
+    },
+    {
+      etiqueta: 'Horarios Comerciales',
+      ruta: '/dashboard/configuracion/horario-comercial',
+      descripcion: 'Gestión de horarios de atención'
+    },
+    {
+      etiqueta: 'Usuarios y Roles',
+      ruta: '/dashboard/configuracion/usuarios',
+      descripcion: 'Gestión de usuarios del sistema'
+    },
+  ]
+},
+{
+  icono: FileText,
+  etiqueta: 'Auditoría',
+  ruta: '/dashboard/auditoria',
+  descripcion: 'Registro de actividades del sistema'
+},
   {
     icono: HelpCircle,
     etiqueta: 'Ayuda',
@@ -279,3 +288,8 @@ export default function BarraLateral() {
       </div>
     );
 }
+
+
+
+
+

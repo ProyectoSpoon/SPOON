@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/shared/components/ui/Card';
 import { Alert, AlertDescription } from '@/shared/components/ui/Alert';
 import { useAuth } from '@/context/authcontext';
 

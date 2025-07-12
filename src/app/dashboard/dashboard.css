@@ -1,0 +1,287 @@
+/* src/app/dashboard/dashboard.css - Versión Mejorada */
+
+.dashboard-container {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: auto auto auto;
+  gap: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  grid-template-areas:
+    "metricas metricas metricas estadoMenu"
+    "acciones platosTop platosTop notificaciones"
+    "insights insights insights insights";
+}
+
+.grid-area-metricas { 
+  grid-area: metricas;
+}
+.grid-area-estadoMenu { 
+  grid-area: estadoMenu;
+}
+.grid-area-acciones { 
+  grid-area: acciones;
+}
+.grid-area-platosTop { 
+  grid-area: platosTop;
+}
+.grid-area-notificaciones { 
+  grid-area: notificaciones;
+}
+.grid-area-insights { 
+  grid-area: insights;
+}
+
+/* Mejoras en Cards */
+.dashboard-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.card-header-modern {
+  padding: 1.5rem 1.5rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  background: linear-gradient(135deg, #fafbfc 0%, #ffffff 100%);
+}
+
+.card-title-modern {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.card-content-modern {
+  padding: 1.5rem;
+}
+
+/* Métricas modernas */
+.metrica-moderna {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.metrica-moderna::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #F4821F, #FF6B35);
+}
+
+.metrica-moderna:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(244, 130, 31, 0.15);
+}
+
+.metrica-icono {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+}
+
+.metrica-valor {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.25rem;
+  line-height: 1;
+}
+
+.metrica-label {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.metrica-comparacion {
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+/* Acciones modernas */
+.accion-rapida {
+  background: linear-gradient(135deg, var(--bg-from), var(--bg-to));
+  border: none;
+  border-radius: 16px;
+  padding: 1.5rem;
+  color: white;
+  transition: all 0.3s ease;
+  text-align: center;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.accion-rapida::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+  transition: all 0.3s ease;
+}
+
+.accion-rapida:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+}
+
+.accion-rapida:hover::before {
+  background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.05) 100%);
+}
+
+.accion-icono {
+  font-size: 2rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.accion-label {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.accion-descripcion {
+  font-size: 0.75rem;
+  opacity: 0.9;
+}
+
+/* Colores para acciones */
+.accion-menu {
+  --bg-from: #3b82f6;
+  --bg-to: #1d4ed8;
+}
+
+.accion-ventas {
+  --bg-from: #10b981;
+  --bg-to: #059669;
+}
+
+.accion-analytics {
+  --bg-from: #8b5cf6;
+  --bg-to: #7c3aed;
+}
+
+.accion-config {
+  --bg-from: #6b7280;
+  --bg-to: #4b5563;
+}
+
+/* Top platos mejorado */
+.plato-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.plato-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(244, 130, 31, 0.1);
+  border-color: #F4821F;
+}
+
+.plato-rank {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.rank-1 { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: white; }
+.rank-2 { background: linear-gradient(135deg, #94a3b8, #64748b); color: white; }
+.rank-3 { background: linear-gradient(135deg, #fb923c, #ea580c); color: white; }
+.rank-other { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; }
+
+.plato-progress {
+  width: 4rem;
+  height: 0.5rem;
+  background: #e2e8f0;
+  border-radius: 0.25rem;
+  overflow: hidden;
+}
+
+.plato-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #F4821F, #FF6B35);
+  border-radius: 0.25rem;
+  transition: width 0.5s ease;
+}
+
+/* Responsive mejorado */
+@media (max-width: 1200px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-areas:
+      "metricas metricas metricas"
+      "estadoMenu acciones notificaciones"
+      "platosTop platosTop platosTop"
+      "insights insights insights";
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 1rem;
+  }
+  
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    grid-template-areas:
+      "metricas"
+      "estadoMenu"
+      "acciones"
+      "platosTop"
+      "notificaciones"
+      "insights";
+  }
+  
+  .metrica-valor { font-size: 1.5rem; }
+  .accion-rapida { min-height: 100px; padding: 1rem; }
+}

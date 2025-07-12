@@ -1,6 +1,6 @@
 // src/app/config-restaurante/components/tarjeta-config.tsx
 import React from 'react';
-import { Card } from '@/shared/components/ui/Card';
+import { Card } from '@/shared/components/ui/Card'
 import { CheckCircle, MapPin, Clock, Camera, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useConfigStore } from '../store/config-store';
