@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { Loader2, ChevronLeft, ChevronRight, Plus, Copy, Trash2, Save } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight, Plus, Copy, Trash2, Save, Edit } from 'lucide-react';
 
 interface HorarioDia {
   abierto: boolean;
@@ -28,18 +28,33 @@ export default function HorariosComerciales() {
   const [horarios, setHorarios] = useState<HorariosData | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  
+  // Estados para el modal de eventos
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<{fecha: string; nombre: string; tipo: string} | null>(null);
 
-  // Cargar los horarios desde el archivo JSON
+  // Cargar los horarios desde PostgreSQL
   useEffect(() => {
     const cargarHorarios = async () => {
       try {
         setIsLoading(true);
-        console.log('Cargando horarios (simulación)...');
+        console.log('🕐 Cargando horarios desde PostgreSQL...');
         
-        // Simular delay de carga
-        await new Promise(resolve => setTimeout(resolve, 500));
+        const response = await fetch('/api/configuracion/horarios');
         
-        // Crear horarios por defecto
+        if (!response.ok) {
+          throw new Error('Error al cargar los horarios');
+        }
+        
+        const data = await response.json();
+        setHorarios(data);
+        console.log('✅ Horarios cargados desde PostgreSQL');
+        
+      } catch (error) {
+        console.error('Error al cargar horarios:', error);
+        toast.error('Error al cargar los horarios');
+        
+        // Fallback a datos por defecto en caso de error
         setHorarios({
           horarioRegular: {
             lunes: { abierto: true, horaApertura: "09:00", horaCierre: "18:00" },
@@ -50,17 +65,8 @@ export default function HorariosComerciales() {
             sabado: { abierto: true, horaApertura: "10:00", horaCierre: "16:00" },
             domingo: { abierto: false, horaApertura: "10:00", horaCierre: "16:00" }
           },
-          diasFestivos: [
-            { fecha: "2025-01-01", nombre: "Año Nuevo", tipo: "Año Nuevo" },
-            { fecha: "2025-05-01", nombre: "Día del Trabajo", tipo: "Día del Trabajo" },
-            { fecha: "2025-07-20", nombre: "Día de la Independencia", tipo: "Día de la Independencia" },
-            { fecha: "2025-08-07", nombre: "Batalla de Boyacá", tipo: "Batalla de Boyacá" },
-            { fecha: "2025-12-25", nombre: "Navidad", tipo: "Navidad" }
-          ]
+          diasFestivos: []
         });
-      } catch (error) {
-        console.error('Error al cargar horarios:', error);
-        toast.error('Error al cargar los horarios');
       } finally {
         setIsLoading(false);
       }
@@ -69,17 +75,29 @@ export default function HorariosComerciales() {
     cargarHorarios();
   }, []);
 
-  // Función para guardar los horarios
+  // Función para guardar los horarios en PostgreSQL
   const guardarHorarios = useCallback(async () => {
     if (!horarios) return;
     
     try {
-      console.log('Guardando horarios (simulación):', horarios);
+      console.log('💾 Guardando horarios en PostgreSQL...');
       
-      // Simular delay de guardado
-      await new Promise(resolve => setTimeout(resolve, 300));
+      const response = await fetch('/api/configuracion/horarios', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(horarios),
+      });
       
-      toast.success('Horarios guardados correctamente');
+      if (!response.ok) {
+        throw new Error('Error al guardar los horarios');
+      }
+      
+      const result = await response.json();
+      console.log('✅ Horarios guardados:', result);
+      toast.success('Horarios guardados correctamente en PostgreSQL');
+      
     } catch (error) {
       console.error('Error al guardar horarios:', error);
       toast.error('Error al guardar los horarios');
@@ -95,22 +113,83 @@ export default function HorariosComerciales() {
     setHorarios(nuevosHorarios);
   };
 
-  // Función para agregar un evento festivo
+  // Función mejorada para agregar eventos
   const agregarEvento = () => {
-    if (!horarios) return;
+    setEditingEvent({
+      fecha: new Date().toISOString().split('T')[0],
+      nombre: "",
+      tipo: "Personalizado"
+    });
+    setShowEventModal(true);
+  };
+
+  // Función para guardar evento
+  const guardarEvento = () => {
+    if (!horarios || !editingEvent || !editingEvent.nombre.trim()) return;
     
     const nuevosHorarios = { ...horarios };
     if (!nuevosHorarios.diasFestivos) {
       nuevosHorarios.diasFestivos = [];
     }
     
-    nuevosHorarios.diasFestivos.push({
-      fecha: new Date().toISOString().split('T')[0],
-      nombre: "Nuevo evento",
-      tipo: "Personalizado"
-    });
+    // Verificar si ya existe un evento en esa fecha
+    const existingIndex = nuevosHorarios.diasFestivos.findIndex(
+      festivo => festivo.fecha === editingEvent.fecha
+    );
+    
+    if (existingIndex >= 0) {
+      // Actualizar evento existente
+      nuevosHorarios.diasFestivos[existingIndex] = editingEvent;
+    } else {
+      // Agregar nuevo evento
+      nuevosHorarios.diasFestivos.push(editingEvent);
+    }
+    
+    // Ordenar por fecha
+    nuevosHorarios.diasFestivos.sort((a, b) => a.fecha.localeCompare(b.fecha));
     
     setHorarios(nuevosHorarios);
+    setShowEventModal(false);
+    setEditingEvent(null);
+    
+    toast.success('Evento agregado. Recuerda guardar los cambios.');
+  };
+
+  // Función para eliminar evento
+  const eliminarEvento = (fecha: string) => {
+    if (!horarios) return;
+    
+    const nuevosHorarios = { ...horarios };
+    nuevosHorarios.diasFestivos = nuevosHorarios.diasFestivos?.filter(
+      festivo => festivo.fecha !== fecha
+    ) || [];
+    
+    setHorarios(nuevosHorarios);
+    toast.success('Evento eliminado. Recuerda guardar los cambios.');
+  };
+
+  // Función para hacer clic en día del calendario
+  const handleDayClick = (dia: number | null) => {
+    if (!dia) return;
+    
+    const fecha = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+    
+    // Verificar si ya hay un evento en esta fecha
+    const eventoExistente = horarios?.diasFestivos?.find(festivo => festivo.fecha === fecha);
+    
+    if (eventoExistente) {
+      // Editar evento existente
+      setEditingEvent(eventoExistente);
+    } else {
+      // Crear nuevo evento
+      setEditingEvent({
+        fecha,
+        nombre: "",
+        tipo: "Personalizado"
+      });
+    }
+    
+    setShowEventModal(true);
   };
 
   // Obtener los nombres de los meses
@@ -149,8 +228,8 @@ export default function HorariosComerciales() {
   };
 
   // Verificar si un día es festivo
-  const esFestivo = (dia: number) => {
-    if (!horarios || !horarios.diasFestivos) return false;
+  const esFestivo = (dia: number | null) => {
+    if (!horarios || !horarios.diasFestivos || !dia) return false;
     
     const fecha = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
     return horarios.diasFestivos.some(festivo => festivo.fecha === fecha);
@@ -192,12 +271,12 @@ export default function HorariosComerciales() {
           <div className="flex justify-between items-center mb-6">
             <div>
               <h3 className="text-xl font-semibold">Configura tus horarios</h3>
-              <div className="flex items-center text-amber-600 mt-1">
+              <div className="flex items-center text-green-600 mt-1">
                 <span className="text-sm">
-                  Usando horarios predeterminados
+                  Conectado a PostgreSQL
                 </span>
                 <span className="text-xs text-neutral-500 ml-4">
-                  • Datos simulados para desarrollo
+                  • Los cambios se guardan en la base de datos
                 </span>
               </div>
             </div>
@@ -277,13 +356,13 @@ export default function HorariosComerciales() {
           
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center">
-              <button onClick={mesAnterior} className="p-1">
+              <button onClick={mesAnterior} className="p-1 hover:bg-gray-100 rounded">
                 <ChevronLeft size={20} />
               </button>
               <h4 className="text-lg font-medium mx-2">
                 {meses[currentMonth]} {currentYear}
               </h4>
-              <button onClick={mesSiguiente} className="p-1">
+              <button onClick={mesSiguiente} className="p-1 hover:bg-gray-100 rounded">
                 <ChevronRight size={20} />
               </button>
             </div>
@@ -299,13 +378,14 @@ export default function HorariosComerciales() {
             {obtenerDiasDelMes().map((dia, index) => (
               <div 
                 key={index} 
-                className={`text-center py-2 rounded-md ${
+                onClick={() => handleDayClick(dia)}
+                className={`text-center py-2 rounded-md cursor-pointer transition-colors ${
                   dia === null 
-                    ? 'text-transparent' 
+                    ? 'text-transparent pointer-events-none' 
                     : esFestivo(dia) 
-                      ? 'bg-orange-100 text-orange-800' 
+                      ? 'bg-orange-100 text-orange-800 hover:bg-orange-200' 
                       : 'hover:bg-gray-100'
-                } cursor-pointer`}
+                }`}
               >
                 {dia}
               </div>
@@ -314,37 +394,140 @@ export default function HorariosComerciales() {
           
           <button
             onClick={agregarEvento}
-            className="w-full py-2 bg-[#F4821F] hover:bg-[#D66A0B] text-white rounded-lg mb-4"
+            className="w-full py-2 bg-[#F4821F] hover:bg-[#D66A0B] text-white rounded-lg mb-4 transition-colors"
           >
+            <Plus className="inline-block mr-2" size={16} />
             Agregar evento
           </button>
           
           <div className="mt-6">
             <h4 className="font-medium mb-2">Próximos eventos:</h4>
-            <div className="space-y-2">
-              {horarios && horarios.diasFestivos && horarios.diasFestivos.map((festivo, index) => (
-                <div key={index} className="flex justify-between items-center">
-                  <span>{festivo.fecha.split('-')[2]} de {meses[parseInt(festivo.fecha.split('-')[1]) - 1]}</span>
-                  <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded">
-                    {festivo.tipo}
-                  </span>
-                </div>
-              ))}
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {horarios && horarios.diasFestivos && horarios.diasFestivos.length > 0 ? (
+                horarios.diasFestivos.map((festivo, index) => (
+                  <div key={index} className="flex justify-between items-center group">
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">{festivo.nombre}</div>
+                      <div className="text-xs text-gray-500">
+                        {festivo.fecha.split('-')[2]} de {meses[parseInt(festivo.fecha.split('-')[1]) - 1]}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded">
+                        {festivo.tipo}
+                      </span>
+                      <button
+                        onClick={() => {
+                          setEditingEvent(festivo);
+                          setShowEventModal(true);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded transition-all"
+                      >
+                        <Edit size={12} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-gray-500">No hay eventos programados</p>
+              )}
             </div>
             
             <div className="mt-6 space-y-1 text-sm">
               <div className="flex items-center">
-                <span className="w-3 h-3 bg-orange-100 inline-block mr-2"></span>
-                <span>Los días festivos aparecen en naranja</span>
+                <span className="w-3 h-3 bg-orange-100 inline-block mr-2 rounded"></span>
+                <span>Días festivos (haz clic para editar)</span>
               </div>
               <div className="flex items-center">
-                <span className="w-3 h-3 bg-blue-100 inline-block mr-2"></span>
-                <span>Los eventos personalizados aparecen en azul</span>
+                <span className="w-3 h-3 bg-gray-100 inline-block mr-2 rounded"></span>
+                <span>Días normales (haz clic para agregar evento)</span>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Modal para editar eventos */}
+      {showEventModal && editingEvent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 max-w-md mx-4">
+            <h3 className="text-lg font-semibold mb-4">
+              {horarios?.diasFestivos?.some(f => f.fecha === editingEvent.fecha) ? 'Editar Evento' : 'Nuevo Evento'}
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Fecha</label>
+                <input
+                  type="date"
+                  value={editingEvent.fecha}
+                  onChange={(e) => setEditingEvent({...editingEvent, fecha: e.target.value})}
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Nombre del evento</label>
+                <input
+                  type="text"
+                  value={editingEvent.nombre}
+                  onChange={(e) => setEditingEvent({...editingEvent, nombre: e.target.value})}
+                  placeholder="Ej: Día de la madre"
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Tipo</label>
+                <select
+                  value={editingEvent.tipo}
+                  onChange={(e) => setEditingEvent({...editingEvent, tipo: e.target.value})}
+                  className="w-full border rounded px-3 py-2"
+                >
+                  <option value="Personalizado">Personalizado</option>
+                  <option value="Día Nacional">Día Nacional</option>
+                  <option value="Día Regional">Día Regional</option>
+                  <option value="Vacaciones">Vacaciones</option>
+                  <option value="Evento Especial">Evento Especial</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex gap-2 mt-6">
+              <button
+                onClick={guardarEvento}
+                disabled={!editingEvent.nombre.trim()}
+                className="flex-1 bg-[#F4821F] hover:bg-[#D66A0B] disabled:bg-gray-300 
+                         text-white py-2 rounded transition-colors"
+              >
+                Guardar
+              </button>
+              
+              {horarios?.diasFestivos?.some(f => f.fecha === editingEvent.fecha) && (
+                <button
+                  onClick={() => {
+                    eliminarEvento(editingEvent.fecha);
+                    setShowEventModal(false);
+                  }}
+                  className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
+              
+              <button
+                onClick={() => {
+                  setShowEventModal(false);
+                  setEditingEvent(null);
+                }}
+                className="px-4 py-2 border border-gray-300 hover:bg-gray-50 rounded transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

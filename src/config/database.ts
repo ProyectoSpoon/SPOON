@@ -1,5 +1,4 @@
-'use client';
-
+// src/config/database.ts
 import { Pool } from 'pg';
 
 // Disable native bindings to avoid the pg-native error

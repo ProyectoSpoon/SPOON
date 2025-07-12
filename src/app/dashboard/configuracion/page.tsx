@@ -1,14 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Settings, Clock, Info, Users, Utensils, Bell } from 'lucide-react';
+import { Settings, Clock, Info, Users, Bell } from 'lucide-react';
 // Importación dinámica para evitar problemas de TypeScript
 import dynamic from 'next/dynamic';
 const HorariosComerciales = dynamic(() => import('./components/HorariosComerciales'), {
-  loading: () => <p>Cargando...</p>,
-  ssr: false
-});
-const TiposCategoriasMenu = dynamic(() => import('./components/TiposCategoriasMenu'), {
   loading: () => <p>Cargando...</p>,
   ssr: false
 });
@@ -33,7 +29,7 @@ export default function ConfiguracionPage() {
         </h1>
       </div>
 
-      {/* Pestañas de configuración */}
+      {/* Pestañas de configuración simplificadas */}
       <div className="flex border-b border-gray-200 mb-6">
         <button
           onClick={() => setActiveTab('empresa')}
@@ -44,7 +40,7 @@ export default function ConfiguracionPage() {
           }`}
         >
           <Info className="h-4 w-4" />
-          <span>Empresa</span>
+          <span>Información General</span>
         </button>
         
         <button
@@ -68,19 +64,7 @@ export default function ConfiguracionPage() {
           }`}
         >
           <Users className="h-4 w-4" />
-          <span>Usuarios</span>
-        </button>
-        
-        <button
-          onClick={() => setActiveTab('menu')}
-          className={`flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm ${
-            activeTab === 'menu'
-              ? 'border-[#F4821F] text-[#F4821F]'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-          }`}
-        >
-          <Utensils className="h-4 w-4" />
-          <span>Menú</span>
+          <span>Roles y Usuarios</span>
         </button>
         
         <button
@@ -101,14 +85,32 @@ export default function ConfiguracionPage() {
         {activeTab === 'empresa' && <InformacionGeneral />}
         {activeTab === 'horarios' && <HorariosComerciales />}
         {activeTab === 'usuarios' && <RolesUsuarios />}
-        {activeTab === 'menu' && <TiposCategoriasMenu />}
         {activeTab === 'notificaciones' && (
           <div className="text-center py-8">
             <Bell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-500">Configuración de Notificaciones</h3>
             <p className="text-gray-400 mt-2">Esta sección está en desarrollo</p>
+            <div className="mt-4 text-sm text-gray-400">
+              <p>• Notificaciones de pedidos</p>
+              <p>• Alertas de inventario</p>
+              <p>• Recordatorios de eventos</p>
+            </div>
           </div>
         )}
+      </div>
+      
+      {/* Nota informativa sobre gestión de menús */}
+      <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="flex items-center">
+          <Info className="h-5 w-5 text-blue-500 mr-2" />
+          <div>
+            <h4 className="text-sm font-medium text-blue-800">Gestión de Menús</h4>
+            <p className="text-sm text-blue-600 mt-1">
+              Para gestionar categorías y productos del menú, ve a la sección 
+              <span className="font-medium"> Dashboard → Carta</span>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

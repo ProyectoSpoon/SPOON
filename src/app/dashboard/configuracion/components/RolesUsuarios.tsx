@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react'; 
 import { toast } from 'sonner';
 import { Save, Loader2, Plus, Trash2, Edit, UserPlus } from 'lucide-react';
 import { Button } from '@/shared/components/ui/Button';
@@ -67,30 +67,32 @@ export default function RolesUsuarios() {
 
   // Guardar datos de usuarios y roles
   const handleSave = async () => {
-    try {
-      setIsSaving(true);
-      
-      const response = await fetch('/api/configuracion/usuarios-roles', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Error al guardar los datos de usuarios y roles');
-      }
-      
-      toast.success('Datos guardados correctamente');
-    } catch (error) {
-      console.error('Error al guardar datos:', error);
-      toast.error('Error al guardar los datos de usuarios y roles');
-    } finally {
-      setIsSaving(false);
+  try {
+    setIsSaving(true);
+    
+    const response = await fetch('/api/configuracion/usuarios-roles', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'guardar_todos',
+        data: data
+      }), // ← Ahora sí está correcto
+    });
+    
+    if (!response.ok) {
+      throw new Error('Error al guardar los datos de usuarios y roles');
     }
-  };
-
+    
+    toast.success('Datos guardados correctamente');
+  } catch (error) {
+    console.error('Error al guardar datos:', error);
+    toast.error('Error al guardar los datos de usuarios y roles');
+  } finally {
+    setIsSaving(false);
+  }
+};
   // Abrir diálogo para crear/editar usuario
   const handleEditUser = (usuario?: Usuario) => {
     if (usuario) {
@@ -107,21 +109,7 @@ export default function RolesUsuarios() {
     setShowUserDialog(true);
   };
 
-  // Abrir diálogo para crear/editar rol
-  const handleEditRol = (rol?: Rol) => {
-    if (rol) {
-      setCurrentRol(rol);
-    } else {
-      setCurrentRol({
-        id: `rol_${Date.now()}`,
-        nombre: '',
-        descripcion: '',
-        permisos: []
-      });
-    }
-    setShowRolDialog(true);
-  };
-
+  
   // Guardar usuario
   const handleSaveUser = () => {
     if (!currentUser) return;
@@ -203,25 +191,7 @@ export default function RolesUsuarios() {
     }
   };
 
-  // Eliminar rol
-  const handleDeleteRol = (id: string) => {
-    // Verificar si hay usuarios con este rol
-    const usuariosConRol = data.usuarios.filter(u => u.rol === id);
-    
-    if (usuariosConRol.length > 0) {
-      toast.error(`No se puede eliminar el rol porque hay ${usuariosConRol.length} usuarios asignados a él`);
-      return;
-    }
-    
-    if (window.confirm('¿Está seguro de eliminar este rol? Esta acción no se puede deshacer.')) {
-      setData(prev => ({
-        ...prev,
-        roles: prev.roles.filter(r => r.id !== id)
-      }));
-      
-      toast.success('Rol eliminado correctamente');
-    }
-  };
+
 
   // Cambiar estado activo de usuario
   const handleToggleUserActive = (id: string) => {
@@ -363,13 +333,6 @@ export default function RolesUsuarios() {
       <div>
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-medium">Roles</h3>
-          <Button 
-            onClick={() => handleEditRol()}
-            className="bg-[#F4821F] hover:bg-[#E67812] text-white"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Nuevo Rol
-          </Button>
         </div>
 
         <div className="border rounded-md overflow-hidden">
@@ -379,7 +342,7 @@ export default function RolesUsuarios() {
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuarios Asignados</th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -394,22 +357,7 @@ export default function RolesUsuarios() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{usuariosConRol}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleEditRol(rol)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleDeleteRol(rol.id)}
-                            className="text-red-500 hover:text-red-700"
-                            disabled={usuariosConRol > 0}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+             
                         </div>
                       </td>
                     </tr>
