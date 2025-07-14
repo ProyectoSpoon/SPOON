@@ -129,7 +129,7 @@ export async function GET() {
             categoriaId: row.category_id,
             categoria: row.categoria_nombre,
             precio: row.current_price,
-            imagen: row.gallery_images,
+            imagen: row.gallery_images?.[0] || null,
             cantidad: row.cantidad
           }));
           
@@ -208,8 +208,8 @@ export async function GET() {
         current_price: row.current_price, // Para compatibilidad
         categoriaId: row.category_id,
         category_id: row.category_id, // Para compatibilidad
-        imagen: row.gallery_images,
-        image_url: row.gallery_images, // Para compatibilidad
+        imagen: row.gallery_images?.[0] || null,
+        image_url: row.gallery_images?.[0] || null, // Para compatibilidad
         categoria_nombre: row.categoria_nombre,
         status: row.status,
         created_at: row.created_at

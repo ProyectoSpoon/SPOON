@@ -1,7 +1,28 @@
 // src/app/dashboard/carta/menu-dia/services/favoritos.service.ts
 
 import { query } from '@/lib/database';
-import { ProductoFavorito, CreateFavoritoRequest } from '../types/menu-dia.types';
+
+export interface ProductoFavorito {
+  id: string;
+  user_id: string;
+  product_id: string;
+  favorite_type: 'product';
+  is_active: boolean;
+  favorite_count: number;
+  last_ordered?: Date;
+  created_at: Date;
+  updated_at: Date;
+  // Datos del producto (join)
+  product_name?: string;
+  product_description?: string;
+  product_image?: string;
+  category_id?: string;
+}
+
+export interface CreateFavoritoRequest {
+  user_id: string;
+  product_id: string;
+}
 
 /**
  * Servicio para gestión de favoritos de productos en mobile.user_favorites
