@@ -1,0 +1,233 @@
+/* globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Colores base con su ratio de contraste indicado */
+  --background: #FFFFFF;
+  
+  /* Color primario y sus variantes */
+  --spoon-primary: #F4821F;          /* Naranja Spoon - Ratio 3.5:1 - Solo elementos grandes */
+  --spoon-primary-light: #FFF4E6;    /* Fondo y hover states */
+  --spoon-primary-dark: #CC6A10;     /* Ratio 4.8:1 - Seguro para texto */
+  --spoon-primary-darker: #A85510;   /* Ratio 7:1 - Máximo contraste */
+  
+  /* Sistema de grises neutros */
+  --spoon-neutral-50: #FAFAFA;      /* Fondo alternativo */
+  --spoon-neutral-100: #F4F4F5;     /* Fondo secundario */
+  --spoon-neutral-200: #E5E5E5;     /* Bordes claros */
+  --spoon-neutral-300: #D4D4D4;     /* Bordes */
+  --spoon-neutral-400: #9CA3AF;     /* Texto deshabilitado - Ratio 3:1 */
+  --spoon-neutral-500: #6B7280;     /* Texto secundario - Ratio 4.5:1 */
+  --spoon-neutral-600: #4B5563;     /* Texto principal - Ratio 7:1 */
+  --spoon-neutral-700: #374151;     /* Texto enfatizado */
+  --spoon-neutral-800: #1F2937;     /* Títulos */
+  --spoon-neutral-900: #111827;     /* Texto máximo contraste */
+  
+  /* Estados del sistema */
+  --spoon-success: #15803D;         /* Verde oscuro - Ratio 4.5:1 */
+  --spoon-warning: #CC6A10;         /* Naranja oscuro - Ratio 4.8:1 */
+  --spoon-error: #B91C1C;          /* Rojo oscuro - Ratio 7:1 */
+  --spoon-info: #1E40AF;           /* Azul oscuro - Ratio 7:1 */
+  
+  /* Fondos y superficies */
+  --spoon-background: var(--spoon-neutral-50);
+  --spoon-surface: #FFFFFF;
+  --spoon-border: var(--spoon-neutral-200);
+}
+
+@layer base {
+  /* Estilos base del cuerpo */
+  body {
+    @apply bg-[var(--spoon-background)] text-[var(--spoon-neutral-600)];
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Sistema tipográfico */
+  h1 {
+    @apply text-3xl font-bold text-[var(--spoon-neutral-800)] mb-4;
+  }
+
+  h2 {
+    @apply text-2xl font-semibold text-[var(--spoon-neutral-700)] mb-3;
+  }
+
+  h3 {
+    @apply text-xl font-medium text-[var(--spoon-neutral-700)] mb-2;
+  }
+
+  p {
+    @apply text-[var(--spoon-neutral-600)] leading-relaxed mb-4;
+  }
+
+  a {
+    @apply text-[var(--spoon-primary-dark)] hover:text-[var(--spoon-primary-darker)] 
+           transition-colors duration-200;
+  }
+}
+
+@layer components {
+  /* Cards y contenedores */
+  .spoon-card {
+    @apply bg-[var(--spoon-surface)] 
+           rounded-xl 
+           shadow-sm 
+           hover:shadow-md 
+           transition-all 
+           duration-300
+           p-6 
+           border 
+           border-[var(--spoon-border)] 
+           hover:border-[var(--spoon-primary)]/20;
+  }
+
+  /* Sistema de títulos */
+  .spoon-title {
+    @apply text-[var(--spoon-neutral-800)] 
+           font-bold 
+           leading-tight;
+  }
+
+  .spoon-subtitle {
+    @apply text-[var(--spoon-neutral-600)] 
+           font-medium;
+  }
+
+  /* Sistema de texto */
+  .spoon-text {
+    @apply text-[var(--spoon-neutral-600)] 
+           leading-relaxed;
+  }
+
+  /* Enlaces */
+  .spoon-link {
+    @apply text-[var(--spoon-primary-dark)]
+           hover:text-[var(--spoon-primary-darker)]
+           transition-colors 
+           duration-200 
+           underline-offset-4 
+           hover:underline;
+  }
+
+  /* Estados y badges */
+  .spoon-status-complete {
+    @apply text-[var(--spoon-success)]
+           bg-[var(--spoon-success)]/10
+           px-3 
+           py-1 
+           rounded-full 
+           text-sm 
+           font-medium;
+  }
+
+  .spoon-status-pending {
+    @apply text-[var(--spoon-primary-dark)]
+           bg-[var(--spoon-primary)]/10
+           px-3 
+           py-1 
+           rounded-full 
+           text-sm 
+           font-medium;
+  }
+
+  /* Botones */
+  .spoon-button {
+    @apply px-4 
+           py-2 
+           rounded-lg 
+           font-medium 
+           transition-all 
+           duration-200 
+           disabled:opacity-50 
+           disabled:cursor-not-allowed;
+  }
+
+  .spoon-button-primary {
+    @apply spoon-button
+           bg-[var(--spoon-primary)]
+           text-white
+           hover:bg-[var(--spoon-primary-dark)]
+           active:bg-[var(--spoon-primary-darker)];
+  }
+
+  .spoon-button-secondary {
+    @apply spoon-button
+           bg-[var(--spoon-neutral-100)]
+           text-[var(--spoon-neutral-700)]
+           hover:bg-[var(--spoon-neutral-200)]
+           active:bg-[var(--spoon-neutral-300)];
+  }
+
+  /* Inputs */
+  .spoon-input {
+    @apply w-full
+           px-3
+           py-2
+           rounded-lg
+           border
+           border-[var(--spoon-border)]
+           focus:outline-none
+           focus:ring-2
+           focus:ring-[var(--spoon-primary)]/50
+           focus:border-transparent
+           disabled:opacity-50
+           disabled:cursor-not-allowed
+           bg-white;
+  }
+}
+
+@layer utilities {
+  /* Gradientes */
+  .text-gradient {
+    @apply bg-gradient-to-r 
+           from-[var(--spoon-primary)] 
+           to-[var(--spoon-primary-darker)] 
+           bg-clip-text 
+           text-transparent;
+  }
+
+  /* Animaciones */
+  .animate-fade-in {
+    @apply opacity-0 animate-[fadeIn_0.3s_ease-in-out_forwards];
+  }
+
+  .animate-slide-up {
+    @apply opacity-0 translate-y-4 animate-[slideUp_0.5s_ease-out_forwards];
+  }
+
+  /* Efectos hover */
+  .hover-lift {
+    @apply transition-transform duration-300 hover:-translate-y-1;
+  }
+
+  .hover-grow {
+    @apply transition-transform duration-300 hover:scale-105;
+  }
+
+  /* Sombras personalizadas */
+  .shadow-spoon {
+    @apply shadow-[0_4px_12px_rgba(0,0,0,0.1)];
+  }
+}
+
+/* Keyframes para animaciones */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -1,0 +1,40 @@
+/* Light Theme - SPOON */
+:root,
+[data-theme="light"] {
+  /* === BRAND COLORS === */
+  --brand-primary: #3b82f6;
+  --brand-secondary: #8b5cf6;
+  --brand-accent: #06b6d4;
+  
+  /* === SEMANTIC COLORS === */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+  
+  /* === SURFACE COLORS === */
+  --surface-primary: #ffffff;
+  --surface-secondary: #f8fafc;
+  --surface-tertiary: #f1f5f9;
+  --surface-card: #ffffff;
+  --surface-overlay: rgba(0, 0, 0, 0.5);
+  
+  /* === TEXT COLORS === */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #64748b;
+  --text-disabled: #94a3b8;
+  --text-inverse: #ffffff;
+  
+  /* === BORDER COLORS === */
+  --border-primary: #e2e8f0;
+  --border-secondary: #cbd5e1;
+  --border-focus: var(--brand-primary);
+  --border-error: var(--color-error);
+  
+  /* === INTERACTIVE STATES === */
+  --interactive-hover: #f8fafc;
+  --interactive-active: #f1f5f9;
+  --interactive-disabled: #f8fafc;
+  --interactive-focus: rgba(59, 130, 246, 0.1);
+}

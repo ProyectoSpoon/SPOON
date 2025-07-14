@@ -1,0 +1,69 @@
+/*
+ * SPOON - Sistema de Estilos Unificado
+ * Archivo principal de importación de estilos
+ * Generado automáticamente: 2025-07-13 23:30:48
+ */
+
+/* === BASE STYLES === */
+/* Reset, normalize y estilos base */
+@import './base/globals.css';
+
+/* === TAILWIND CSS === */
+/* Framework de utilidades */
+@tailwind base;
+@tailwind components; 
+@tailwind utilities;
+
+/* === THEMES === */
+/* Variables de tema y colores */
+@import './themes/light.css';
+@import './themes/dark.css';
+
+/* === COMPONENT STYLES === */
+/* Estilos específicos de componentes */
+@import './components/ui-components.css';
+@import './components/dashboard.css';
+@import './components/time-input.css';
+
+/* === UTILITIES === */
+/* Utilidades y helpers */
+@import './utils/scrollbar.css';
+@import './utils/animations.css';
+
+/* === CUSTOM PROPERTIES === */
+/* Variables CSS personalizadas globales */
+:root {
+  /* === SPACING SYSTEM === */
+  --spacing-xs: 0.25rem;    /* 4px */
+  --spacing-sm: 0.5rem;     /* 8px */
+  --spacing-md: 1rem;       /* 16px */
+  --spacing-lg: 1.5rem;     /* 24px */
+  --spacing-xl: 3rem;       /* 48px */
+  
+  /* === BORDER RADIUS === */
+  --radius-sm: 0.25rem;     /* 4px */
+  --radius-md: 0.5rem;      /* 8px */
+  --radius-lg: 0.75rem;     /* 12px */
+  --radius-xl: 1rem;        /* 16px */
+  
+  /* === SHADOWS === */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+  
+  /* === TRANSITIONS === */
+  --transition-fast: 150ms ease;
+  --transition-normal: 300ms ease;
+  --transition-slow: 500ms ease;
+  
+  /* === Z-INDEX SCALE === */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-toast: 1080;
+}

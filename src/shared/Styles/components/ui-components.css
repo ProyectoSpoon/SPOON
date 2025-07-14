@@ -1,0 +1,105 @@
+/* UI Components Styles - SPOON */
+
+/* === COMPONENT BASE CLASSES === */
+.spoon-button {
+  @apply inline-flex items-center justify-center rounded-md text-sm font-medium;
+  @apply transition-colors focus-visible:outline-none focus-visible:ring-2;
+  @apply disabled:pointer-events-none disabled:opacity-50;
+  background-color: var(--surface-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+}
+
+.spoon-button:hover {
+  background-color: var(--interactive-hover);
+}
+
+.spoon-button:focus {
+  ring-color: var(--border-focus);
+}
+
+.spoon-card {
+  @apply rounded-lg border shadow-sm;
+  background-color: var(--surface-card);
+  color: var(--text-primary);
+  border-color: var(--border-primary);
+}
+
+.spoon-input {
+  @apply flex h-10 w-full rounded-md border px-3 py-2 text-sm;
+  @apply focus-visible:outline-none focus-visible:ring-2;
+  @apply disabled:cursor-not-allowed disabled:opacity-50;
+  background-color: var(--surface-primary);
+  color: var(--text-primary);
+  border-color: var(--border-primary);
+}
+
+.spoon-input:focus {
+  ring-color: var(--border-focus);
+}
+
+.spoon-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.spoon-table {
+  @apply w-full caption-bottom text-sm;
+  color: var(--text-primary);
+}
+
+.spoon-table-header {
+  @apply border-b;
+  border-color: var(--border-primary);
+}
+
+.spoon-table-row {
+  @apply border-b transition-colors;
+  border-color: var(--border-primary);
+}
+
+.spoon-table-row:hover {
+  background-color: var(--interactive-hover);
+}
+
+.spoon-badge {
+  @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  @apply transition-colors focus:outline-none focus:ring-2;
+  background-color: var(--surface-secondary);
+  color: var(--text-secondary);
+}
+
+.spoon-alert {
+  @apply relative w-full rounded-lg border p-4;
+  background-color: var(--surface-secondary);
+  border-color: var(--border-primary);
+  color: var(--text-primary);
+}
+
+/* === DASHBOARD SPECIFIC === */
+.dashboard-layout {
+  @apply min-h-screen;
+  background-color: var(--surface-secondary);
+}
+
+.dashboard-content {
+  @apply container mx-auto px-4 py-6;
+}
+
+.dashboard-card {
+  @apply spoon-card p-6;
+}
+
+.dashboard-header {
+  @apply flex items-center justify-between mb-6;
+}
+
+/* === RESPONSIVE UTILITIES === */
+@media (max-width: 768px) {
+  .dashboard-content {
+    @apply px-2 py-4;
+  }
+  
+  .dashboard-card {
+    @apply p-4;
+  }
+}
