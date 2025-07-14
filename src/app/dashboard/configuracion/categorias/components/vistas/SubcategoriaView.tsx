@@ -40,7 +40,7 @@ export function SubcategoriaView({
         <h2 className="text-xl font-semibold text-gray-800">Subcategorías de {categoriaActual.nombre}</h2>
         <Button 
           onClick={onNuevaSubcategoria}
-          className="bg-[#F4821F] hover:bg-[#E67812] text-white"
+          className="bg-spoon-primary hover:bg-spoon-primary-dark text-white"
         >
           <PlusCircle className="h-4 w-4 mr-2" />
           Nueva Subcategoría
@@ -86,3 +86,30 @@ export function SubcategoriaView({
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

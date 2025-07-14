@@ -142,7 +142,7 @@ export default function EspecialesPage(): JSX.Element {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-[#F4821F]" />
+        <Loader2 className="h-8 w-8 animate-spin text-spoon-primary" />
       </div>
     );
   }
@@ -183,7 +183,7 @@ export default function EspecialesPage(): JSX.Element {
           </p>
           <Button
             onClick={() => router.push('/dashboard/carta/combinaciones')}
-            className="bg-[#F4821F] hover:bg-[#E67812] text-white"
+            className="bg-spoon-primary hover:bg-spoon-primary-dark text-white"
           >
             Ver Combinaciones
           </Button>
@@ -335,3 +335,29 @@ export default function EspecialesPage(): JSX.Element {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

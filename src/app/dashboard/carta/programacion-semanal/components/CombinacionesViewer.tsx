@@ -146,7 +146,7 @@ export const CombinacionesViewer: React.FC<CombinacionesViewerProps> = ({
                       type="checkbox"
                       checked={filters.onlyEspeciales}
                       onChange={() => setFilters({...filters, onlyEspeciales: !filters.onlyEspeciales})}
-                      className="rounded text-[#F4821F] focus:ring-[#F4821F]"
+                      className="rounded text-spoon-primary focus:ring-[#F4821F]"
                     />
                     <span className="text-sm">Solo especiales</span>
                   </label>
@@ -158,7 +158,7 @@ export const CombinacionesViewer: React.FC<CombinacionesViewerProps> = ({
                       type="checkbox"
                       checked={filters.onlyFavoritos}
                       onChange={() => setFilters({...filters, onlyFavoritos: !filters.onlyFavoritos})}
-                      className="rounded text-[#F4821F] focus:ring-[#F4821F]"
+                      className="rounded text-spoon-primary focus:ring-[#F4821F]"
                     />
                     <span className="text-sm">Solo favoritos</span>
                   </label>
@@ -201,7 +201,7 @@ export const CombinacionesViewer: React.FC<CombinacionesViewerProps> = ({
                   </button>
                   <button
                     onClick={() => setShowFilters(false)}
-                    className="text-sm bg-[#F4821F] text-white px-3 py-1 rounded hover:bg-[#E67812]"
+                    className="text-sm bg-spoon-primary text-white px-3 py-1 rounded hover:bg-spoon-primary-dark"
                   >
                     Aplicar
                   </button>
@@ -223,7 +223,7 @@ export const CombinacionesViewer: React.FC<CombinacionesViewerProps> = ({
             {filteredCombinaciones.map((combinacion) => (
               <div
                 key={combinacion.id}
-                className="p-2 border rounded-lg hover:border-[#F4821F] transition-colors group"
+                className="p-2 border rounded-lg hover:border-spoon-primary transition-colors group"
                 draggable
                 onDragStart={(e) => {
                   e.dataTransfer.setData('combinacion', JSON.stringify(combinacion));
@@ -272,7 +272,7 @@ export const CombinacionesViewer: React.FC<CombinacionesViewerProps> = ({
                   <div className="ml-2 flex flex-col space-y-1">
                     <button
                       onClick={() => onAddToDia(combinacion)}
-                      className="p-1 text-[#F4821F] hover:bg-orange-50 rounded-full transition-colors"
+                      className="p-1 text-spoon-primary hover:bg-orange-50 rounded-full transition-colors"
                       title="Agregar a día seleccionado"
                     >
                       <Plus size={14} />
@@ -309,3 +309,28 @@ export const CombinacionesViewer: React.FC<CombinacionesViewerProps> = ({
 };
 
 export default CombinacionesViewer;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

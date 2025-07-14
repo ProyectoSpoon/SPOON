@@ -453,30 +453,30 @@ export function MenuLayout({
           {/* Header */}
           <div className="border-b bg-white shadow-sm">
             <div className="flex justify-between items-center py-3 px-6">
-              <h1 className="text-base font-medium text-[#4B5563]">
+              <h1 className="text-base font-medium text-spoon-neutral-600">
                 Menú/Carta
               </h1>
               <div className="flex items-center gap-3">
                 {/* Indicador de caché */}
                 {hasCache() && (
                   <div className="flex items-center border rounded-lg px-3 py-1 bg-white">
-                    <Clock className="h-3 w-3 mr-2 text-[#F4821F]" />
+                    <Clock className="h-3 w-3 mr-2 text-spoon-primary" />
                     <div className="text-xs text-gray-700">
                       Tiempo restante caché: <span className="font-semibold">{Math.floor(cacheRemainingTime / 60)}m {cacheRemainingTime % 60}s</span>
                     </div>
                   </div>
                 )}
-                <Button variant="ghost" className="text-[#6B7280] hover:text-[#4B5563] hover:bg-[#F4F4F5] text-xs h-8">
+                <Button variant="ghost" className="text-spoon-neutral-500 hover:text-spoon-neutral-600 hover:bg-spoon-neutral-100 text-xs h-8">
                   <VideoIcon className="h-3 w-3 mr-1" />
                   Ver tutorial
                 </Button>
-                <Button variant="ghost" className="text-[#6B7280] hover:text-[#4B5563] hover:bg-[#F4F4F5] text-xs h-8">
+                <Button variant="ghost" className="text-spoon-neutral-500 hover:text-spoon-neutral-600 hover:bg-spoon-neutral-100 text-xs h-8">
                   <FileQuestion className="h-3 w-3 mr-1" />
                   Guía de recomendaciones
                 </Button>
                 <Button 
                   onClick={handleGenerarCombinaciones}
-                  className="bg-[#F4821F] hover:bg-[#CC6A10] text-white transition-colors flex items-center gap-1 text-xs h-8"
+                  className="bg-spoon-primary hover:bg-spoon-primary-dark text-white transition-colors flex items-center gap-1 text-xs h-8"
                 >
                   <GitFork className="h-3 w-3" />
                   Generar Combinaciones
@@ -487,9 +487,9 @@ export function MenuLayout({
 
           <div className="grid grid-cols-[250px_320px_1fr] h-full">
             {/* Columna Categorías */}
-            <div className="border-r border-[#E5E5E5] bg-[#FAFAFA]">
-              <div className="py-2 px-4 border-b border-[#E5E5E5] bg-white">
-                <h2 className="text-[#1F2937] font-medium text-center text-sm">Categorías</h2>
+            <div className="border-r border-spoon-border bg-spoon-neutral-50">
+              <div className="py-2 px-4 border-b border-spoon-border bg-white">
+                <h2 className="text-spoon-neutral-800 font-medium text-center text-sm">Categorías</h2>
               </div>
               <div className="px-3 py-2">
                 {error ? (
@@ -512,9 +512,9 @@ export function MenuLayout({
             </div>
             
             {/* Columna Productos */}
-            <div className="border-r border-[#E5E5E5] bg-white">
-              <div className="py-2 px-4 border-b border-[#E5E5E5]">
-                <h2 className="text-[#1F2937] font-medium text-center text-sm">Productos</h2>
+            <div className="border-r border-spoon-border bg-white">
+              <div className="py-2 px-4 border-b border-spoon-border">
+                <h2 className="text-spoon-neutral-800 font-medium text-center text-sm">Productos</h2>
               </div>
               <div className="px-3 py-2">
                 <ListaProductos
@@ -530,16 +530,16 @@ export function MenuLayout({
 
             {/* Columna Menú del Día */}
             <div className="bg-white">
-              <div className="border-b border-[#E5E5E5]">
-                <h2 className="text-[#1F2937] font-medium text-center py-2 text-sm whitespace-nowrap">Menú del Día</h2>
-                <div className="grid grid-cols-[220px_1fr_50px] border-t border-[#E5E5E5]">
-                  <div className="text-xs text-[#6B7280] text-center border-r border-[#E5E5E5] py-2 bg-[#FFF4E6]">
+              <div className="border-b border-spoon-border">
+                <h2 className="text-spoon-neutral-800 font-medium text-center py-2 text-sm whitespace-nowrap">Menú del Día</h2>
+                <div className="grid grid-cols-[220px_1fr_50px] border-t border-spoon-border">
+                  <div className="text-xs text-spoon-neutral-500 text-center border-r border-spoon-border py-2 bg-spoon-primary-light">
                     Producto
                   </div>
-                  <div className="text-xs text-[#6B7280] text-center py-2 bg-[#F4F4F5]">
+                  <div className="text-xs text-spoon-neutral-500 text-center py-2 bg-spoon-neutral-100">
                     Descripción
                   </div>
-                  <div className="text-xs text-[#6B7280] text-center py-2 bg-[#F4F4F5]">
+                  <div className="text-xs text-spoon-neutral-500 text-center py-2 bg-spoon-neutral-100">
                     Acción
                   </div>
                 </div>
@@ -598,3 +598,29 @@ export function MenuLayout({
     </ErrorBoundary>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

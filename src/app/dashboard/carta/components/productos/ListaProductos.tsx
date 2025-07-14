@@ -364,7 +364,7 @@ export default function ListaProductos({
             onClick={handleVerProductos}
             variant="outline"
             size="sm"
-            className="text-[#F4821F] border-[#F4821F] hover:bg-[#F4821F]/10 text-xs h-6"
+            className="text-spoon-primary border-spoon-primary hover:bg-spoon-primary/10 text-xs h-6"
           >
             <Plus className="h-3 w-3 mr-1" />
             Agregar más
@@ -449,7 +449,7 @@ export default function ListaProductos({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-[#F4821F] hover:bg-[#F4821F]/10 h-6 w-6 p-0"
+                        className="text-spoon-primary hover:bg-spoon-primary/10 h-6 w-6 p-0"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleProductClick(producto);
@@ -535,7 +535,7 @@ export default function ListaProductos({
               </Button>
               <Button 
                 onClick={handleAgregarDesdeDetalle}
-                className="bg-[#F4821F] hover:bg-[#CC6A10] text-white text-xs h-7"
+                className="bg-spoon-primary hover:bg-spoon-primary-dark text-white text-xs h-7"
               >
                 <Plus className="h-3 w-3 mr-1" />
                 Agregar al menú
@@ -552,7 +552,7 @@ export default function ListaProductos({
     <div className="flex flex-col items-center justify-center min-h-[400px]">
       <Button
         onClick={handleVerProductos}
-        className="bg-[#F4821F] hover:bg-[#CC6A10] text-white text-xs h-7"
+        className="bg-spoon-primary hover:bg-spoon-primary-dark text-white text-xs h-7"
         disabled={cargando}
       >
         {cargando ? (
@@ -609,7 +609,7 @@ export default function ListaProductos({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-[#F4821F] hover:bg-[#F4821F]/10 h-6 w-6 p-0"
+                      className="text-spoon-primary hover:bg-spoon-primary/10 h-6 w-6 p-0"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleProductClick(producto);
@@ -695,7 +695,7 @@ export default function ListaProductos({
             </Button>
             <Button 
               onClick={handleAgregarDesdeDetalle}
-              className="bg-[#F4821F] hover:bg-[#CC6A10] text-white text-xs h-7"
+              className="bg-spoon-primary hover:bg-spoon-primary-dark text-white text-xs h-7"
             >
               <Plus className="h-3 w-3 mr-1" />
               Agregar al menú
@@ -706,3 +706,29 @@ export default function ListaProductos({
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

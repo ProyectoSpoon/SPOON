@@ -106,21 +106,21 @@ export default function EstadisticasPage() {
       </div>
 
       {/* Resumen rápido */}
-      <Card className="p-6 mt-8 bg-[#FFF9F2]">
-        <h3 className="text-lg font-semibold text-[#F4821F] mb-3">
+      <Card className="p-6 mt-8 bg-spoon-light">
+        <h3 className="text-lg font-semibold text-spoon-primary mb-3">
           Consejos de uso
         </h3>
         <ul className="space-y-2 text-neutral-600">
           <li className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-[#F4821F]" />
+            <div className="w-2 h-2 rounded-full bg-spoon-primary" />
             Utiliza Análisis de Ventas para una vista general del desempeño
           </li>
           <li className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-[#F4821F]" />
+            <div className="w-2 h-2 rounded-full bg-spoon-primary" />
             Rendimiento de Menú te ayuda a optimizar tu carta
           </li>
           <li className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-[#F4821F]" />
+            <div className="w-2 h-2 rounded-full bg-spoon-primary" />
             Tendencias y Patrones para descubrir oportunidades de mejora
           </li>
         </ul>
@@ -128,3 +128,30 @@ export default function EstadisticasPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

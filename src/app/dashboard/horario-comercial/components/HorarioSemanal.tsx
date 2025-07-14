@@ -109,3 +109,30 @@ export default function HorarioSemanal({ initialSchedule = defaultSchedule, onSc
 }
 
 export { type HorarioDay };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

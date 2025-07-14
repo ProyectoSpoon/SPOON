@@ -144,7 +144,7 @@ export function ListaCategoriasRediseno({
         </div>
         <Button 
           onClick={() => obtenerCategorias()}
-          className="w-full bg-[#F4821F] hover:bg-[#CC6A10] text-white text-sm"
+          className="w-full bg-spoon-primary hover:bg-spoon-primary-dark text-white text-sm"
         >
           Reintentar
         </Button>
@@ -157,7 +157,7 @@ export function ListaCategoriasRediseno({
       {/* Indicador de carga */}
       {cargandoCategorias && (
         <div className="flex justify-center items-center py-4">
-          <Loader2 className="h-6 w-6 animate-spin text-[#F4821F]" />
+          <Loader2 className="h-6 w-6 animate-spin text-spoon-primary" />
           <span className="ml-2 text-sm">Cargando categorías...</span>
         </div>
       )}
@@ -304,3 +304,29 @@ export function ListaCategoriasRediseno({
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

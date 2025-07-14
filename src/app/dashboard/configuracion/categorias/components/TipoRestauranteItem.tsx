@@ -57,7 +57,7 @@ export function TipoRestauranteItem({
       style={style}
       className={`flex items-center p-2 rounded-md border ${
         seleccionado 
-          ? 'border-[#F4821F] bg-[#FFF8F3]' 
+          ? 'border-spoon-primary bg-spoon-primary-light' 
           : 'border-gray-200 hover:bg-gray-50'
       } ${!tipo.activo ? 'opacity-60' : ''}`}
     >
@@ -90,7 +90,7 @@ export function TipoRestauranteItem({
             e.stopPropagation();
             onEditar(tipo.id);
           }}
-          className="p-1 h-8 w-8 text-gray-500 hover:text-[#F4821F]"
+          className="p-1 h-8 w-8 text-gray-500 hover:text-spoon-primary"
         >
           <Edit className="h-4 w-4" />
         </Button>
@@ -110,3 +110,30 @@ export function TipoRestauranteItem({
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

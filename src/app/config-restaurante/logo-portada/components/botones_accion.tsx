@@ -30,7 +30,7 @@ const BotonesAccion = ({ puedeGuardar, onGuardar, onCancelar }: PropsBotonesAcci
             className={`
               px-4 py-2 rounded-md transition-all duration-250
               ${puedeGuardar 
-                ? 'bg-[#F4821F] hover:bg-[#CC6A10] text-white hover:scale-105'
+                ? 'bg-spoon-primary hover:bg-spoon-primary-dark text-white hover:scale-105'
                 : 'bg-neutral-200 cursor-not-allowed text-neutral-500'
               }
             `}
@@ -50,3 +50,29 @@ const BotonesAccion = ({ puedeGuardar, onGuardar, onCancelar }: PropsBotonesAcci
 };
 
 export default BotonesAccion;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -66,3 +66,30 @@ const HorarioDiario: React.FC<PropiedadesHorarioDiario> = ({
 };
 
 export default HorarioDiario;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

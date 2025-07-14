@@ -158,7 +158,7 @@ export const CalendarioSemanal: React.FC<CalendarioSemanalProps> = ({
                 disabled={!diaToCopy}
                 className={`px-6 py-2 rounded-md text-sm mx-2 ${
                   diaToCopy
-                    ? 'bg-[#F4821F] text-white hover:bg-[#E67812]'
+                    ? 'bg-spoon-primary text-white hover:bg-spoon-primary-dark'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               >
@@ -204,7 +204,7 @@ export const CalendarioSemanal: React.FC<CalendarioSemanalProps> = ({
                 disabled={!templateName.trim()}
                 className={`px-6 py-2 rounded-md text-sm mx-2 ${
                   templateName.trim()
-                    ? 'bg-[#F4821F] text-white hover:bg-[#E67812]'
+                    ? 'bg-spoon-primary text-white hover:bg-spoon-primary-dark'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               >
@@ -254,7 +254,7 @@ export const CalendarioSemanal: React.FC<CalendarioSemanalProps> = ({
             onClick={() => onSelectDia(dia)}
             className={`p-4 text-center border-b border-r border-gray-200 transition-colors
               ${dia === diaSeleccionado 
-                ? 'bg-[#FFF4E6] text-[#F4821F]' 
+                ? 'bg-spoon-primary-light text-spoon-primary' 
                 : 'hover:bg-gray-50'}`}
           >
             <span className="block text-sm font-medium">{dia}</span>
@@ -296,7 +296,7 @@ export const CalendarioSemanal: React.FC<CalendarioSemanalProps> = ({
               {programacionSemanal[diaSeleccionado].map((combinacion) => (
                 <div
                   key={combinacion.id}
-                  className="p-2 border rounded-md bg-white flex justify-between items-center group hover:border-[#F4821F]"
+                  className="p-2 border rounded-md bg-white flex justify-between items-center group hover:border-spoon-primary"
                 >
                   <div className="flex-1">
                     <div className="text-sm font-medium">
@@ -331,3 +331,27 @@ export const CalendarioSemanal: React.FC<CalendarioSemanalProps> = ({
 };
 
 export default CalendarioSemanal;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

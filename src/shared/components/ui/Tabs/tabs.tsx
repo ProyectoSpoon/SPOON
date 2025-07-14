@@ -42,7 +42,7 @@ const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
     <div
       ref={ref}
       className={cn(
-        "inline-flex items-center justify-center rounded-lg bg-[#F4F4F5] p-1",
+        "inline-flex items-center justify-center rounded-lg bg-spoon-neutral-100 p-1",
         className
       )}
       role="tablist"
@@ -72,8 +72,8 @@ const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4821F] focus-visible:ring-offset-2",
           "disabled:pointer-events-none disabled:opacity-50",
           {
-            "bg-white text-[#4B5563] shadow-sm": isSelected,
-            "text-[#6B7280] hover:bg-white/50": !isSelected,
+            "bg-white text-spoon-neutral-600 shadow-sm": isSelected,
+            "text-spoon-neutral-500 hover:bg-white/50": !isSelected,
           },
           className
         )}
@@ -114,3 +114,30 @@ const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
 TabsContent.displayName = "TabsContent";
 
 export { Tabs, TabsList, TabsTrigger, TabsContent };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

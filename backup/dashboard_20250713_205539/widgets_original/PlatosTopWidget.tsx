@@ -13,7 +13,7 @@ interface PlatosTopWidgetProps {
 }
 
 const SkeletonPlatosTop: React.FC = () => (
-  <Card>
+  <Card className="grid-area-platosTop">
     <CardHeader>
       <CardTitle>Top Platos</CardTitle>
     </CardHeader>
@@ -103,7 +103,7 @@ export const PlatosTopWidget: React.FC<PlatosTopWidgetProps> = ({
                 <p className="text-sm font-medium">{plato.porcentaje}%</p>
                 <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div 
-                    className="h-full bg-[#F4821F] transition-all duration-300"
+                    className="h-full bg-spoon-primary transition-all duration-300"
                     style={{ width: `${Math.min(plato.porcentaje, 100)}%` }}
                   />
                 </div>
@@ -115,3 +115,28 @@ export const PlatosTopWidget: React.FC<PlatosTopWidgetProps> = ({
     </Card>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

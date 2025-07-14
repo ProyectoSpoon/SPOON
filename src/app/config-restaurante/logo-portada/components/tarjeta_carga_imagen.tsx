@@ -102,3 +102,29 @@ const TarjetaCargaImagen: React.FC<PropsTarjetaCargaImagen> = ({
 };
 
 export default TarjetaCargaImagen;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -29,7 +29,7 @@ export const FiltroPeriodo = ({
           className={`
             px-4 py-2 rounded-lg font-medium transition-all
             ${periodoSeleccionado === valor
-              ? 'bg-[#F4821F] text-white'
+              ? 'bg-spoon-primary text-white'
               : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
             }
           `}
@@ -40,3 +40,30 @@ export const FiltroPeriodo = ({
     </div>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

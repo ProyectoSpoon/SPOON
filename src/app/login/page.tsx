@@ -194,28 +194,28 @@ const LoginPage = () => {
 
             <div className="grid grid-cols-2 gap-6">
               <div className="bg-white/20 backdrop-blur-sm p-6 rounded-xl">
-                <h3 className="text-[#FF9933] font-semibold mb-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
+                <h3 className="text-spoon-primary font-semibold mb-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
                   Geolocalización
                 </h3>
                 <p className="text-white/90">Alcanza clientes en cualquier zona y optimiza tus entregas</p>
               </div>
               
               <div className="bg-white/20 backdrop-blur-sm p-6 rounded-xl">
-                <h3 className="text-[#FF9933] font-semibold mb-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
+                <h3 className="text-spoon-primary font-semibold mb-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
                   Sistema de Reseñas
                 </h3>
                 <p className="text-white/90">Mejora tu servicio con feedback real de los clientes</p>
               </div>
               
               <div className="bg-white/20 backdrop-blur-sm p-6 rounded-xl">
-                <h3 className="text-[#FF9933] font-semibold mb-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
+                <h3 className="text-spoon-primary font-semibold mb-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
                   Notificaciones
                 </h3>
                 <p className="text-white/90">Mantén informados a tus clientes sobre sus pedidos</p>
               </div>
               
               <div className="bg-white/20 backdrop-blur-sm p-6 rounded-xl">
-                <h3 className="text-[#FF9933] font-semibold mb-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
+                <h3 className="text-spoon-primary font-semibold mb-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
                   Gestión de Domicilios
                 </h3>
                 <p className="text-white/90">Control total sobre tus entregas y repartidores</p>
@@ -268,7 +268,7 @@ const LoginPage = () => {
                 required
                 value={datosFormulario.correo}
                 onChange={manejarCambio}
-                className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF9933] focus:border-[#FF9933] transition-colors"
+                className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF9933] focus:border-spoon-primary transition-colors"
                 placeholder="Ingresa tu usuario"
               />
             </div>
@@ -285,7 +285,7 @@ const LoginPage = () => {
                   required
                   value={datosFormulario.contrasena}
                   onChange={manejarCambio}
-                  className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF9933] focus:border-[#FF9933] transition-colors"
+                  className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF9933] focus:border-spoon-primary transition-colors"
                   placeholder="••••••••"
                 />
                 <button
@@ -306,7 +306,7 @@ const LoginPage = () => {
               <button
                 type="button"
                 onClick={() => setModalAbierto(true)}
-                className="text-sm font-medium text-[#FF9933] hover:text-[#F4821F] transition-colors"
+                className="text-sm font-medium text-spoon-primary hover:text-spoon-primary transition-colors"
               >
                 ¿Olvidaste tu contraseña?
               </button>
@@ -314,7 +314,7 @@ const LoginPage = () => {
             <button
               type="submit"
               disabled={cargando || redireccionando}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#FF9933] hover:bg-[#F4821F] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF9933] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-spoon-primary hover:bg-spoon-primary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF9933] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {cargando || redireccionando ? (
                 <div className="flex items-center">
@@ -356,7 +356,7 @@ const LoginPage = () => {
 
           <p className="text-center text-sm text-gray-600">
             ¿Necesitas ayuda?{' '}
-            <Link href="/soporte" className="font-medium text-[#FF9933] hover:text-[#F4821F] transition-colors">
+            <Link href="/soporte" className="font-medium text-spoon-primary hover:text-spoon-primary transition-colors">
               Contacta soporte
             </Link>
           </p>
@@ -372,3 +372,30 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

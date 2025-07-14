@@ -42,7 +42,7 @@ export function TipoRestauranteView({
         <h2 className="text-xl font-semibold text-gray-800">Tipos de Restaurante</h2>
         <Button 
           onClick={onNuevoTipo}
-          className="bg-[#F4821F] hover:bg-[#E67812] text-white"
+          className="bg-spoon-primary hover:bg-spoon-primary-dark text-white"
         >
           <PlusCircle className="h-4 w-4 mr-2" />
           Nuevo Tipo
@@ -90,3 +90,30 @@ export function TipoRestauranteView({
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

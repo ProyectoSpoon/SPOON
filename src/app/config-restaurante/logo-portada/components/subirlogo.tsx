@@ -51,7 +51,7 @@ export default function SubirLogo({ archivo, onFileChange, estaEnviando }: Subir
     <div className="space-y-4">
       <div className="text-lg font-semibold">Logo del Restaurante</div>
       
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-[#FF9933] transition-colors">
+      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-spoon-primary transition-colors">
         <input
           ref={inputRef}
           type="file"
@@ -86,7 +86,7 @@ export default function SubirLogo({ archivo, onFileChange, estaEnviando }: Subir
           <button
             onClick={handleClick}
             disabled={estaEnviando}
-            className="w-full h-48 flex flex-col items-center justify-center gap-4 text-gray-500 hover:text-[#FF9933]"
+            className="w-full h-48 flex flex-col items-center justify-center gap-4 text-gray-500 hover:text-spoon-primary"
           >
             <Upload size={40} />
             <div className="text-center">
@@ -108,3 +108,29 @@ export default function SubirLogo({ archivo, onFileChange, estaEnviando }: Subir
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

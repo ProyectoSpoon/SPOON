@@ -47,7 +47,7 @@ export function CategoriaView({
         <div className="flex space-x-2">
           <Button 
             onClick={onNuevaCategoria}
-            className="bg-[#F4821F] hover:bg-[#E67812] text-white"
+            className="bg-spoon-primary hover:bg-spoon-primary-dark text-white"
           >
             <PlusCircle className="h-4 w-4 mr-2" />
             Nueva Categoría
@@ -55,7 +55,7 @@ export function CategoriaView({
           <Button 
             onClick={onImportarPlantilla}
             variant="outline"
-            className="border-[#F4821F] text-[#F4821F] hover:bg-orange-50"
+            className="border-spoon-primary text-spoon-primary hover:bg-orange-50"
           >
             <RefreshCw className="h-4 w-4 mr-2" />
             Importar Plantilla
@@ -104,3 +104,30 @@ export function CategoriaView({
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

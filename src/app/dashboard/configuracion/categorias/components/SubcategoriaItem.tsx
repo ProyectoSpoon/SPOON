@@ -80,7 +80,7 @@ export function SubcategoriaItem({
           variant="ghost"
           size="sm"
           onClick={() => onEditar(subcategoria.id)}
-          className="p-1 h-8 w-8 text-gray-500 hover:text-[#F4821F]"
+          className="p-1 h-8 w-8 text-gray-500 hover:text-spoon-primary"
         >
           <Edit className="h-4 w-4" />
         </Button>
@@ -97,3 +97,30 @@ export function SubcategoriaItem({
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

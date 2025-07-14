@@ -72,7 +72,7 @@ export const TimeInput = forwardRef<HTMLInputElement, TimeInputProps>(({
         className={cn(
           "w-full rounded-md px-3 py-2",
           "border border-neutral-200",
-          "focus:border-[#F4821F] focus:ring-1 focus:ring-[#F4821F]/20",
+          "focus:border-spoon-primary focus:ring-1 focus:ring-[#F4821F]/20",
           "text-xs text-neutral-600",
           "bg-transparent appearance-none",
           "[&::-webkit-calendar-picker-indicator]:hidden",
@@ -84,7 +84,7 @@ export const TimeInput = forwardRef<HTMLInputElement, TimeInputProps>(({
       />
       <Pencil 
         className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 
-                 hover:text-[#F4821F] transition-colors cursor-pointer"
+                 hover:text-spoon-primary transition-colors cursor-pointer"
         size={14}
         onClick={() => setIsOpen(!isOpen)}
       />
@@ -105,7 +105,7 @@ export const TimeInput = forwardRef<HTMLInputElement, TimeInputProps>(({
               className={cn(
                 "p-1.5 text-xs rounded-md transition-colors",
                 hours === i + 1
-                  ? "bg-[#F4821F] text-white"
+                  ? "bg-spoon-primary text-white"
                   : "hover:bg-neutral-100 text-neutral-600"
               )}
             >
@@ -126,7 +126,7 @@ export const TimeInput = forwardRef<HTMLInputElement, TimeInputProps>(({
               className={cn(
                 "p-1.5 text-xs rounded-md transition-colors",
                 minutes === min
-                  ? "bg-[#F4821F] text-white"
+                  ? "bg-spoon-primary text-white"
                   : "hover:bg-neutral-100 text-neutral-600"
               )}
             >
@@ -147,7 +147,7 @@ export const TimeInput = forwardRef<HTMLInputElement, TimeInputProps>(({
               className={cn(
                 "p-1.5 text-xs rounded-md transition-colors",
                 period === p
-                  ? "bg-[#F4821F] text-white"
+                  ? "bg-spoon-primary text-white"
                   : "hover:bg-neutral-100 text-neutral-600"
               )}
             >
@@ -161,7 +161,7 @@ export const TimeInput = forwardRef<HTMLInputElement, TimeInputProps>(({
       <div className="flex justify-end border-t border-neutral-100 pt-2">
         <button
           onClick={() => setIsOpen(false)}
-          className="text-xs px-3 py-1 rounded-md text-[#F4821F] hover:bg-[#F4821F]/10 transition-colors"
+          className="text-xs px-3 py-1 rounded-md text-spoon-primary hover:bg-spoon-primary/10 transition-colors"
         >
           Aceptar
         </button>
@@ -174,3 +174,30 @@ export const TimeInput = forwardRef<HTMLInputElement, TimeInputProps>(({
 });
 
 TimeInput.displayName = 'TimeInput';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

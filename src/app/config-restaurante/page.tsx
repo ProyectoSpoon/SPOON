@@ -47,8 +47,8 @@ export default function ConfiguracionRestaurante() {
             size="lg"
             className={`w-full md:w-auto ${
               puedeAvanzar 
-                ? 'bg-[#F4821F] hover:bg-[#D66A0B] text-white' 
-                : 'bg-[#556B2F] hover:bg-[#3E4D1A] text-white'
+                ? 'bg-spoon-primary hover:bg-spoon-primary-dark text-white' 
+                : 'bg-spoon-success hover:bg-spoon-success/90 text-white'
             }`}
           >
             {puedeAvanzar 
@@ -61,3 +61,29 @@ export default function ConfiguracionRestaurante() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

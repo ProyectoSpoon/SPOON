@@ -17,7 +17,7 @@ const Table = ({ children, className = '', ...props }: TableProps) => (
 
 const Header = ({ children, sticky = false, className = '', ...props }: TableHeaderProps) => (
   <thead 
-    className={`bg-[#FFF9F2] text-neutral-700 ${sticky ? 'sticky top-0' : ''} ${className}`}
+    className={`bg-spoon-light text-neutral-700 ${sticky ? 'sticky top-0' : ''} ${className}`}
     {...props}
   >
     {children}
@@ -42,7 +42,7 @@ const Row = ({
 }: TableRowProps) => (
   <tr 
     className={`
-      ${selected ? 'bg-[#FFF9F2]' : 'bg-white hover:bg-[#FFF9F2]'}
+      ${selected ? 'bg-spoon-light' : 'bg-white hover:bg-spoon-light'}
       ${clickable ? 'cursor-pointer' : ''}
       transition-colors duration-150
       ${className}
@@ -114,3 +114,30 @@ export const DataTable = {
   Cell,
   HeaderCell,
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

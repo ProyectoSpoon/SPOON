@@ -62,3 +62,29 @@ const SelectorPais = ({ valorSeleccionado, alCambiar }: PropsSelectorPais) => {
 };
 
 export default SelectorPais;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

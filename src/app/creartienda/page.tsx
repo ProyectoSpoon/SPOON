@@ -297,3 +297,29 @@ const CrearTiendaPage = () => {
 };
 
 export default CrearTiendaPage;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

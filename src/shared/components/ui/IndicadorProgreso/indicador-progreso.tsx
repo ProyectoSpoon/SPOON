@@ -24,12 +24,12 @@ export function IndicadorProgreso({ pasos, pasoActual }: IndicadorProgresoProps)
               {/* Línea conectora */}
               {index !== 0 && (
                 <div className={`hidden sm:block absolute h-0.5 w-full -translate-y-4 
-                  ${index <= pasoActual ? 'bg-[#FF9933]' : 'bg-gray-200'}`} />
+                  ${index <= pasoActual ? 'bg-spoon-primary' : 'bg-gray-200'}`} />
               )}
               
               {/* Círculo indicador */}
               <div className={`relative flex items-center justify-center w-8 h-8 rounded-full 
-                ${esCompleto ? 'bg-[#FF9933]' : esActivo ? 'bg-[#FF9933]' : 'bg-gray-200'}
+                ${esCompleto ? 'bg-spoon-primary' : esActivo ? 'bg-spoon-primary' : 'bg-gray-200'}
                 ${esActivo ? 'ring-4 ring-[#FF9933]/20' : ''}`}
               >
                 {esCompleto ? (
@@ -59,3 +59,30 @@ export function IndicadorProgreso({ pasos, pasoActual }: IndicadorProgresoProps)
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

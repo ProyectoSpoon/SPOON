@@ -643,7 +643,7 @@ export default function MenuDiaPage() {
   if (!isLoaded || categoriasLoading || loadingDB || !restaurantId) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F4821F] mb-4"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-spoon-primary mb-4"></div>
         <p className="text-gray-600">
           {!restaurantId ? 'Cargando configuración del restaurante...' : 'Cargando datos del menú...'}
         </p>
@@ -669,7 +669,7 @@ export default function MenuDiaPage() {
           <button 
             className={`px-3 py-2 rounded-md text-sm font-medium transition-colors relative ${
               showFavorites 
-                ? 'bg-[#F4821F] text-white' 
+                ? 'bg-spoon-primary text-white' 
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
             onClick={() => setShowFavorites(!showFavorites)}
@@ -680,7 +680,7 @@ export default function MenuDiaPage() {
             {favoritos.length > 0 && (
               <span className={`absolute -top-2 -right-2 h-5 w-5 rounded-full text-xs flex items-center justify-center font-bold ${
                 showFavorites 
-                  ? 'bg-white text-[#F4821F]' 
+                  ? 'bg-white text-spoon-primary' 
                   : 'bg-red-500 text-white'
               }`}>
                 {favoritos.length}
@@ -747,7 +747,7 @@ export default function MenuDiaPage() {
                               )}
                             </div>
                             <button
-                              className="text-xs bg-[#F4821F] hover:bg-[#E67812] text-white px-2 py-1 rounded"
+                              className="text-xs bg-spoon-primary hover:bg-spoon-primary-dark text-white px-2 py-1 rounded"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleAgregarAlMenu(producto);
@@ -780,7 +780,7 @@ export default function MenuDiaPage() {
         
         <div className="flex space-x-4 overflow-x-auto py-2 px-4">
           <button 
-            className="px-3 py-1 font-medium text-sm capitalize text-[#F4821F] border-b-2 border-[#F4821F]"
+            className="px-3 py-1 font-medium text-sm capitalize text-spoon-primary border-b-2 border-spoon-primary"
           >
             Almuerzo
           </button>
@@ -797,8 +797,8 @@ export default function MenuDiaPage() {
             <button 
               key={categoria.id}
               className={`px-3 py-1 text-sm ${selectedCategoryTab === categoria.id 
-                ? 'text-[#F4821F] border-b-2 border-[#F4821F]' 
-                : 'text-gray-700 hover:text-[#F4821F]'}`}
+                ? 'text-spoon-primary border-b-2 border-spoon-primary' 
+                : 'text-gray-700 hover:text-spoon-primary'}`}
               onClick={() => {
                 setSelectedCategoryTab(categoria.id);
                 handleCategoriaSeleccionada(categoria.id);
@@ -834,7 +834,7 @@ export default function MenuDiaPage() {
                   </div>
                   <div className="flex space-x-2 ml-2">
                     <button 
-                      className="text-[#F4821F] hover:text-[#E67812] p-1"
+                      className="text-spoon-primary hover:text-spoon-primary-dark p-1"
                       onClick={() => {
                         console.log('➕ Agregando favorito al menú:', favorito.product_name);
                         // Crear VersionedProduct desde favorito
@@ -936,7 +936,7 @@ export default function MenuDiaPage() {
                   {/* Botón de agregar al menú */}
                   <div className="col-span-3 flex justify-center">
                     <button 
-                      className="px-3 py-1 bg-[#F4821F] hover:bg-[#E67812] text-white text-xs rounded-md"
+                      className="px-3 py-1 bg-spoon-primary hover:bg-spoon-primary-dark text-white text-xs rounded-md"
                       onClick={() => handleAgregarAlMenu(producto)}
                     >
                       Agregar
@@ -1057,7 +1057,7 @@ export default function MenuDiaPage() {
                 
                 <div className="mt-6 flex space-x-4">
                   <button 
-                    className="px-4 py-2 bg-[#F4821F] hover:bg-[#E67812] text-white rounded-md flex-1"
+                    className="px-4 py-2 bg-spoon-primary hover:bg-spoon-primary-dark text-white rounded-md flex-1"
                     onClick={() => {
                       handleAgregarAlMenu(selectedProduct);
                       setShowProductModal(false);
@@ -1144,14 +1144,14 @@ export default function MenuDiaPage() {
             </Button>
             
             <Button 
-              className="bg-[#F4821F] hover:bg-[#E67812] text-white"
+              className="bg-spoon-primary hover:bg-spoon-primary-dark text-white"
               onClick={handleMantenerMenu}
               disabled={manteniendoMenu || versionedProductosMenu.length === 0}
             >
               {manteniendoMenu ? 'Guardando...' : 'Mantener Menu'}
             </Button>
             <Button 
-              className="bg-[#E67812] hover:bg-[#D56A0F] text-white"
+              className="bg-spoon-primary-dark hover:bg-spoon-primary-dark text-white"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -1181,3 +1181,24 @@ export default function MenuDiaPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

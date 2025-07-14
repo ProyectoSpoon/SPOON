@@ -45,14 +45,14 @@ export function BusquedaFiltros({
             type="checkbox"
             checked={showInactive}
             onChange={() => onShowInactiveChange(!showInactive)}
-            className="rounded text-[#F4821F] focus:ring-[#F4821F]"
+            className="rounded text-spoon-primary focus:ring-[#F4821F]"
           />
           <span>Mostrar inactivos</span>
         </label>
         
         <Button 
           onClick={onGuardarConfiguracion}
-          className="bg-[#F4821F] hover:bg-[#E67812] text-white"
+          className="bg-spoon-primary hover:bg-spoon-primary-dark text-white"
         >
           <Save className="h-4 w-4 mr-2" />
           Guardar
@@ -61,3 +61,27 @@ export function BusquedaFiltros({
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

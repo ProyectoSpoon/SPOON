@@ -253,7 +253,7 @@ const MenuDiarioContainer = () => {
             {/* Columna de Menú del Día */}
             <div className="col-span-6">
               <div className="bg-white p-4 rounded-lg shadow-sm">
-                <h2 className="text-xl font-semibold mb-4 text-[#F4821F]">Menú del Día</h2>
+                <h2 className="text-xl font-semibold mb-4 text-spoon-primary">Menú del Día</h2>
                 <MenuDiario 
                   productos={versionedProductosActivos}
                   onRemoveProduct={handleRemoveProducto}
@@ -298,7 +298,7 @@ const MenuDiarioContainer = () => {
             {/* Columna de Platos Favoritos */}
             <div className="col-span-6">
               <div className="bg-white p-4 rounded-lg shadow-sm">
-                <h2 className="text-xl font-semibold mb-4 text-[#F4821F]">Platos Favoritos</h2>
+                <h2 className="text-xl font-semibold mb-4 text-spoon-primary">Platos Favoritos</h2>
                 <MenuDiario 
                   productos={versionedProductosActivos}
                   onRemoveProduct={handleRemoveProducto}
@@ -343,7 +343,7 @@ const MenuDiarioContainer = () => {
             {/* Columna de Platos Especiales */}
             <div className="col-span-6">
               <div className="bg-white p-4 rounded-lg shadow-sm">
-                <h2 className="text-xl font-semibold mb-4 text-[#F4821F]">Platos Especiales</h2>
+                <h2 className="text-xl font-semibold mb-4 text-spoon-primary">Platos Especiales</h2>
                 <MenuDiario 
                   productos={versionedProductosActivos}
                   onRemoveProduct={handleRemoveProducto}
@@ -358,3 +358,29 @@ const MenuDiarioContainer = () => {
 };
 
 export default MenuDiarioContainer;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

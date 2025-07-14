@@ -24,7 +24,7 @@ export default function ConfiguracionPage() {
   return (
     <div className="container mx-auto py-6">
       <div className="flex items-center mb-6">
-        <Settings className="h-6 w-6 mr-2 text-[#F4821F]" />
+        <Settings className="h-6 w-6 mr-2 text-spoon-primary" />
         <h1 className="text-2xl font-bold text-[var(--spoon-neutral-800)]">
           Configuración del Sistema
         </h1>
@@ -36,7 +36,7 @@ export default function ConfiguracionPage() {
           onClick={() => setActiveTab('empresa')}
           className={`flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm whitespace-nowrap ${
             activeTab === 'empresa'
-              ? 'border-[#F4821F] text-[#F4821F]'
+              ? 'border-spoon-primary text-spoon-primary'
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
           }`}
         >
@@ -48,7 +48,7 @@ export default function ConfiguracionPage() {
           onClick={() => setActiveTab('horarios')}
           className={`flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm whitespace-nowrap ${
             activeTab === 'horarios'
-              ? 'border-[#F4821F] text-[#F4821F]'
+              ? 'border-spoon-primary text-spoon-primary'
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
           }`}
         >
@@ -60,7 +60,7 @@ export default function ConfiguracionPage() {
           onClick={() => setActiveTab('eventos')}
           className={`flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm whitespace-nowrap ${
             activeTab === 'eventos'
-              ? 'border-[#F4821F] text-[#F4821F]'
+              ? 'border-spoon-primary text-spoon-primary'
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
           }`}
         >
@@ -72,7 +72,7 @@ export default function ConfiguracionPage() {
           onClick={() => setActiveTab('usuarios')}
           className={`flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm whitespace-nowrap ${
             activeTab === 'usuarios'
-              ? 'border-[#F4821F] text-[#F4821F]'
+              ? 'border-spoon-primary text-spoon-primary'
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
           }`}
         >
@@ -84,7 +84,7 @@ export default function ConfiguracionPage() {
           onClick={() => setActiveTab('notificaciones')}
           className={`flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm whitespace-nowrap ${
             activeTab === 'notificaciones'
-              ? 'border-[#F4821F] text-[#F4821F]'
+              ? 'border-spoon-primary text-spoon-primary'
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
           }`}
         >
@@ -101,7 +101,7 @@ export default function ConfiguracionPage() {
           <div className="space-y-6">
             <div className="border-b border-gray-200 pb-4">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-[#F4821F]" />
+                <Calendar className="h-5 w-5 text-spoon-primary" />
                 Eventos Especiales y Festivos
               </h3>
               <p className="text-gray-600 mt-2">
@@ -138,7 +138,7 @@ export default function ConfiguracionPage() {
                     <span className="text-xs text-gray-500">Variable</span>
                   </div>
                 </div>
-                <button className="mt-3 text-sm text-[#F4821F] hover:text-[#D66A0B] font-medium">
+                <button className="mt-3 text-sm text-spoon-primary hover:text-spoon-primary-dark font-medium">
                   Ver todos los festivos →
                 </button>
               </div>
@@ -150,7 +150,7 @@ export default function ConfiguracionPage() {
                     <Calendar className="h-4 w-4 text-blue-500" />
                     Eventos Especiales
                   </h4>
-                  <button className="text-sm text-[#F4821F] hover:text-[#D66A0B] font-medium">
+                  <button className="text-sm text-spoon-primary hover:text-spoon-primary-dark font-medium">
                     + Agregar
                   </button>
                 </div>
@@ -243,7 +243,7 @@ export default function ConfiguracionPage() {
                 </div>
               </div>
               <div className="mt-4 flex gap-2">
-                <button className="px-4 py-2 bg-[#F4821F] text-white rounded-md text-sm hover:bg-[#D66A0B]">
+                <button className="px-4 py-2 bg-spoon-primary text-white rounded-md text-sm hover:bg-spoon-primary-dark">
                   Guardar Configuración
                 </button>
                 <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md text-sm hover:bg-gray-50">
@@ -284,3 +284,26 @@ export default function ConfiguracionPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

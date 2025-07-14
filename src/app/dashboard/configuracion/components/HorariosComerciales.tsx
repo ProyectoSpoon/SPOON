@@ -258,7 +258,7 @@ export default function HorariosComerciales() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-[#F4821F]" />
+        <Loader2 className="h-8 w-8 animate-spin text-spoon-primary" />
       </div>
     );
   }
@@ -282,7 +282,7 @@ export default function HorariosComerciales() {
             </div>
             <button
               onClick={guardarHorarios}
-              className="flex items-center gap-2 px-4 py-2 bg-[#F4821F] hover:bg-[#D66A0B] 
+              className="flex items-center gap-2 px-4 py-2 bg-spoon-primary hover:bg-spoon-primary-dark 
                        text-white rounded-lg transition-colors"
             >
               <Save size={18} />
@@ -394,7 +394,7 @@ export default function HorariosComerciales() {
           
           <button
             onClick={agregarEvento}
-            className="w-full py-2 bg-[#F4821F] hover:bg-[#D66A0B] text-white rounded-lg mb-4 transition-colors"
+            className="w-full py-2 bg-spoon-primary hover:bg-spoon-primary-dark text-white rounded-lg mb-4 transition-colors"
           >
             <Plus className="inline-block mr-2" size={16} />
             Agregar evento
@@ -497,7 +497,7 @@ export default function HorariosComerciales() {
               <button
                 onClick={guardarEvento}
                 disabled={!editingEvent.nombre.trim()}
-                className="flex-1 bg-[#F4821F] hover:bg-[#D66A0B] disabled:bg-gray-300 
+                className="flex-1 bg-spoon-primary hover:bg-spoon-primary-dark disabled:bg-gray-300 
                          text-white py-2 rounded transition-colors"
               >
                 Guardar
@@ -531,3 +531,30 @@ export default function HorariosComerciales() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

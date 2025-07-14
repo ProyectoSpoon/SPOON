@@ -33,3 +33,30 @@ const SelectorMesa: React.FC<SelectorMesaProps> = ({ mesaSeleccionada, onSelecci
 };
 
 export default SelectorMesa;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

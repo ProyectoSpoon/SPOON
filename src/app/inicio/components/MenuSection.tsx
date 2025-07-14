@@ -28,7 +28,7 @@ export const MenuSection = () => {
                 />
                 <AnimatedText
                   variant="slideIn"
-                  className="relative text-5xl lg:text-6xl font-bold text-[#F4821F] tracking-tight"
+                  className="relative text-5xl lg:text-6xl font-bold text-spoon-primary tracking-tight"
                 >
                   Siempre a la carta.
                 </AnimatedText>
@@ -55,9 +55,9 @@ export const MenuSection = () => {
 
             {/* Botón CTA */}
             <motion.button
-              className="mt-8 inline-flex items-center gap-2 bg-white text-[#F4821F] 
+              className="mt-8 inline-flex items-center gap-2 bg-white text-spoon-primary 
                          px-8 py-4 rounded-xl border border-neutral-200
-                         hover:border-[#F4821F]/20 hover:bg-[#F4821F]/5
+                         hover:border-spoon-primary/20 hover:bg-spoon-primary/5
                          transition-all duration-300 font-medium
                          shadow-sm hover:shadow-md"
               whileHover={{ scale: 1.02 }}
@@ -133,3 +133,30 @@ export const MenuSection = () => {
     </section>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

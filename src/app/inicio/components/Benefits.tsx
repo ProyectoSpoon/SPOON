@@ -85,7 +85,7 @@ export const Benefits = () => {
                     </motion.div>
                     
                     <h3 className="text-2xl font-bold text-center text-neutral-900
-                                 group-hover:text-[#F4821F] transition-colors duration-300">
+                                 group-hover:text-spoon-primary transition-colors duration-300">
                       {benefit.title}
                     </h3>
                     
@@ -96,8 +96,8 @@ export const Benefits = () => {
 
                     {/* Indicador de hover */}
                     <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2
-                                  w-12 h-1 rounded-full bg-[#F4821F]/20
-                                  group-hover:bg-[#F4821F] transition-colors duration-300" />
+                                  w-12 h-1 rounded-full bg-spoon-primary/20
+                                  group-hover:bg-spoon-primary transition-colors duration-300" />
                   </div>
                 </div>
               </Tilt3D>
@@ -108,3 +108,30 @@ export const Benefits = () => {
     </section>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

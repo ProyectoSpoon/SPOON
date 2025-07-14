@@ -305,7 +305,7 @@ export default function ProgramacionSemanalPage() {
             </div>
 
             <Button 
-              className="flex items-center px-4 py-2 bg-[#F4821F] text-white rounded-lg hover:bg-[#CC6A10] transition-colors"
+              className="flex items-center px-4 py-2 bg-spoon-primary text-white rounded-lg hover:bg-spoon-primary-dark transition-colors"
               onClick={programarAutomaticamente}
               disabled={programandoAutomatico || loading}
             >
@@ -392,7 +392,7 @@ export default function ProgramacionSemanalPage() {
             onClick={guardarBorrador}
             disabled={guardando || !hasUnsavedChanges}
             variant="outline"
-            className="border-[#F4821F] text-[#F4821F] hover:bg-[#F4821F] hover:text-white"
+            className="border-spoon-primary text-spoon-primary hover:bg-spoon-primary hover:text-white"
           >
             <Save className="w-4 h-4 mr-2" />
             {guardando ? 'Guardando...' : 'Guardar Borrador'}
@@ -401,7 +401,7 @@ export default function ProgramacionSemanalPage() {
           <Button
             onClick={publicarProgramacion}
             disabled={publicando || totalCombinacionesSemana === 0}
-            className="bg-[#F4821F] text-white hover:bg-[#CC6A10] transition-colors"
+            className="bg-spoon-primary text-white hover:bg-spoon-primary-dark transition-colors"
           >
             <Share className="w-4 h-4 mr-2" />
             {publicando ? 'Publicando...' : 'Publicar Programación'}
@@ -433,3 +433,29 @@ export default function ProgramacionSemanalPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

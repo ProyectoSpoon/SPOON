@@ -87,7 +87,7 @@ export default function CompletarPerfil() {
           <button
             type="submit"
             disabled={estaCargando}
-            className="w-full bg-[#FF9933] text-white py-2 px-4 rounded-md hover:bg-[#B37B5E] transition-colors font-medium"
+            className="w-full bg-spoon-primary text-white py-2 px-4 rounded-md hover:bg-spoon-primary-dark transition-colors font-medium"
           >
             {estaCargando ? 'Guardando...' : 'Completar registro'}
           </button>
@@ -96,3 +96,29 @@ export default function CompletarPerfil() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

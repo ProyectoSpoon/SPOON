@@ -107,7 +107,7 @@ export default function HorarioComercialPage() {
             <button
               onClick={handleGuardar}
               disabled={estaGuardando}
-              className="px-6 py-2 bg-[#F4821F] hover:bg-[#D66A0B] 
+              className="px-6 py-2 bg-spoon-primary hover:bg-spoon-primary-dark 
                        text-white rounded-lg transition-colors
                        disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -119,3 +119,29 @@ export default function HorarioComercialPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

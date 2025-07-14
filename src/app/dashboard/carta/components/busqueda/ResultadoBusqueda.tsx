@@ -115,7 +115,7 @@ export const ResultadoBusqueda: React.FC<ResultadoBusquedaProps> = ({
             className={`p-1 rounded-full ${
               yaEnMenu 
                 ? 'text-gray-300 cursor-not-allowed' 
-                : 'text-[#F4821F] hover:bg-orange-50'
+                : 'text-spoon-primary hover:bg-orange-50'
             }`}
             title={yaEnMenu ? 'Ya está en el menú' : 'Agregar al menú'}
           >
@@ -150,3 +150,29 @@ export const ResultadoBusqueda: React.FC<ResultadoBusquedaProps> = ({
 };
 
 export default ResultadoBusqueda;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

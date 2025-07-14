@@ -66,3 +66,30 @@ export { Alert, AlertTitle, AlertDescription };
 // Tipos
 export interface AlertTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {}
 export interface AlertDescriptionProps extends React.HTMLAttributes<HTMLParagraphElement> {}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

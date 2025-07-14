@@ -76,7 +76,7 @@ export const TablaProgramacion: React.FC<TablaProgramacionProps> = ({
               <td className="px-6 py-4">
                 <button
                   onClick={() => onSeleccionarCombinacion(combinacion)}
-                  className="text-[#F4821F] hover:text-[#CC6A10] text-sm font-medium"
+                  className="text-spoon-primary hover:text-spoon-primary-dark text-sm font-medium"
                 >
                   Agregar
                 </button>
@@ -88,3 +88,29 @@ export const TablaProgramacion: React.FC<TablaProgramacionProps> = ({
     </div>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

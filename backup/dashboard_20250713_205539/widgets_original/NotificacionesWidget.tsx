@@ -13,7 +13,7 @@ interface NotificacionesWidgetProps {
 }
 
 const SkeletonNotificaciones: React.FC = () => (
-  <Card>
+  <Card className="grid-area-notificaciones">
     <CardHeader>
       <CardTitle>Notificaciones</CardTitle>
     </CardHeader>
@@ -114,3 +114,28 @@ export const NotificacionesWidget: React.FC<NotificacionesWidgetProps> = ({
     </Card>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

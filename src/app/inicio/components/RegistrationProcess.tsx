@@ -62,7 +62,7 @@ export const RegistrationProcess = () => {
               >
                 <motion.div
                   className="relative bg-white p-8 pt-16 rounded-2xl group
-                            border border-neutral-100 hover:border-[#F4821F]/20
+                            border border-neutral-100 hover:border-spoon-primary/20
                             transition-all duration-300 shadow-sm hover:shadow-md"
                   whileHover={{ y: -4 }}
                   transition={{ duration: 0.3 }}
@@ -71,10 +71,10 @@ export const RegistrationProcess = () => {
                   <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
                     <motion.div
                       className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center
-                                border border-neutral-100 group-hover:border-[#F4821F]/20
+                                border border-neutral-100 group-hover:border-spoon-primary/20
                                 shadow-sm group-hover:shadow-md transition-all duration-300"
                     >
-                      <span className="text-2xl font-bold text-[#F4821F]">
+                      <span className="text-2xl font-bold text-spoon-primary">
                         {step.number}
                       </span>
                     </motion.div>
@@ -83,7 +83,7 @@ export const RegistrationProcess = () => {
                   {/* Contenido */}
                   <div className="text-center space-y-4">
                     <h3 className="text-xl font-bold text-neutral-900 
-                                  group-hover:text-[#F4821F] transition-colors duration-300">
+                                  group-hover:text-spoon-primary transition-colors duration-300">
                       {step.title}
                     </h3>
                     <p className="text-neutral-600 leading-relaxed
@@ -105,8 +105,8 @@ export const RegistrationProcess = () => {
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
         >
-          <button className="bg-[#F4821F] text-white px-8 py-4 rounded-xl
-                            hover:bg-[#CC6A10] transition-colors duration-300
+          <button className="bg-spoon-primary text-white px-8 py-4 rounded-xl
+                            hover:bg-spoon-primary-dark transition-colors duration-300
                             font-medium shadow-sm hover:shadow-md">
             Comienza ahora
           </button>
@@ -115,3 +115,30 @@ export const RegistrationProcess = () => {
     </section>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

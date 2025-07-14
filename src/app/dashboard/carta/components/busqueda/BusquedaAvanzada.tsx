@@ -382,11 +382,11 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({
           )}
           <button 
             onClick={() => setMostrarFiltros(!mostrarFiltros)}
-            className={`px-3 py-2 border-l border-gray-200 ${hayFiltrosActivos ? 'text-[#F4821F]' : 'text-gray-500'} hover:bg-gray-50`}
+            className={`px-3 py-2 border-l border-gray-200 ${hayFiltrosActivos ? 'text-spoon-primary' : 'text-gray-500'} hover:bg-gray-50`}
           >
             <Filter size={18} />
             {hayFiltrosActivos && (
-              <span className="absolute top-0 right-0 w-2 h-2 bg-[#F4821F] rounded-full"></span>
+              <span className="absolute top-0 right-0 w-2 h-2 bg-spoon-primary rounded-full"></span>
             )}
           </button>
         </div>
@@ -432,7 +432,7 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({
                         type="checkbox"
                         checked={categoriasFiltradas.includes(categoria.id)}
                         onChange={() => handleToggleCategoria(categoria.id)}
-                        className="rounded text-[#F4821F] focus:ring-[#F4821F]"
+                        className="rounded text-spoon-primary focus:ring-[#F4821F]"
                       />
                       <span className="text-sm">{categoria.nombre}</span>
                     </label>
@@ -446,7 +446,7 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({
                               type="checkbox"
                               checked={subcategoriasFiltradas.includes(subcategoria.id)}
                               onChange={() => handleToggleSubcategoria(subcategoria.id)}
-                              className="rounded text-[#F4821F] focus:ring-[#F4821F]"
+                              className="rounded text-spoon-primary focus:ring-[#F4821F]"
                             />
                             <span className="text-xs">{subcategoria.nombre}</span>
                           </label>
@@ -469,7 +469,7 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({
                         type="checkbox"
                         checked={atributosFiltrados.includes(atributo.id)}
                         onChange={() => handleToggleAtributo(atributo.id)}
-                        className="rounded text-[#F4821F] focus:ring-[#F4821F]"
+                        className="rounded text-spoon-primary focus:ring-[#F4821F]"
                       />
                       <span className="text-sm">{atributo.nombre}</span>
                     </label>
@@ -493,7 +493,7 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({
             </Button>
             <Button
               onClick={() => setMostrarFiltros(false)}
-              className="text-xs bg-[#F4821F] text-white hover:bg-[#E67812]"
+              className="text-xs bg-spoon-primary text-white hover:bg-spoon-primary-dark"
             >
               Aplicar filtros
             </Button>
@@ -586,3 +586,29 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({
 };
 
 export default BusquedaAvanzada;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

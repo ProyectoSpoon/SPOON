@@ -28,7 +28,7 @@ export function TablaCombinacionesMenu({
   if (isLoading) {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[#F4821F]" />
+        <Loader2 className="w-8 h-8 animate-spin text-spoon-primary" />
       </div>
     );
   }
@@ -131,3 +131,29 @@ export function TablaCombinacionesMenu({
     </>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

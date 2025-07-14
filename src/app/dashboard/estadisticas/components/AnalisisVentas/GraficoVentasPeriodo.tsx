@@ -55,7 +55,7 @@ export const GraficoVentasPeriodo = ({
             {formatearFechaCorta(new Date(label))}
           </p>
           <div className="space-y-2 mt-2">
-            <p className="text-[#F4821F] font-medium">
+            <p className="text-spoon-primary font-medium">
               {`Ventas: ${formatearMoneda(ventasActuales)}`}
             </p>
             {mostrarComparativa && ventasAnteriores && porcentajeCambio !== null && (
@@ -193,7 +193,7 @@ export const GraficoVentasPeriodo = ({
               id="comparativa"
               checked={mostrarComparativa}
               onChange={(e) => setMostrarComparativa(e.target.checked)}
-              className="rounded text-[#F4821F] focus:ring-[#F4821F]"
+              className="rounded text-spoon-primary focus:ring-[#F4821F]"
             />
             <label htmlFor="comparativa" className="text-sm text-neutral-600">
               Mostrar comparativa
@@ -221,20 +221,47 @@ export const GraficoVentasPeriodo = ({
       {/* Leyenda de colores */}
       <div className="mt-4 flex items-center gap-6 text-sm text-neutral-600">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-[#F4821F]" />
+          <div className="w-3 h-3 rounded-full bg-spoon-primary" />
           <span>Ventas actuales</span>
         </div>
         {mostrarComparativa && (
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[#9CA3AF]" />
+            <div className="w-3 h-3 rounded-full bg-spoon-neutral-400" />
             <span>Ventas anteriores</span>
           </div>
         )}
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-[#059669]" />
+          <div className="w-3 h-3 rounded-full bg-spoon-success" />
           <span>Órdenes</span>
         </div>
       </div>
     </Card>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

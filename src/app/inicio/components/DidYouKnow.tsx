@@ -69,7 +69,7 @@ export const DidYouKnow = () => {
                   viewport={{ once: true }}
                   transition={{ duration: 0.8 }}
                 >
-                  Explorar menús en <span className="text-[#F4821F] font-semibold">Spoon</span> no solo 
+                  Explorar menús en <span className="text-spoon-primary font-semibold">Spoon</span> no solo 
                   facilita tu decisión al momento de salir a comer.
                 </motion.p>
 
@@ -100,7 +100,7 @@ export const DidYouKnow = () => {
                       viewport={{ once: true }}
                       transition={{ duration: 0.5, delay: 0.1 * index }}
                     >
-                      <div className="text-3xl font-bold text-[#F4821F] mb-2">
+                      <div className="text-3xl font-bold text-spoon-primary mb-2">
                         {stat.number}
                       </div>
                       <div className="text-sm text-neutral-600 font-medium">
@@ -117,3 +117,30 @@ export const DidYouKnow = () => {
     </section>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

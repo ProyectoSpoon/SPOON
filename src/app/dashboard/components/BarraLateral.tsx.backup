@@ -29,7 +29,8 @@ import {
   FileStack,
   Calendar,
   Star,
-  Award
+  Award,
+  ChefHat
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -287,4 +288,34 @@ export default function BarraLateral() {
       </div>
     );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

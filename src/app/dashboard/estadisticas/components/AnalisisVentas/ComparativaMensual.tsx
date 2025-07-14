@@ -56,7 +56,7 @@ export const ComparativaMensual = ({
         <div className="bg-white p-4 shadow-lg rounded-lg border border-neutral-200">
           <p className="font-medium text-neutral-800 mb-2">{label}</p>
           <div className="space-y-2">
-            <p className="text-[#F4821F]">
+            <p className="text-spoon-primary">
               {`${mesActual}: ${formatearDinero(payload[0].value as number)}`}
             </p>
             <p className="text-neutral-500">
@@ -161,3 +161,30 @@ export const ComparativaMensual = ({
     </Card>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

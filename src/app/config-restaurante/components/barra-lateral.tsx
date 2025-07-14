@@ -24,7 +24,7 @@ export default function BarraLateral() {
           </div>
           
           {/* Porcentaje */}
-          <div className="text-sm font-bold text-[#F4821F]">
+          <div className="text-sm font-bold text-spoon-primary">
             {progreso}%
           </div>
         </div>
@@ -32,3 +32,29 @@ export default function BarraLateral() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

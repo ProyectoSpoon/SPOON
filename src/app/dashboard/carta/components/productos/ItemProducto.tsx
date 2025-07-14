@@ -70,7 +70,7 @@ export function ItemProducto({
             e.stopPropagation();
             onAdd();
           }}
-          className="text-[#00A0A7] hover:text-[#008a90] transition-colors text-sm"
+          className="text-spoon-info hover:text-spoon-info/80 transition-colors text-sm"
         >
           Agregar
         </button>
@@ -78,3 +78,29 @@ export function ItemProducto({
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

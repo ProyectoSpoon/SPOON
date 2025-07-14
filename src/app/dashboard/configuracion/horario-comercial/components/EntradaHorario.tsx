@@ -54,3 +54,30 @@ const EntradaHorario: React.FC<PropiedadesEntradaHorario> = ({
 };
 
 export default EntradaHorario;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

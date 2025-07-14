@@ -91,7 +91,7 @@ export default function InformacionGeneral() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-[#F4821F]" />
+        <Loader2 className="h-8 w-8 animate-spin text-spoon-primary" />
       </div>
     );
   }
@@ -103,7 +103,7 @@ export default function InformacionGeneral() {
         <Button 
           onClick={handleSubmit}
           disabled={isSaving}
-          className="bg-[#F4821F] hover:bg-[#E67812] text-white"
+          className="bg-spoon-primary hover:bg-spoon-primary-dark text-white"
         >
           {isSaving ? (
             <>
@@ -226,3 +226,30 @@ export default function InformacionGeneral() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

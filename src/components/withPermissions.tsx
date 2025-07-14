@@ -34,7 +34,7 @@ export const withPermissions = (
     if (loading) {
       return (
         <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="h-8 w-8 animate-spin text-[#FF9933]" />
+          <Loader2 className="h-8 w-8 animate-spin text-spoon-primary" />
         </div>
       );
     }
@@ -50,3 +50,30 @@ export const withPermissions = (
     return <WrappedComponent {...props} />;
   };
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

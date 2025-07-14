@@ -62,9 +62,9 @@ export const Footer = () => {
           >
             <p className="text-xl text-white/80 tracking-wide">
               <span className="px-2">Explora</span>
-              <span className="text-[#F4821F]">•</span>
+              <span className="text-spoon-primary">•</span>
               <span className="px-2">Elige</span>
-              <span className="text-[#F4821F]">•</span>
+              <span className="text-spoon-primary">•</span>
               <span className="px-2">Disfruta</span>
             </p>
 
@@ -104,8 +104,8 @@ export const Footer = () => {
                     key={social}
                     href="#"
                     className="w-10 h-10 rounded-full flex items-center justify-center
-                             bg-white/5 hover:bg-[#F4821F]/10 
-                             text-neutral-400 hover:text-[#F4821F]
+                             bg-white/5 hover:bg-spoon-primary/10 
+                             text-neutral-400 hover:text-spoon-primary
                              transition-all duration-200"
                     whileHover={{ scale: 1.1 }}
                     transition={{ duration: 0.2 }}
@@ -122,3 +122,30 @@ export const Footer = () => {
     </footer>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

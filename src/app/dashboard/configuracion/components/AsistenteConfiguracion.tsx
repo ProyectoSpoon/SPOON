@@ -59,7 +59,7 @@ export default function AsistenteConfiguracion() {
     <Card className="bg-gradient-to-r from-[#FFF4E6] to-white p-6 border-none shadow-sm">
       <div className="flex justify-between items-start">
         <div className="flex gap-3">
-          <div className="p-2 bg-[#F4821F] rounded-lg text-white">
+          <div className="p-2 bg-spoon-primary rounded-lg text-white">
             <Sparkles size={20} />
           </div>
           <div>
@@ -87,7 +87,7 @@ export default function AsistenteConfiguracion() {
           >
             <div 
               className={`flex items-center justify-center w-8 h-8 rounded-full text-white ${
-                paso.completado ? 'bg-green-500' : 'bg-[#F4821F]'
+                paso.completado ? 'bg-green-500' : 'bg-spoon-primary'
               }`}
             >
               {paso.completado ? <Check size={16} /> : index + 1}
@@ -108,7 +108,7 @@ export default function AsistenteConfiguracion() {
               </label>
               <Link 
                 href={paso.ruta}
-                className="flex items-center px-3 py-1.5 bg-[#F4821F] text-white text-sm rounded hover:bg-[#E77918]"
+                className="flex items-center px-3 py-1.5 bg-spoon-primary text-white text-sm rounded hover:bg-[#E77918]"
               >
                 <span>Ir</span>
                 <ArrowRight size={14} className="ml-1" />
@@ -124,7 +124,7 @@ export default function AsistenteConfiguracion() {
         </div>
         <div className="w-1/2 bg-neutral-200 rounded-full h-2">
           <div 
-            className="bg-[#F4821F] h-2 rounded-full" 
+            className="bg-spoon-primary h-2 rounded-full" 
             style={{ width: `${(pasos.filter(p => p.completado).length / pasos.length) * 100}%` }}
           ></div>
         </div>
@@ -132,3 +132,30 @@ export default function AsistenteConfiguracion() {
     </Card>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

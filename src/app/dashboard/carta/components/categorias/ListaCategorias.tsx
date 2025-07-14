@@ -161,7 +161,7 @@ export function ListaCategorias({
         </div>
         <Button 
           onClick={() => obtenerCategorias()}
-          className="w-full bg-[#F4821F] hover:bg-[#CC6A10] text-white text-sm"
+          className="w-full bg-spoon-primary hover:bg-spoon-primary-dark text-white text-sm"
         >
           Reintentar
         </Button>
@@ -174,7 +174,7 @@ export function ListaCategorias({
       {/* Botón para agregar categoría principal */}
       <Button 
         onClick={() => setModalCategoria(true)}
-        className="w-full bg-[#F4821F] hover:bg-[#CC6A10] text-white text-sm"
+        className="w-full bg-spoon-primary hover:bg-spoon-primary-dark text-white text-sm"
         disabled={cargandoCategorias}
       >
         <Plus className="h-3 w-3 mr-1" />
@@ -184,7 +184,7 @@ export function ListaCategorias({
       {/* Indicador de carga */}
       {cargandoCategorias && (
         <div className="flex justify-center items-center py-4">
-          <Loader2 className="h-6 w-6 animate-spin text-[#F4821F]" />
+          <Loader2 className="h-6 w-6 animate-spin text-spoon-primary" />
           <span className="ml-2 text-sm">Cargando categorías...</span>
         </div>
       )}
@@ -202,7 +202,7 @@ export function ListaCategorias({
                   onClick={() => handleSelectCategoria(categoria.id)}
                   className={`flex-1 text-left flex items-center gap-2 px-3 py-1.5 transition-colors ${
                     categoriaSeleccionada === categoria.id
-                      ? 'bg-[#F4821F]/10 text-[#F4821F] font-medium'
+                      ? 'bg-spoon-primary/10 text-spoon-primary font-medium'
                       : 'text-neutral-600 hover:bg-neutral-100'
                   }`}
                 >
@@ -233,7 +233,7 @@ export function ListaCategorias({
                   variant="ghost"
                   size="sm"
                   onClick={() => openSubcategoriaModal(categoria.id)}
-                  className="text-[#F4821F] hover:bg-[#F4821F]/10 text-xs h-6 px-2"
+                  className="text-spoon-primary hover:bg-spoon-primary/10 text-xs h-6 px-2"
                 >
                   <Plus className="h-3 w-3 mr-1" />
                   Agregar subcategoría
@@ -249,7 +249,7 @@ export function ListaCategorias({
                         onClick={() => handleSelectSubcategoria(subcategoria.id, categoria.id)}
                         className={`flex-1 flex items-center gap-2 px-2 py-1 rounded-md transition-colors ${
                           subcategoriaSeleccionada === subcategoria.id
-                            ? 'bg-[#F4821F]/10 text-[#F4821F]'
+                            ? 'bg-spoon-primary/10 text-spoon-primary'
                             : 'text-neutral-600 hover:bg-neutral-100'
                         }`}
                       >
@@ -368,3 +368,29 @@ export function ListaCategorias({
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

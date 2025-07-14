@@ -207,7 +207,7 @@ export default function LogoPortadaPage() {
               <button
                 onClick={() => setPasoActual(prev => prev + 1)}
                 disabled={estaEnviando || !validarPasoActual()}
-                className="px-4 py-2 bg-[#FF9933] hover:bg-[#FF8000] text-white rounded-lg
+                className="px-4 py-2 bg-spoon-primary hover:bg-spoon-primary-dark text-white rounded-lg
                   disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Siguiente
@@ -228,3 +228,29 @@ export default function LogoPortadaPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

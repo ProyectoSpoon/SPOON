@@ -33,13 +33,13 @@ export const Calendar: React.FC<CalendarProps> = ({
         head_row: "flex",
         head_cell: "text-neutral-500 rounded-md w-9 font-normal text-[0.8rem]",
         row: "flex w-full mt-2",
-        cell: "text-center text-sm p-0 relative [&:has([aria-selected])]:bg-[#F4821F]/5 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-        day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-[#F4821F]/10 rounded-md",
-        day_selected: "bg-[#F4821F] text-white hover:bg-[#F4821F] hover:text-white focus:bg-[#F4821F] focus:text-white",
+        cell: "text-center text-sm p-0 relative [&:has([aria-selected])]:bg-spoon-primary/5 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+        day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-spoon-primary/10 rounded-md",
+        day_selected: "bg-spoon-primary text-white hover:bg-spoon-primary hover:text-white focus:bg-spoon-primary focus:text-white",
         day_today: "bg-neutral-100",
         day_outside: "text-neutral-400 opacity-50",
         day_disabled: "text-neutral-400 opacity-50",
-        day_range_middle: "aria-selected:bg-[#F4821F]/5 aria-selected:text-neutral-900",
+        day_range_middle: "aria-selected:bg-spoon-primary/5 aria-selected:text-neutral-900",
         day_hidden: "invisible",
       }}
       modifiers={modifiers}
@@ -47,3 +47,30 @@ export const Calendar: React.FC<CalendarProps> = ({
     />
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

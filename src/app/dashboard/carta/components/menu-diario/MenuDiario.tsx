@@ -138,7 +138,7 @@ export function MenuDiario({ productos = [], onRemoveProduct }: MenuDiarioProps)
   return (
     <div className="space-y-3">
       {Object.entries(productosPorCategoria).map(([categoriaId, categoria]) => (
-        <div key={categoriaId} className="relative pl-3 border-l-2 border-[#F4821F]">
+        <div key={categoriaId} className="relative pl-3 border-l-2 border-spoon-primary">
           <h3 className="font-medium text-gray-900 mb-2 pl-1 text-xs">{categoria.nombre}</h3>
           <div className="bg-white rounded-lg border border-gray-100 overflow-hidden">
             <div className="divide-y divide-gray-100">
@@ -172,3 +172,29 @@ export function MenuDiario({ productos = [], onRemoveProduct }: MenuDiarioProps)
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

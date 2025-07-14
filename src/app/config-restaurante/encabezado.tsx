@@ -39,7 +39,7 @@ export default function Encabezado() {
           
           {/* Porcentaje */}
           <div className="text-center">
-            <span className="text-2xl font-bold text-[#F4821F]">{progreso}%</span>
+            <span className="text-2xl font-bold text-spoon-primary">{progreso}%</span>
             <span className="text-sm text-gray-500 ml-2">completado</span>
           </div>
         </div>
@@ -47,3 +47,29 @@ export default function Encabezado() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -110,3 +110,29 @@ const VistaPrevia: React.FC<PropsVistaPrevia> = ({ logo, portada }) => {
 };
 
 export default VistaPrevia;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

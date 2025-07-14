@@ -109,7 +109,7 @@ export function FormularioEdicion({
             Cancelar
           </Button>
           <Button 
-            className="bg-[#F4821F] hover:bg-[#E67812] text-white"
+            className="bg-spoon-primary hover:bg-spoon-primary-dark text-white"
             onClick={onGuardar}
           >
             Guardar
@@ -119,3 +119,30 @@ export function FormularioEdicion({
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

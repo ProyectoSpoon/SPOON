@@ -68,7 +68,7 @@ export const CacheTimer = ({ variant = 'default', className = '' }: CacheTimerPr
   if (variant === 'compact') {
     return (
       <div className={`flex items-center border rounded-lg px-3 py-1 bg-white ${className}`}>
-        <Clock className="h-3 w-3 mr-2 text-[#F4821F]" />
+        <Clock className="h-3 w-3 mr-2 text-spoon-primary" />
         <div className="text-xs text-gray-700">
           Tiempo restante caché: <span className="font-semibold">{minutes}m {seconds}s</span>
         </div>
@@ -80,7 +80,7 @@ export const CacheTimer = ({ variant = 'default', className = '' }: CacheTimerPr
     <div className={`bg-white p-4 rounded-lg border border-gray-200 ${className}`}>
       <div className="text-sm font-medium text-gray-500">Tiempo restante caché</div>
       <div className="flex items-center mt-1">
-        <Clock className="h-4 w-4 mr-2 text-[#F4821F]" />
+        <Clock className="h-4 w-4 mr-2 text-spoon-primary" />
         <div className="text-2xl font-semibold text-gray-900">
           {timeLeft}
         </div>
@@ -90,3 +90,30 @@ export const CacheTimer = ({ variant = 'default', className = '' }: CacheTimerPr
 };
 
 export default CacheTimer;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

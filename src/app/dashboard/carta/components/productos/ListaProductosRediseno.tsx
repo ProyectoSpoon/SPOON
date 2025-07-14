@@ -317,7 +317,7 @@ useEffect(() => {
             {cargandoProductos ? (
               <tr>
                 <td colSpan={4} className="px-4 py-4 text-center">
-                  <Loader2 className="h-5 w-5 animate-spin mx-auto text-[#F4821F]" />
+                  <Loader2 className="h-5 w-5 animate-spin mx-auto text-spoon-primary" />
                   <span className="text-sm text-gray-500 mt-2 block">Cargando productos...</span>
                 </td>
               </tr>
@@ -363,7 +363,7 @@ useEffect(() => {
                           checked={isProductInMenu(producto.id)}
                           onChange={() => handleToggleProductoMenu(producto)}
                         />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#F4821F]/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#F4821F]"></div>
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#F4821F]/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-spoon-primary"></div>
                       </label>
                     </div>
                   </td>
@@ -372,7 +372,7 @@ useEffect(() => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-[#F4821F] hover:bg-[#F4821F]/10 h-8 w-8 p-0"
+                        className="text-spoon-primary hover:bg-spoon-primary/10 h-8 w-8 p-0"
                         onClick={() => handleProductClick(producto)}
                       >
                         <Edit className="h-4 w-4" />
@@ -446,7 +446,7 @@ useEffect(() => {
                   setModalDetalleProducto(false);
                 }
               }}
-              className="bg-[#F4821F] hover:bg-[#CC6A10] text-white text-xs h-7"
+              className="bg-spoon-primary hover:bg-spoon-primary-dark text-white text-xs h-7"
             >
               <Plus className="h-3 w-3 mr-1" />
               Agregar al menú
@@ -457,3 +457,29 @@ useEffect(() => {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

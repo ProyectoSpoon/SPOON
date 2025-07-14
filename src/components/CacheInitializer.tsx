@@ -12,3 +12,30 @@ export function CacheInitializer() {
   // Este componente no renderiza nada
   return null;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

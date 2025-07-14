@@ -65,8 +65,8 @@ export const Hero = () => {
             </motion.p>
 
             <motion.button
-              className="mt-8 bg-[#F4821F] text-white px-10 py-4 rounded-xl 
-                         hover:bg-[#CC6A10] transition-colors duration-300
+              className="mt-8 bg-spoon-primary text-white px-10 py-4 rounded-xl 
+                         hover:bg-spoon-primary-dark transition-colors duration-300
                          font-medium text-lg shadow-lg hover:shadow-xl
                          transform hover:-translate-y-0.5"
               initial={{ opacity: 0, y: 20 }}
@@ -98,3 +98,30 @@ export const Hero = () => {
     </section>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -213,7 +213,7 @@ export default function RolesUsuarios() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-[#F4821F]" />
+        <Loader2 className="h-8 w-8 animate-spin text-spoon-primary" />
       </div>
     );
   }
@@ -225,7 +225,7 @@ export default function RolesUsuarios() {
         <Button 
           onClick={handleSave}
           disabled={isSaving}
-          className="bg-[#F4821F] hover:bg-[#E67812] text-white"
+          className="bg-spoon-primary hover:bg-spoon-primary-dark text-white"
         >
           {isSaving ? (
             <>
@@ -254,7 +254,7 @@ export default function RolesUsuarios() {
             />
             <Button 
               onClick={() => handleEditUser()}
-              className="bg-[#F4821F] hover:bg-[#E67812] text-white"
+              className="bg-spoon-primary hover:bg-spoon-primary-dark text-white"
             >
               <UserPlus className="mr-2 h-4 w-4" />
               Nuevo Usuario
@@ -441,7 +441,7 @@ export default function RolesUsuarios() {
             <Button variant="outline" onClick={() => setShowUserDialog(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleSaveUser} className="bg-[#F4821F] hover:bg-[#E67812] text-white">
+            <Button onClick={handleSaveUser} className="bg-spoon-primary hover:bg-spoon-primary-dark text-white">
               Guardar
             </Button>
           </DialogFooter>
@@ -493,7 +493,7 @@ export default function RolesUsuarios() {
             <Button variant="outline" onClick={() => setShowRolDialog(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleSaveRol} className="bg-[#F4821F] hover:bg-[#E67812] text-white">
+            <Button onClick={handleSaveRol} className="bg-spoon-primary hover:bg-spoon-primary-dark text-white">
               Guardar
             </Button>
           </DialogFooter>
@@ -502,3 +502,30 @@ export default function RolesUsuarios() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

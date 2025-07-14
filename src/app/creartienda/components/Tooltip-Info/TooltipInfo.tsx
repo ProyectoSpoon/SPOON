@@ -59,3 +59,29 @@ const TooltipInfo = ({ mensaje, posicion = 'arriba' }: PropsTooltipInfo) => {
 };
 
 export default TooltipInfo;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

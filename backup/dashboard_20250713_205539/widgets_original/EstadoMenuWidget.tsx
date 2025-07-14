@@ -85,7 +85,7 @@ const ProgressItem: React.FC<ProgressItemProps> = ({
       </div>
       <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
         <div 
-          className="bg-[#F4821F] h-2 rounded-full transition-all duration-300"
+          className="bg-spoon-primary h-2 rounded-full transition-all duration-300"
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -180,3 +180,28 @@ export const EstadoMenuWidget: React.FC<EstadoMenuWidgetProps> = ({
     </Card>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -37,13 +37,13 @@ export const FormularioProgramacion: React.FC<FormularioProgramacionProps> = ({
         <div className="flex gap-2">
           <button 
             onClick={onCopiarDiaAnterior}
-            className="text-sm text-[#F4821F] hover:text-[#CC6A10]"
+            className="text-sm text-spoon-primary hover:text-spoon-primary-dark"
           >
             Copiar del día anterior
           </button>
           <button 
             onClick={onLimpiar}
-            className="text-sm text-[#F4821F] hover:text-[#CC6A10]"
+            className="text-sm text-spoon-primary hover:text-spoon-primary-dark"
           >
             Limpiar
           </button>
@@ -56,7 +56,7 @@ export const FormularioProgramacion: React.FC<FormularioProgramacionProps> = ({
             {combinaciones.map(combo => (
               <div
                 key={combo.id}
-                className="p-4 border rounded-lg hover:border-[#F4821F] group"
+                className="p-4 border rounded-lg hover:border-spoon-primary group"
               >
                 <div className="flex justify-between items-start">
                   <div>
@@ -97,7 +97,7 @@ export const FormularioProgramacion: React.FC<FormularioProgramacionProps> = ({
               <Calendar className="w-12 h-12 mx-auto mb-2 text-neutral-400" />
               <p>Arrastra combinaciones aquí para programarlas</p>
               <p className="text-sm mt-1">o</p>
-              <button className="mt-2 px-4 py-2 text-sm text-[#F4821F] hover:bg-[#FFF4E6] rounded-lg">
+              <button className="mt-2 px-4 py-2 text-sm text-spoon-primary hover:bg-spoon-primary-light rounded-lg">
                 Seleccionar Combinaciones
               </button>
             </div>
@@ -107,3 +107,29 @@ export const FormularioProgramacion: React.FC<FormularioProgramacionProps> = ({
     </div>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

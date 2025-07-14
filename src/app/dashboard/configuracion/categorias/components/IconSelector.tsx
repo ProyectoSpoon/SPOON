@@ -106,7 +106,7 @@ export function IconSelector({ selectedIcon, onSelectIcon }: IconSelectorProps) 
                   type="button"
                   className={`w-8 h-8 rounded flex items-center justify-center border ${
                     iconName === selectedIcon 
-                      ? 'border-[#F4821F] bg-[#FFF8F3]' 
+                      ? 'border-spoon-primary bg-spoon-primary-light' 
                       : 'border-gray-200 hover:bg-gray-50'
                   }`}
                   onClick={() => {
@@ -131,3 +131,30 @@ export function IconSelector({ selectedIcon, onSelectIcon }: IconSelectorProps) 
     </Popover>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

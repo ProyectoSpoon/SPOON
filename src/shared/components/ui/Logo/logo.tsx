@@ -14,7 +14,7 @@ export const Logo = ({
   };
 
   const variantStyles = {
-    default: 'text-[#F4821F]',
+    default: 'text-spoon-primary',
     white: 'text-white',
     black: 'text-black'
   };
@@ -51,3 +51,30 @@ export const Logo = ({
     </div>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -159,7 +159,7 @@ const VistaHorariosRestaurante: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F4821F] mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-spoon-primary mb-4"></div>
           <p className="text-neutral-600">Cargando horarios...</p>
         </div>
       </div>
@@ -197,7 +197,7 @@ const VistaHorariosRestaurante: React.FC = () => {
               <button
                 onClick={handleGuardar}
                 disabled={guardando}
-                className="flex items-center gap-2 px-4 py-2 bg-[#F4821F] hover:bg-[#D66A0B] 
+                className="flex items-center gap-2 px-4 py-2 bg-spoon-primary hover:bg-spoon-primary-dark 
                          text-white rounded-lg transition-colors
                          disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -226,3 +226,30 @@ const VistaHorariosRestaurante: React.FC = () => {
 };
 
 export default VistaHorariosRestaurante;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

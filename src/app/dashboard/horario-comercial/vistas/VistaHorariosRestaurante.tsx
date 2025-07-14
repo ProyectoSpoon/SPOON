@@ -307,3 +307,30 @@ export default function VistaHorariosRestaurante({
 }
 
 export { type HorarioDay };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

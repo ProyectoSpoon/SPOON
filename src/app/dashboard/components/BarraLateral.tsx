@@ -34,6 +34,9 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 
+// ✨ AGREGADO: Import de iconos Spoon Refined
+import { ChefHatIcon, SalesAnalyticsIcon, RevenueIcon, OrderBellIcon, DashboardSpoonIcon, SettingsSpoonIcon, AuditSpoonIcon, HelpSpoonIcon } from '@/shared/components/icons';
+
 interface SubElementoMenu {
   etiqueta: string;
   ruta: string;
@@ -50,24 +53,24 @@ interface ElementoMenuProps {
 
 const elementosMenu: ElementoMenuProps[] = [
 {
-  icono: Home,
+  icono: DashboardSpoonIcon, // ✨ CAMBIADO: era Home
   etiqueta: 'Dashboard',
   ruta: '/dashboard',
   descripcion: 'Vista general del negocio'
 },
   {
-    icono: Receipt,
+    icono: RevenueIcon, // ✨ CAMBIADO: era Receipt
     etiqueta: 'Registro de Ventas',
     ruta: '/dashboard/registro-ventas',
     descripcion: 'Registro de ventas diarias',  },
   {
-    icono: ChefHat,
+    icono: OrderBellIcon, // ✨ CAMBIADO: era ChefHat
     etiqueta: 'Gestión de Órdenes',
     ruta: '/dashboard/gestion-ordenes',
     descripcion: 'Administrar comandas y estados de órdenes'
   },
   {
-  icono: Utensils,  // 🔄 Cambiar icono
+  icono: ChefHatIcon, // ✨ CAMBIADO: era Utensils
   etiqueta: 'Mi Menú Digital',
   descripcion: 'Gestión completa del menú - Producto gratuito principal',  // 🔄 Nueva descripción
   subElementos: [
@@ -100,7 +103,7 @@ const elementosMenu: ElementoMenuProps[] = [
 },
 
 {
-  icono: BarChart2,
+  icono: SalesAnalyticsIcon, // ✨ CAMBIADO: era BarChart2
   etiqueta: 'Analytics & Insights',  // 🔄 Nuevo nombre
   descripcion: 'Inteligencia para optimizar tu negocio',  // 🔄 Nueva descripción
   subElementos: [
@@ -127,7 +130,7 @@ const elementosMenu: ElementoMenuProps[] = [
   ]
 },
 {
-  icono: Settings,
+  icono: SettingsSpoonIcon, // ✨ CAMBIADO: era Settings
   etiqueta: 'Configuración',
   descripcion: 'Configuración del restaurante',
   subElementos: [
@@ -149,13 +152,13 @@ const elementosMenu: ElementoMenuProps[] = [
   ]
 },
 {
-  icono: FileText,
+  icono: AuditSpoonIcon, // ✨ CAMBIADO: era FileText
   etiqueta: 'Auditoría',
   ruta: '/dashboard/auditoria',
   descripcion: 'Registro de actividades del sistema'
 },
   {
-    icono: HelpCircle,
+    icono: HelpSpoonIcon, // ✨ CAMBIADO: era HelpCircle
     etiqueta: 'Ayuda',
     ruta: '/dashboard/ayuda',
     descripcion: 'Centro de ayuda'
@@ -288,8 +291,3 @@ export default function BarraLateral() {
       </div>
     );
 }
-
-
-
-
-

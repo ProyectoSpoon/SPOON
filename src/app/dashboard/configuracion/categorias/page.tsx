@@ -108,7 +108,7 @@ export default function CategoriasConfiguracionPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-[#F4821F]" />
+        <Loader2 className="h-8 w-8 animate-spin text-spoon-primary" />
       </div>
     );
   }
@@ -144,3 +144,28 @@ export default function CategoriasConfiguracionPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -77,7 +77,7 @@ const TwoFactorAuth: React.FC<TwoFactorAuthProps> = ({ onVerified, sessionData }
             className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white 
               ${loading || code.length !== 6
                 ? 'bg-gray-300 cursor-not-allowed'
-                : 'bg-[#FF9933] hover:bg-[#B37B5E]'
+                : 'bg-spoon-primary hover:bg-spoon-primary-dark'
               } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF9933] disabled:opacity-50`}
           >
             {loading ? (
@@ -91,7 +91,7 @@ const TwoFactorAuth: React.FC<TwoFactorAuthProps> = ({ onVerified, sessionData }
             <button
               type="button"
               onClick={() => onVerified('resend')}
-              className="text-sm text-gray-600 hover:text-[#FF9933] transition-colors"
+              className="text-sm text-gray-600 hover:text-spoon-primary transition-colors"
             >
               ¿No recibiste el código? Reenviar
             </button>
@@ -106,3 +106,30 @@ const TwoFactorAuth: React.FC<TwoFactorAuthProps> = ({ onVerified, sessionData }
 };
 
 export default TwoFactorAuth;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
