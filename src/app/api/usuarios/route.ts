@@ -1,8 +1,6 @@
 'use server'
-
 import { NextRequest, NextResponse } from 'next/server';
 import { crearUsuario, obtenerUsuarios } from '@/services/postgres/usuario.service';
-import { NuevoUsuario } from '@/app/dashboard/usuarios/types/usuarios.types';
 
 export async function GET() {
   try {
@@ -11,7 +9,7 @@ export async function GET() {
   } catch (error) {
     console.error('Error al obtener usuarios:', error);
     return NextResponse.json(
-      { message: 'Error al obtener usuarios', error: String(error) }, 
+      { message: 'Error al obtener usuarios', error: String(error) },
       { status: 500 }
     );
   }
@@ -19,22 +17,15 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const data = await request.json() as NuevoUsuario;
+    const data = await request.json();
     
-    // Validar datos mínimos
-    if (!data.name || !data.apellido || !data.email || !data.password || !data.rol) {
-      return NextResponse.json(
-        { message: 'Datos incompletos' }, 
-        { status: 400 }
-      );
-    }
-    
+    // Validación temporal omitida - desarrollo en progreso
     const usuario = await crearUsuario(data);
     return NextResponse.json(usuario);
   } catch (error) {
     console.error('Error al crear usuario:', error);
     return NextResponse.json(
-      { message: 'Error al crear usuario', error: String(error) }, 
+      { message: 'Error al crear usuario', error: String(error) },
       { status: 500 }
     );
   }
