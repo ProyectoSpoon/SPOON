@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/shared/components/ui/Dialog/dialog';
-import { Button } from '@/shared/components/ui/Button/button';
+import { Button } from '@/shared/components/ui/Button';
 import { Usuario } from '../../types/usuarios.types';
 
 const formSchema = z.object({
@@ -192,6 +192,7 @@ export default function ModalEditarUsuario({
     </Dialog>
   );
 }
+
 
 
 

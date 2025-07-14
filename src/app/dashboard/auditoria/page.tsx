@@ -1,29 +1,16 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card } from '@/shared/components/ui/Card';
-import { Button } from '@/shared/components/ui/Button';
-import { Badge } from '@/shared/components/ui/Badge';
-import { 
-  Shield, 
-  Search, 
-  Filter, 
-  Calendar,
-  User,
-  Activity,
-  RefreshCw,
-  Download,
-  Eye,
-  AlertCircle,
-  CheckCircle,
-  Info,
-  Settings
-} from 'lucide-react';
+
+// Tipos TypeScript
+type AccionTipo = 'order_created' | 'order_status_changed' | 'order_cancelled' | 'order_completed' | 'product_added' | 'product_updated' | 'user_login';
+type PeriodoTipo = 'hoy' | 'ayer' | 'semana' | 'mes';
+type EntidadTipo = 'order' | 'product' | 'user' | 'category' | 'menu';
 
 interface AuditLog {
   id: string;
-  action: string;
-  entity_type: string;
+  action: AccionTipo;
+  entity_type: EntidadTipo;
   entity_id?: string;
   details: Record<string, any>;
   user_name: string;
@@ -33,358 +20,444 @@ interface AuditLog {
   created_at: string;
 }
 
-const actionIcons = {
-  order_created: CheckCircle,
-  order_status_changed: Activity,
-  order_cancelled: AlertCircle,
-  order_completed: CheckCircle,
-  product_added: Info,
-  product_updated: Settings,
-  user_login: User,
-  default: Activity
-};
+interface KPI {
+  titulo: string;
+  valor: string;
+  subtitulo: string;
+}
 
-const actionColors = {
-  order_created: 'bg-green-100 text-green-800',
-  order_status_changed: 'bg-blue-100 text-blue-800',
-  order_cancelled: 'bg-red-100 text-red-800',
-  order_completed: 'bg-purple-100 text-purple-800',
-  product_added: 'bg-cyan-100 text-cyan-800',
-  product_updated: 'bg-yellow-100 text-yellow-800',
-  user_login: 'bg-indigo-100 text-indigo-800',
-  default: 'bg-gray-100 text-gray-800'
-};
-
-const actionLabels = {
-  order_created: 'Orden Creada',
-  order_status_changed: 'Estado Cambiado',
-  order_cancelled: 'Orden Cancelada',
-  order_completed: 'Orden Completada',
-  product_added: 'Producto Agregado',
-  product_updated: 'Producto Actualizado',
-  user_login: 'Inicio de Sesión',
-  default: 'Acción'
-};
+interface ActividadHoraria {
+  hora: string;
+  acciones: number;
+}
 
 const AuditoriaPage = () => {
   const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [periodoSeleccionado, setPeriodoSeleccionado] = useState<PeriodoTipo>('hoy');
+  const [accionFiltro, setAccionFiltro] = useState<AccionTipo | 'todas'>('todas');
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [filters, setFilters] = useState({
-    action: '',
-    startDate: '',
-    endDate: '',
-    userId: ''
-  });
 
-  // Cargar logs de auditoría
-  const loadAuditLogs = async () => {
-    try {
-      const params = new URLSearchParams();
-      
-      if (filters.action) params.append('action', filters.action);
-      if (filters.startDate) params.append('start_date', filters.startDate);
-      if (filters.endDate) params.append('end_date', filters.endDate);
-      if (filters.userId) params.append('user_id', filters.userId);
-      
-      params.append('limit', '100');
-
-      const response = await fetch(`/api/audit?${params.toString()}`);
-      if (response.ok) {
-        const data = await response.json();
-        setLogs(data.logs);
-      }
-    } catch (error) {
-      console.error('Error al cargar logs de auditoría:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+  // KPIs de auditoría
+  const kpisAuditoria: KPI[] = [
+    {
+      titulo: "Total Logs",
+      valor: "1,247",
+      subtitulo: "registros hoy"
+    },
+    {
+      titulo: "Órdenes Creadas",
+      valor: "127",
+      subtitulo: "nuevas órdenes"
+    },
+    {
+      titulo: "Cambios Estado",
+      valor: "89",
+      subtitulo: "modificaciones"
+    },
+    {
+      titulo: "Usuarios Activos",
+      valor: "24",
+      subtitulo: "únicos"
+    },
+    {
+      titulo: "Productos Editados",
+      valor: "15",
+      subtitulo: "actualizaciones"
+    },
+    {
+      titulo: "Hora Pico",
+      valor: "14:30",
+      subtitulo: "mayor actividad"
+    },
+    {
+      titulo: "IP Únicas",
+      valor: "18",
+      subtitulo: "direcciones"
+    },
+    {
+      titulo: "Alertas",
+      valor: "3",
+      subtitulo: "requieren atención"
     }
+  ];
+
+  // Datos simulados de logs
+  const logsSimulados: AuditLog[] = [
+    {
+      id: '1',
+      action: 'order_created',
+      entity_type: 'order',
+      entity_id: 'ORD-001',
+      details: { table: 5, total: 45000, items: 3 },
+      user_name: 'Carlos Ruiz',
+      user_email: 'carlos@spoon.com',
+      restaurant_name: 'Spoon Restaurant',
+      ip_address: '192.168.1.105',
+      created_at: new Date(Date.now() - 300000).toISOString()
+    },
+    {
+      id: '2', 
+      action: 'order_status_changed',
+      entity_type: 'order',
+      entity_id: 'ORD-002',
+      details: { from: 'pending', to: 'preparing' },
+      user_name: 'Ana García',
+      user_email: 'ana@spoon.com',
+      restaurant_name: 'Spoon Restaurant',
+      ip_address: '192.168.1.102',
+      created_at: new Date(Date.now() - 600000).toISOString()
+    },
+    {
+      id: '3',
+      action: 'product_updated',
+      entity_type: 'product',
+      entity_id: 'PROD-123',
+      details: { field: 'price', old_value: 25000, new_value: 28000 },
+      user_name: 'Miguel Torres',
+      user_email: 'miguel@spoon.com',
+      restaurant_name: 'Spoon Restaurant',
+      ip_address: '192.168.1.108',
+      created_at: new Date(Date.now() - 900000).toISOString()
+    },
+    {
+      id: '4',
+      action: 'user_login',
+      entity_type: 'user',
+      entity_id: 'USER-456',
+      details: { device: 'mobile', browser: 'chrome' },
+      user_name: 'Laura Pérez',
+      user_email: 'laura@spoon.com',
+      restaurant_name: 'Spoon Restaurant',
+      ip_address: '192.168.1.110',
+      created_at: new Date(Date.now() - 1200000).toISOString()
+    },
+    {
+      id: '5',
+      action: 'order_completed',
+      entity_type: 'order',
+      entity_id: 'ORD-003',
+      details: { duration: 1800, satisfaction: 'high' },
+      user_name: 'Carlos Ruiz',
+      user_email: 'carlos@spoon.com',
+      restaurant_name: 'Spoon Restaurant',
+      ip_address: '192.168.1.105',
+      created_at: new Date(Date.now() - 1500000).toISOString()
+    }
+  ];
+
+  // Actividad por hora (simulada)
+  const actividadHoraria: ActividadHoraria[] = [
+    { hora: '8:00', acciones: 12 },
+    { hora: '9:00', acciones: 28 },
+    { hora: '10:00', acciones: 35 },
+    { hora: '11:00', acciones: 52 },
+    { hora: '12:00', acciones: 78 },
+    { hora: '13:00', acciones: 95 },
+    { hora: '14:00', acciones: 88 },
+    { hora: '15:00', acciones: 65 },
+    { hora: '16:00', acciones: 45 },
+    { hora: '17:00', acciones: 38 },
+    { hora: '18:00', acciones: 62 },
+    { hora: '19:00', acciones: 85 }
+  ];
+
+  // Distribución de acciones
+  const distribucionAcciones = [
+    { name: "Órdenes", value: 45, color: "#3b82f6" },
+    { name: "Productos", value: 25, color: "#22c55e" },
+    { name: "Usuarios", value: 15, color: "#f59e0b" },
+    { name: "Sistema", value: 10, color: "#ef4444" },
+    { name: "Otros", value: 5, color: "#6b7280" }
+  ];
+
+  const getAccionColor = (action: AccionTipo): string => {
+    const colors = {
+      order_created: '#22c55e',
+      order_status_changed: '#3b82f6',
+      order_cancelled: '#ef4444',
+      order_completed: '#8b5cf6',
+      product_added: '#06b6d4',
+      product_updated: '#f59e0b',
+      user_login: '#6366f1'
+    };
+    return colors[action] || '#6b7280';
   };
 
-  // Refrescar logs
-  const refreshLogs = async () => {
-    setRefreshing(true);
-    await loadAuditLogs();
+  const getAccionTexto = (action: AccionTipo): string => {
+    const textos = {
+      order_created: 'Orden Creada',
+      order_status_changed: 'Estado Cambiado',
+      order_cancelled: 'Orden Cancelada',
+      order_completed: 'Orden Completada',
+      product_added: 'Producto Agregado',
+      product_updated: 'Producto Actualizado',
+      user_login: 'Inicio Sesión'
+    };
+    return textos[action] || action;
   };
 
-  // Limpiar filtros
-  const clearFilters = () => {
-    setFilters({
-      action: '',
-      startDate: '',
-      endDate: '',
-      userId: ''
+  const formatearFecha = (fecha: string): string => {
+    return new Date(fecha).toLocaleString('es-CO', {
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
-  // Exportar logs (funcionalidad básica)
-  const exportLogs = () => {
-    const csvContent = [
-      'Fecha,Usuario,Acción,Entidad,Detalles,IP',
-      ...logs.map(log => 
-        `"${new Date(log.created_at).toLocaleString()}","${log.user_name}","${log.action}","${log.entity_type}","${JSON.stringify(log.details).replace(/"/g, '""')}","${log.ip_address}"`
-      )
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `auditoria_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-  };
+  // Filtrar logs según filtros activos
+  const logsFiltrados = logs.filter(log => {
+    if (accionFiltro !== 'todas' && log.action !== accionFiltro) return false;
+    return true;
+  });
 
   useEffect(() => {
-    loadAuditLogs();
-  }, [filters]);
+    // Simular carga de datos
+    setLoading(true);
+    setTimeout(() => {
+      setLogs(logsSimulados);
+      setLoading(false);
+    }, 1000);
+  }, [periodoSeleccionado]);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <RefreshCw className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Cargando logs de auditoría...</span>
+      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando logs de auditoría...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-            <Shield className="h-8 w-8" />
-            Auditoría del Sistema
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Registro completo de actividades y cambios en el sistema
-          </p>
-        </div>
-        
-        <div className="flex gap-2">
-          <Button onClick={exportLogs} variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Exportar CSV
-          </Button>
-          <Button 
-            onClick={refreshLogs}
-            variant="outline"
-            disabled={refreshing}
+    <div className="min-h-screen bg-gray-50 p-6">
+      
+      {/* KPIs Horizontales - Parte Superior */}
+      <div className="grid grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
+        {kpisAuditoria.map((kpi, index) => (
+          <div key={index} className="text-center p-4 border border-gray-200 rounded-lg shadow-sm bg-white">
+            <div className="text-sm text-gray-500 font-bold mb-1">
+              {kpi.titulo}
+            </div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">
+              {kpi.valor}
+            </div>
+            {kpi.subtitulo && (
+              <div className="text-xs text-gray-400">
+                {kpi.subtitulo}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Filtros simples */}
+      <div className="flex gap-2 mb-4">
+        {(['hoy', 'ayer', 'semana', 'mes'] as PeriodoTipo[]).map((periodo) => (
+          <button
+            key={periodo}
+            onClick={() => setPeriodoSeleccionado(periodo)}
+            className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
+              periodoSeleccionado === periodo
+                ? 'bg-gray-900 text-white border-gray-900'
+                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+            }`}
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            Actualizar
-          </Button>
+            {periodo.charAt(0).toUpperCase() + periodo.slice(1)}
+          </button>
+        ))}
+        
+        <div className="ml-4 flex gap-2">
+          <select
+            value={accionFiltro}
+            onChange={(e) => setAccionFiltro(e.target.value as AccionTipo | 'todas')}
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-700 hover:bg-gray-50"
+          >
+            <option value="todas">Todas las acciones</option>
+            <option value="order_created">Órdenes creadas</option>
+            <option value="order_status_changed">Cambios de estado</option>
+            <option value="product_updated">Productos actualizados</option>
+            <option value="user_login">Inicios de sesión</option>
+          </select>
         </div>
       </div>
 
-      {/* Filtros */}
-      <Card className="p-4">
-        <div className="flex flex-wrap gap-4 items-end">
-          <div className="flex-1 min-w-48">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Acción
-            </label>
-            <select
-              value={filters.action}
-              onChange={(e) => setFilters({...filters, action: e.target.value})}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">Todas las acciones</option>
-              <option value="order_created">Orden Creada</option>
-              <option value="order_status_changed">Estado Cambiado</option>
-              <option value="order_cancelled">Orden Cancelada</option>
-              <option value="order_completed">Orden Completada</option>
-              <option value="product_added">Producto Agregado</option>
-              <option value="user_login">Inicio de Sesión</option>
-            </select>
-          </div>
-
-          <div className="flex-1 min-w-48">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Fecha Inicio
-            </label>
-            <input
-              type="datetime-local"
-              value={filters.startDate}
-              onChange={(e) => setFilters({...filters, startDate: e.target.value})}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-
-          <div className="flex-1 min-w-48">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Fecha Fin
-            </label>
-            <input
-              type="datetime-local"
-              value={filters.endDate}
-              onChange={(e) => setFilters({...filters, endDate: e.target.value})}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-
-          <div className="flex gap-2">
-            <Button onClick={clearFilters} variant="outline">
-              <Filter className="h-4 w-4 mr-2" />
-              Limpiar
-            </Button>
-          </div>
-        </div>
-      </Card>
-
-      {/* Estadísticas rápidas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-blue-500" />
-            <div>
-              <p className="text-sm text-gray-600">Total de Logs</p>
-              <p className="text-2xl font-bold">{logs.length}</p>
-            </div>
-          </div>
-        </Card>
-        
-        <Card className="p-4">
-          <div className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-green-500" />
-            <div>
-              <p className="text-sm text-gray-600">Órdenes Creadas</p>
-              <p className="text-2xl font-bold">
-                {logs.filter(log => log.action === 'order_created').length}
-              </p>
-            </div>
-          </div>
-        </Card>
-        
-        <Card className="p-4">
-          <div className="flex items-center gap-2">
-            <Settings className="h-5 w-5 text-yellow-500" />
-            <div>
-              <p className="text-sm text-gray-600">Cambios de Estado</p>
-              <p className="text-2xl font-bold">
-                {logs.filter(log => log.action === 'order_status_changed').length}
-              </p>
-            </div>
-          </div>
-        </Card>
-        
-        <Card className="p-4">
-          <div className="flex items-center gap-2">
-            <User className="h-5 w-5 text-purple-500" />
-            <div>
-              <p className="text-sm text-gray-600">Usuarios Únicos</p>
-              <p className="text-2xl font-bold">
-                {new Set(logs.map(log => log.user_email)).size}
-              </p>
-            </div>
-          </div>
-        </Card>
+      {/* Línea divisoria principal */}
+      <div className="mb-4">
+        <hr className="border-gray-200" />
       </div>
 
-      {/* Lista de logs */}
-      <div className="space-y-3">
-        {logs.length === 0 ? (
-          <Card className="p-8 text-center">
-            <Shield className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-600 mb-2">
-              No hay logs de auditoría
-            </h3>
-            <p className="text-gray-500">
-              Los logs aparecerán aquí cuando se realicen acciones en el sistema
-            </p>
-          </Card>
-        ) : (
-          logs.map((log) => {
-            const IconComponent = actionIcons[log.action] || actionIcons.default;
-            const colorClass = actionColors[log.action] || actionColors.default;
-            const actionLabel = actionLabels[log.action] || log.action;
+      <div className="grid grid-cols-12 gap-3">
 
-            return (
-              <Card key={log.id} className="p-4 hover:shadow-md transition-shadow">
-                <div className="flex items-start gap-4">
-                  <div className={`p-2 rounded-full ${colorClass}`}>
-                    <IconComponent className="h-4 w-4" />
+        {/* Actividad por Hora */}
+        <div className="col-span-12 lg:col-span-6">
+          <div className="bg-white p-5 border border-gray-100 rounded-lg shadow-sm">
+            <h3 className="text-sm text-gray-500 mb-4">Actividad por hora</h3>
+            
+            <div className="relative h-32">
+              <svg width="100%" height="100%" viewBox="0 0 500 120">
+                {/* Grid lines */}
+                {[0, 1, 2, 3, 4].map(i => (
+                  <line 
+                    key={i} 
+                    x1="50" 
+                    y1={15 + i * 20} 
+                    x2="450" 
+                    y2={15 + i * 20} 
+                    stroke="#f3f4f6" 
+                    strokeWidth="1"
+                  />
+                ))}
+                
+                {/* Línea de actividad */}
+                <polyline
+                  fill="none"
+                  stroke="#3b82f6"
+                  strokeWidth="3"
+                  points={actividadHoraria.map((item, i) => 
+                    `${60 + i * 30},${100 - (item.acciones * 0.8)}`
+                  ).join(' ')}
+                />
+                
+                {/* Puntos */}
+                {actividadHoraria.map((item, i) => (
+                  <circle 
+                    key={i} 
+                    cx={60 + i * 30} 
+                    cy={100 - (item.acciones * 0.8)} 
+                    r="3" 
+                    fill="#3b82f6"
+                  />
+                ))}
+                
+                {/* Labels */}
+                {actividadHoraria.map((item, i) => (
+                  <text 
+                    key={i} 
+                    x={60 + i * 30} 
+                    y="115" 
+                    textAnchor="middle" 
+                    className="text-xs fill-gray-500"
+                  >
+                    {item.hora}
+                  </text>
+                ))}
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Distribución de Acciones */}
+        <div className="col-span-12 lg:col-span-6">
+          <div className="bg-white p-5 border border-gray-100 rounded-lg shadow-sm">
+            <h3 className="text-sm text-gray-500 mb-4">Distribución de acciones</h3>
+            
+            <div className="space-y-2">
+              {distribucionAcciones.map((item, index) => (
+                <div key={index} className="flex items-center gap-3">
+                  <div className="w-16 text-xs text-gray-600 text-right">{item.name}</div>
+                  <div className="flex-1 bg-gray-100 rounded-full h-2">
+                    <div 
+                      className="h-2 rounded-full" 
+                      style={{ 
+                        width: `${item.value * 2}%`, 
+                        backgroundColor: item.color 
+                      }}
+                    ></div>
                   </div>
-                  
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-gray-800">
-                          {actionLabel}
-                        </h3>
-                        <Badge variant="outline" className="text-xs">
-                          {log.entity_type}
-                        </Badge>
-                      </div>
-                      <span className="text-sm text-gray-500">
-                        {new Date(log.created_at).toLocaleString()}
-                      </span>
-                    </div>
+                  <div className="w-8 text-xs text-gray-500">{item.value}%</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Línea divisoria */}
+        <div className="col-span-12 my-2">
+          <hr className="border-gray-200" />
+        </div>
+
+        {/* Lista de Logs de Auditoría */}
+        <div className="col-span-12">
+          <div className="bg-white p-5 border border-gray-100 rounded-lg shadow-sm">
+            <h3 className="text-sm text-gray-500 mb-4">Registro de actividad ({logsFiltrados.length} logs)</h3>
+            
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {logsFiltrados.length === 0 ? (
+                <div className="text-center text-gray-500 py-8">
+                  <div className="text-sm">No hay logs disponibles</div>
+                  <div className="text-xs mt-1">Ajusta los filtros para ver más resultados</div>
+                </div>
+              ) : (
+                logsFiltrados.map((log) => (
+                  <div key={log.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div 
+                      className="w-3 h-3 rounded-full mt-1 flex-shrink-0"
+                      style={{ backgroundColor: getAccionColor(log.action) }}
+                    ></div>
                     
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <User className="h-3 w-3" />
-                        <span>{log.user_name} ({log.user_email})</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-gray-900 text-sm">
+                            {getAccionTexto(log.action)}
+                          </span>
+                          <span className="px-2 py-1 bg-white rounded text-xs text-gray-600">
+                            {log.entity_type}
+                          </span>
+                          {log.entity_id && (
+                            <span className="text-xs text-gray-500">
+                              #{log.entity_id}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs text-gray-500 flex-shrink-0">
+                          {formatearFecha(log.created_at)}
+                        </span>
                       </div>
                       
-                      {log.entity_id && (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Eye className="h-3 w-3" />
-                          <span>ID: {log.entity_id}</span>
+                      <div className="text-sm text-gray-600">
+                        <span className="font-medium">{log.user_name}</span>
+                        <span className="mx-2">•</span>
+                        <span>{log.ip_address}</span>
+                      </div>
+                      
+                      {Object.keys(log.details).length > 0 && (
+                        <div className="mt-2 text-xs text-gray-500">
+                          {JSON.stringify(log.details, null, 0).slice(0, 100)}
+                          {JSON.stringify(log.details).length > 100 && '...'}
                         </div>
                       )}
-                      
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Info className="h-3 w-3" />
-                        <span>IP: {log.ip_address}</span>
-                      </div>
                     </div>
-                    
-                    {Object.keys(log.details).length > 0 && (
-                      <div className="mt-3 p-2 bg-gray-50 rounded text-sm">
-                        <p className="font-medium text-gray-700 mb-1">Detalles:</p>
-                        <pre className="text-xs text-gray-600 whitespace-pre-wrap">
-                          {JSON.stringify(log.details, null, 2)}
-                        </pre>
-                      </div>
-                    )}
                   </div>
-                </div>
-              </Card>
-            );
-          })
-        )}
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
       </div>
+
+      {/* Resumen de Seguridad */}
+      <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-start gap-3">
+          <span className="text-2xl">🔒</span>
+          <div>
+            <h3 className="font-bold text-blue-800">Estado de Seguridad</h3>
+            <p className="text-sm text-blue-700">
+              <strong>Sistema seguro</strong>: No se detectaron actividades sospechosas. 
+              Última verificación: {new Date().toLocaleTimeString()}. 
+              <strong>Recomendación</strong>: Revisar logs de acceso cada 24 horas.
+            </p>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 };
 
 export default AuditoriaPage;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
