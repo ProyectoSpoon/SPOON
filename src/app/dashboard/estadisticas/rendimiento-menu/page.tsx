@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useSetPageTitle } from '@/shared/Context/page-title-context';
 
 // Tipos TypeScript
 type StatusType = 'estrella' | 'excelente' | 'bueno' | 'bajo';
@@ -29,6 +30,9 @@ interface Categoria {
 }
 
 const RendimientoMenuPage = () => {
+
+  // ✅ TÍTULO DINÁMICO DE LA PÁGINA
+  useSetPageTitle('Rendimiento del Menú', 'Análisis de popularidad de productos');
   const [periodoSeleccionado, setPeriodoSeleccionado] = useState<PeriodoType>('hoy');
 
   // KPIs del rendimiento del menú

@@ -2,6 +2,7 @@
 'use client'
 
 import React from 'react';
+import { useSetPageTitle } from '@/shared/Context/page-title-context';
 import { Plus } from 'lucide-react';
 import { Button } from '@/shared/components/ui/Button';
 import TablaUsuarios from './components/tabla-usuarios';
@@ -10,6 +11,9 @@ import ModalNuevoUsuario from './components/modal-usuario/modal-nuevo-usuario';
 import { usePostgresUsuarios } from './hooks/use-postgres-usuarios';
 
 export default function UsuariosPage() {
+
+  // ✅ TÍTULO DINÁMICO DE LA PÁGINA
+  useSetPageTitle('Gestión de Usuarios', 'Administración de usuarios del sistema');
   const {
     usuarios,
     isLoading,
@@ -62,6 +66,7 @@ export default function UsuariosPage() {
     </div>
   );
 }
+
 
 
 

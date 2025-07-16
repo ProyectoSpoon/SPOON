@@ -12,3 +12,8 @@ export const FavoritesSection = lazy(() =>
 export const MenuSection = lazy(() => 
   import('./MenuSection').then(module => ({ default: module.MenuSection }))
 );
+
+// ✅ NUEVO: Modal del menú del día
+export const ModalVerMenuDia = lazy(() => 
+  import('./ModalVerMenuDia').then(module => ({ default: module.ModalVerMenuDia }))
+);

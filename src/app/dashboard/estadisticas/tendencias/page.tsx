@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useSetPageTitle } from '@/shared/Context/page-title-context';
 
 // Tipos TypeScript
 type PeriodoType = 'hoy' | 'ayer' | 'semana' | 'mes';
@@ -31,6 +32,9 @@ interface TendenciaHoraria {
 }
 
 const TendenciasPage = () => {
+
+  // ✅ TÍTULO DINÁMICO DE LA PÁGINA
+  useSetPageTitle('Tendencias', 'Tendencias de ventas y comportamiento');
   const [periodoSeleccionado, setPeriodoSeleccionado] = useState<PeriodoType>('mes');
 
   // KPIs de tendencias

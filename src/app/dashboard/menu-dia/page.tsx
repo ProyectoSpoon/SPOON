@@ -1,10 +1,14 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useSetPageTitle } from '@/shared/Context/page-title-context';
 import { MenuDiaSection } from '@/components/menu/MenuDiaSection';
 import { initializeCache } from '@/utils/init-cache';
 
 export default function MenuDiaPage() {
+
+  // ✅ TÍTULO DINÁMICO DE LA PÁGINA
+  useSetPageTitle('Menú del Día', 'Gestión del menú diario');
   // Inicializar el caché al cargar la página
   useEffect(() => {
     initializeCache();
@@ -30,6 +34,7 @@ export default function MenuDiaPage() {
     </div>
   );
 }
+
 
 
 

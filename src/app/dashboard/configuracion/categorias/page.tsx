@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSetPageTitle } from '@/shared/Context/page-title-context';
 import { Loader2 } from 'lucide-react';
 import { ConfiguracionCategorias } from './components/ConfiguracionCategorias';
 import { TipoRestaurante } from './types/tipos';
@@ -9,6 +10,9 @@ import { Button } from '@/shared/components/ui/Button';
 import { toast } from 'sonner';
 
 export default function CategoriasConfiguracionPage() {
+
+  // ✅ TÍTULO DINÁMICO DE LA PÁGINA
+  useSetPageTitle('Configuración de Categorías', 'Gestión de categorías de productos');
   const [tiposRestaurante, setTiposRestaurante] = useState<TipoRestaurante[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -144,6 +148,7 @@ export default function CategoriasConfiguracionPage() {
     </div>
   );
 }
+
 
 
 

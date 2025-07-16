@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSetPageTitle } from '@/shared/Context/page-title-context';
 
 // Tipos TypeScript
 type AccionTipo = 'order_created' | 'order_status_changed' | 'order_cancelled' | 'order_completed' | 'product_added' | 'product_updated' | 'user_login';
@@ -32,6 +33,9 @@ interface ActividadHoraria {
 }
 
 const AuditoriaPage = () => {
+
+  // ✅ TÍTULO DINÁMICO DE LA PÁGINA
+  useSetPageTitle('Auditoría', 'Registro de actividades del sistema');
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [periodoSeleccionado, setPeriodoSeleccionado] = useState<PeriodoTipo>('hoy');
   const [accionFiltro, setAccionFiltro] = useState<AccionTipo | 'todas'>('todas');

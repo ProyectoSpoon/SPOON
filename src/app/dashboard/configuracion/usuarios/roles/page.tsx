@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react';
+import { useSetPageTitle } from '@/shared/Context/page-title-context';
 import { Shield } from 'lucide-react';
 import { Card } from "@/shared/components/ui/Card";
 import { DataTable } from "@/shared/components/ui/Table";
@@ -8,6 +9,9 @@ import { Badge } from "@/shared/components/ui/Badge";
 import { Button } from "@/shared/components/ui/Button";
 
 export default function RolesPage() {
+
+  // ✅ TÍTULO DINÁMICO DE LA PÁGINA
+  useSetPageTitle('Roles de Usuario', 'Configuración de roles y permisos');
   const roles = [
     {
       nombre: 'Administrador',
@@ -103,6 +107,7 @@ export default function RolesPage() {
     </div>
   );
 }
+
 
 
 

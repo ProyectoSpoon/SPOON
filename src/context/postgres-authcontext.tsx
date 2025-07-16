@@ -1,3 +1,4 @@
+// src/context/postgres-authcontext.tsx
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
@@ -9,7 +10,7 @@ interface User {
   role: string;
   permissions: string[];
   emailVerified: boolean;
-  restaurantId?: string;
+  restaurantId?: string; // ← YA EXISTE
   isActive: boolean;
   lastLogin?: Date;
 }
@@ -21,6 +22,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  refreshAuth: () => Promise<void>; // Nuevo método para refrescar
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,32 +40,82 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Función para obtener restaurant_id del usuario
+  const getRestaurantId = async (userId: string, token: string): Promise<string | undefined> => {
+    try {
+      const response = await fetch('/api/auth/current-user/restaurant', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.restaurantId;
+      }
+      
+      console.log('Usuario sin restaurante asignado');
+      return undefined;
+    } catch (error) {
+      console.error('Error obteniendo restaurant_id:', error);
+      return undefined;
+    }
+  };
+
   useEffect(() => {
-    // Simular verificación de sesión existente
     const checkSession = async () => {
       try {
-        console.log('Verificando sesión existente...');
+        console.log('🔍 Verificando sesión existente...');
         
-        // Simular delay de verificación
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Verificar si hay un token guardado
         const token = localStorage.getItem('auth_token');
-        if (token) {
-          // Simular usuario autenticado
-          setUser({
-            uid: 'user_1',
-            email: 'admin@spoon.com',
-            displayName: 'Administrador SPOON',
-            role: 'admin',
-            permissions: ['read', 'write', 'delete', 'manage'],
-            emailVerified: true,
+        if (!token) {
+          setLoading(false);
+          return;
+        }
+
+        // Verificar validez del token
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          
+          // Verificar si el token ha expirado
+          if (payload.exp * 1000 < Date.now()) {
+            console.log('Token expirado, removiendo...');
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('refresh_token');
+            setLoading(false);
+            return;
+          }
+
+          // Obtener restaurant_id
+          const restaurantId = await getRestaurantId(payload.userId, token);
+
+          // Configurar usuario desde token válido
+          const userData: User = {
+            uid: payload.userId,
+            email: payload.email,
+            displayName: payload.firstName && payload.lastName 
+              ? `${payload.firstName} ${payload.lastName}` 
+              : payload.email,
+            role: payload.role,
+            permissions: payload.permissions || [],
+            emailVerified: true, // Asumimos verificado si tiene token válido
+            restaurantId: restaurantId,
             isActive: true,
             lastLogin: new Date()
-          });
+          };
+          
+          setUser(userData);
+          console.log('✅ Sesión restaurada desde token válido');
+          
+        } catch (tokenError) {
+          console.error('Token inválido:', tokenError);
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('refresh_token');
         }
+        
       } catch (err) {
-        console.error('Error verificando sesión:', err);
+        console.error('❌ Error verificando sesión:', err);
       } finally {
         setLoading(false);
       }
@@ -77,32 +129,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       setError(null);
       
-      console.log('Simulando login:', email);
+      console.log('🔐 Iniciando login para:', email);
       
-      // Simular delay de autenticación
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Simular validación
-      if (email === 'admin@spoon.com' && password === 'admin123') {
-        const userData: User = {
-          uid: 'user_1',
-          email: email,
-          displayName: 'Administrador SPOON',
-          role: 'admin',
-          permissions: ['read', 'write', 'delete', 'manage'],
-          emailVerified: true,
-          isActive: true,
-          lastLogin: new Date()
-        };
-        
-        setUser(userData);
-        localStorage.setItem('auth_token', 'simulated_token');
-        console.log('Login exitoso (simulación)');
-      } else {
-        throw new Error('Credenciales incorrectas');
+      // Llamar a la API real de login
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al iniciar sesión');
       }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Credenciales incorrectas');
+      }
+
+      // Guardar tokens
+      localStorage.setItem('auth_token', data.token);
+      if (data.refreshToken) {
+        localStorage.setItem('refresh_token', data.refreshToken);
+      }
+
+      // Obtener restaurant_id del usuario
+      const restaurantId = await getRestaurantId(data.user.id, data.token);
+
+      // Configurar usuario con datos reales de PostgreSQL
+      const userData: User = {
+        uid: data.user.id,
+        email: data.user.email,
+        displayName: data.user.firstName && data.user.lastName 
+          ? `${data.user.firstName} ${data.user.lastName}` 
+          : data.user.email,
+        role: data.user.role,
+        permissions: data.user.permissions || [],
+        emailVerified: true, // Si llegó hasta aquí, está verificado
+        restaurantId: restaurantId,
+        isActive: true,
+        lastLogin: new Date()
+      };
+      
+      setUser(userData);
+      console.log('✅ Login exitoso con PostgreSQL');
+      console.log('🏪 Restaurant ID:', restaurantId);
+      
     } catch (err: any) {
-      console.error('Error en login:', err);
+      console.error('❌ Error en login:', err);
       setError(err.message || 'Error al iniciar sesión');
       throw err;
     } finally {
@@ -115,27 +192,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       setError(null);
       
-      console.log('Simulando login con Google...');
+      console.log('🔐 Iniciando login con Google...');
       
-      // Simular delay de autenticación
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Redirigir a la API de Google OAuth
+      window.location.href = '/api/auth/google';
       
-      const userData: User = {
-        uid: 'user_google',
-        email: 'usuario@gmail.com',
-        displayName: 'Usuario Google',
-        role: 'owner',
-        permissions: ['read', 'write'],
-        emailVerified: true,
-        isActive: true,
-        lastLogin: new Date()
-      };
-      
-      setUser(userData);
-      localStorage.setItem('auth_token', 'simulated_google_token');
-      console.log('Login con Google exitoso (simulación)');
     } catch (err: any) {
-      console.error('Error en login con Google:', err);
+      console.error('❌ Error en login con Google:', err);
       setError(err.message || 'Error al iniciar sesión con Google');
       throw err;
     } finally {
@@ -147,19 +210,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       
-      console.log('Simulando logout...');
+      console.log('🚪 Cerrando sesión...');
       
-      // Simular delay de logout
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Opcional: Notificar al servidor del logout
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        try {
+          await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+        } catch (logoutError) {
+          console.log('Error notificando logout al servidor:', logoutError);
+        }
+      }
       
+      // Limpiar estado local
       setUser(null);
       localStorage.removeItem('auth_token');
-      console.log('Logout exitoso (simulación)');
+      localStorage.removeItem('refresh_token');
+      
+      console.log('✅ Logout exitoso');
+      
     } catch (err: any) {
-      console.error('Error en logout:', err);
+      console.error('❌ Error en logout:', err);
       setError(err.message || 'Error al cerrar sesión');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const refreshAuth = async () => {
+    try {
+      console.log('🔄 Refrescando autenticación...');
+      
+      const token = localStorage.getItem('auth_token');
+      if (!token) return;
+      
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const restaurantId = await getRestaurantId(payload.userId, token);
+      
+      if (user && restaurantId !== user.restaurantId) {
+        setUser(prev => prev ? { ...prev, restaurantId } : null);
+      }
+      
+    } catch (error) {
+      console.error('Error refrescando auth:', error);
     }
   };
 
@@ -169,7 +268,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     error,
     login,
     logout,
-    signInWithGoogle
+    signInWithGoogle,
+    refreshAuth
   };
 
   return (
@@ -178,30 +278,3 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </AuthContext.Provider>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -2,9 +2,13 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useSetPageTitle } from '@/shared/Context/page-title-context';
 import { useRouter } from 'next/navigation';
 
 export default function CartaPage() {
+
+  // ✅ TÍTULO DINÁMICO DE LA PÁGINA
+  useSetPageTitle('Gestión de Carta', 'Administración del menú y productos');
   const router = useRouter();
 
   useEffect(() => {
@@ -19,6 +23,7 @@ export default function CartaPage() {
     </div>
   );
 }
+
 
 
 

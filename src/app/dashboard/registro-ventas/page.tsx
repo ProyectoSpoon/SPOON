@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSetPageTitle } from '@/shared/Context/page-title-context';
 
 // Tipos TypeScript
 type EstadoMesa = 'libre' | 'ocupada' | 'reservada' | 'limpieza';
@@ -35,6 +36,9 @@ interface ConfigRestaurante {
 }
 
 const RegistroVentasPage = () => {
+
+  // ✅ TÍTULO DINÁMICO DE LA PÁGINA
+  useSetPageTitle('Registro de Ventas', 'Control y registro de ventas diarias');
   // Estados
   const [mesaSeleccionada, setMesaSeleccionada] = useState<string | null>(null);
   const [categoriaActiva, setCategoriaActiva] = useState<CategoriaTipo>('platos');
@@ -128,6 +132,9 @@ const RegistroVentasPage = () => {
   };
 
   const agregarAlCarrito = (producto: Producto) => {
+
+  // ✅ TÍTULO DINÁMICO DE LA PÁGINA
+  useSetPageTitle('Registro de Ventas', 'Control y registro de ventas diarias');
     setCarrito(carritoActual => {
       const existente = carritoActual.find(item => item.producto.id === producto.id);
       if (existente) {
@@ -142,6 +149,9 @@ const RegistroVentasPage = () => {
   };
 
   const actualizarCantidad = (productId: string, cantidad: number) => {
+
+  // ✅ TÍTULO DINÁMICO DE LA PÁGINA
+  useSetPageTitle('Registro de Ventas', 'Control y registro de ventas diarias');
     if (cantidad <= 0) {
       setCarrito(carritoActual => 
         carritoActual.filter(item => item.producto.id !== productId)

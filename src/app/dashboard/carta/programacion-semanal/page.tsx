@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSetPageTitle } from '@/shared/Context/page-title-context';
 import { Clock, AlertCircle, Save, Share, ChevronLeft, ChevronRight, RotateCcw, Calendar, Wand2 } from 'lucide-react';
 import { useProgramacionSemanalUnificado } from './hooks/useProgramacionSemanalUnificado';
 import { Button } from '@/shared/components/ui/Button';
@@ -14,6 +15,9 @@ type DiaSemana = 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes' | 'Sá
 const RESTAURANTE_ID_PRUEBA = 'rest-test-001';
 
 export default function ProgramacionSemanalPage() {
+
+  // ✅ TÍTULO DINÁMICO DE LA PÁGINA
+  useSetPageTitle('Programación Semanal', 'Planificación de menús semanales');
   const {
     loading,
     error,
@@ -433,6 +437,7 @@ export default function ProgramacionSemanalPage() {
     </div>
   );
 }
+
 
 
 

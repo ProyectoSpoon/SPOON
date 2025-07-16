@@ -2,10 +2,11 @@
 'use client';
 
 import { useState } from 'react';
+import { useSetPageTitle } from '@/shared/Context/page-title-context';
 import { Settings, Clock, Info, Users, Bell, Calendar } from 'lucide-react';
 // Importación dinámica para evitar problemas de TypeScript
 import dynamic from 'next/dynamic';
-const HorariosComerciales = dynamic(() => import('./components/HorariosComerciales'), {
+const HorariosComerciales = dynamic(() => import('./horario-comercial/page'), {
   loading: () => <p>Cargando...</p>,
   ssr: false
 });
@@ -19,6 +20,9 @@ const RolesUsuarios = dynamic(() => import('./components/RolesUsuarios'), {
 });
 
 export default function ConfiguracionPage() {
+
+  // ✅ TÍTULO DINÁMICO DE LA PÁGINA
+  useSetPageTitle('Configuración', 'Configuraciones generales del sistema');
   const [activeTab, setActiveTab] = useState('empresa');
 
   return (
@@ -284,6 +288,7 @@ export default function ConfiguracionPage() {
     </div>
   );
 }
+
 
 
 

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSetPageTitle } from '@/shared/Context/page-title-context';
 import { Card } from '@/shared/components/ui/Card';
 
 interface VentaHora {
@@ -23,6 +24,9 @@ interface VentaDia {
 }
 
 const AnalisisVentasPage = () => {
+
+  // ✅ TÍTULO DINÁMICO DE LA PÁGINA
+  useSetPageTitle('Análisis de Ventas', 'Reportes detallados de ventas');
   const [periodoSeleccionado, setPeriodoSeleccionado] = useState('hoy');
   const [loading, setLoading] = useState(true);
 

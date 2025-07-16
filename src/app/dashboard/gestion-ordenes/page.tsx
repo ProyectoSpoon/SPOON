@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSetPageTitle } from '@/shared/Context/page-title-context';
 import { Card } from '@/shared/components/ui/Card';
 import { Button } from '@/shared/components/ui/Button';
 import { useNotifications } from '@/shared/Context/notification-context';
@@ -39,6 +40,9 @@ interface Order {
 }
 
 const GestionOrdenesPage = () => {
+
+  // ✅ TÍTULO DINÁMICO DE LA PÁGINA
+  useSetPageTitle('Gestión de Órdenes', 'Administración de pedidos y órdenes');
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

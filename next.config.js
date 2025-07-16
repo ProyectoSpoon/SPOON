@@ -34,6 +34,10 @@ const nextConfig = {
   // Aseguramos compatibilidad con versiones más nuevas de React
   images: {
     unoptimized: true,
+  },
+  // 🗺️ CONFIGURACIÓN GOOGLE MAPS API
+  env: {
+    GOOGLE_MAPS_API_KEY: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
   }
 };
 

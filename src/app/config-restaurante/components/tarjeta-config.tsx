@@ -1,7 +1,7 @@
 // src/app/config-restaurante/components/tarjeta-config.tsx
 import React from 'react';
 import { Card } from '@/shared/components/ui/Card'
-import { CheckCircle, MapPin, Clock, Camera, ArrowRight } from 'lucide-react';
+import { CheckCircle, MapPin, Clock, Camera, ArrowRight, Building } from 'lucide-react';
 import Link from 'next/link';
 import { useConfigStore } from '../store/config-store';
 import { TarjetaConfiguracion } from '@/types/group-config.types';
@@ -16,8 +16,15 @@ export default function TarjetaConfig({ tarjeta }: TarjetaConfigProps) {
   const camposTotales = tarjeta.camposRequeridos.length;
   const porcentaje = Math.round((camposCompletados / camposTotales) * 100);
 
-  // Configuración de iconos y colores por tipo
+  // Configuración de iconos y colores por tipo - CON INFORMACIÓN GENERAL
   const configuraciones = {
+    'informacion-general': {
+      icon: Building,
+      gradient: 'from-purple-500 to-purple-600',
+      bgGradient: 'from-purple-50 to-purple-100',
+      accentColor: 'text-purple-600',
+      completedColor: 'from-purple-500 to-purple-600'
+    },
     'ubicacion': {
       icon: MapPin,
       gradient: 'from-blue-500 to-blue-600',
@@ -183,29 +190,3 @@ export default function TarjetaConfig({ tarjeta }: TarjetaConfigProps) {
     </Link>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

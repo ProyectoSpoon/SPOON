@@ -6,8 +6,7 @@ import { useRouter } from 'next/navigation';
 import toast, { Toaster } from 'react-hot-toast';
 import Link from 'next/link';
 import RecuperarContrasenaModal from './components/recuperarcontrasenaModal';
-import Cookies from 'js-cookie';
-import { AuthService } from '@/services/auth.service';
+import { useAuth } from '@/context/postgres-authcontext';
 
 // Importar Google Identity Services
 declare global {
@@ -19,6 +18,7 @@ declare global {
 // Definición del componente
 const LoginPage = () => {
   const router = useRouter();
+  const { login } = useAuth();
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -27,19 +27,6 @@ const LoginPage = () => {
     contrasena: ''
   });
   const [mostrarContrasena, setMostrarContrasena] = useState(false);
-  const [redireccionando, setRedireccionando] = useState(false);
-
-  // Efecto para manejar la redirección después de establecer la cookie
-  useEffect(() => {
-    if (redireccionando) {
-      // Pequeño retraso para asegurar que la cookie se establezca
-      const timer = setTimeout(() => {
-        router.push('/dashboard');
-      }, 100);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [redireccionando, router]);
 
   // Manejador de cambios en el formulario
   const manejarCambio = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,7 +37,7 @@ const LoginPage = () => {
     }));
     setError(null);
   };
-  
+
   // Cargar Google Identity Services - Deshabilitado temporalmente
   useEffect(() => {
     // TODO: Configurar Google Client ID en variables de entorno
@@ -78,31 +65,8 @@ const LoginPage = () => {
     try {
       setCargando(true);
       console.log('🔐 Procesando respuesta de Google...');
-      
-      const result = await AuthService.googleSignIn(response.credential);
-      
-      if (result.success && result.token) {
-        // Guardar token JWT en cookie segura
-        Cookies.set('auth-token', result.token, { 
-          expires: 1, 
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict' 
-        });
-        
-        // Guardar información del usuario
-        if (result.user) {
-          Cookies.set('user-info', JSON.stringify(result.user), { 
-            expires: 1,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict' 
-          });
-        }
-        
-        toast.success(result.user?.isNewUser ? '¡Cuenta creada exitosamente!' : '¡Bienvenido de nuevo!');
-        setRedireccionando(true);
-      } else {
-        throw new Error(result.error || 'Error en autenticación con Google');
-      }
+      // TODO: Implementar Google Sign-In con auth context
+      toast.error('Google Sign-In no implementado aún');
     } catch (error: any) {
       console.error('Error en Google Sign-In:', error);
       setError(error.message);
@@ -124,40 +88,24 @@ const LoginPage = () => {
       toast.error('Error al inicializar Google Sign-In');
     }
   };
-  
+
   // Manejador para el envío del formulario de inicio de sesión
   const manejarEnvio = async (e: React.FormEvent) => {
     e.preventDefault();
     setCargando(true);
     setError(null);
-    
+
     try {
       console.log('🔐 Intentando login con:', datosFormulario.correo);
+
+      // Usar el auth context en lugar de AuthService
+      await login(datosFormulario.correo, datosFormulario.contrasena);
+
+      toast.success('¡Bienvenido!');
       
-      const result = await AuthService.login(datosFormulario.correo, datosFormulario.contrasena);
+      // Navegar al dashboard
+      router.push('/dashboard');
       
-      if (result.success && result.token) {
-        // Guardar token JWT en cookie segura
-        Cookies.set('auth-token', result.token, { 
-          expires: 1, 
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict' 
-        });
-        
-        // Guardar información del usuario
-        if (result.user) {
-          Cookies.set('user-info', JSON.stringify(result.user), { 
-            expires: 1,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict' 
-          });
-        }
-        
-        toast.success('¡Bienvenido!');
-        setRedireccionando(true);
-      } else {
-        throw new Error(result.error || 'Error al iniciar sesión');
-      }
     } catch (err: any) {
       console.error('Error al iniciar sesión:', err);
       const mensajeError = err.message || 'Error al iniciar sesión';
@@ -172,7 +120,7 @@ const LoginPage = () => {
       <Toaster position="top-right" />
       {/* Columna izquierda - Información de Spoon */}
       <div className="hidden md:flex w-1/2 relative">
-        <div 
+        <div
           className="absolute inset-0 z-0"
           style={{
             backgroundImage: "url('/images/fondologinusr.jpg')",
@@ -199,21 +147,21 @@ const LoginPage = () => {
                 </h3>
                 <p className="text-white/90">Alcanza clientes en cualquier zona y optimiza tus entregas</p>
               </div>
-              
+
               <div className="bg-white/20 backdrop-blur-sm p-6 rounded-xl">
                 <h3 className="text-spoon-primary font-semibold mb-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
                   Sistema de Reseñas
                 </h3>
                 <p className="text-white/90">Mejora tu servicio con feedback real de los clientes</p>
               </div>
-              
+
               <div className="bg-white/20 backdrop-blur-sm p-6 rounded-xl">
                 <h3 className="text-spoon-primary font-semibold mb-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
                   Notificaciones
                 </h3>
                 <p className="text-white/90">Mantén informados a tus clientes sobre sus pedidos</p>
               </div>
-              
+
               <div className="bg-white/20 backdrop-blur-sm p-6 rounded-xl">
                 <h3 className="text-spoon-primary font-semibold mb-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
                   Gestión de Domicilios
@@ -228,7 +176,7 @@ const LoginPage = () => {
       <div className="w-full md:w-1/2 bg-white flex items-center justify-center p-8">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
-            <img 
+            <img
               src="/images/spoon-logo.jpg"
               alt="Spoon Logo"
               className="mx-auto h-[150px] w-auto mb-6"
@@ -313,10 +261,10 @@ const LoginPage = () => {
             </div>
             <button
               type="submit"
-              disabled={cargando || redireccionando}
+              disabled={cargando}
               className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-spoon-primary hover:bg-spoon-primary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF9933] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {cargando || redireccionando ? (
+              {cargando ? (
                 <div className="flex items-center">
                   <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -363,7 +311,7 @@ const LoginPage = () => {
         </div>
       </div>
 
-      <RecuperarContrasenaModal 
+      <RecuperarContrasenaModal
         isOpen={modalAbierto}
         onClose={() => setModalAbierto(false)}
       />
@@ -372,30 +320,3 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

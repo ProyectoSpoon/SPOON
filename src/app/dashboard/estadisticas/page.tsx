@@ -1,5 +1,7 @@
 'use client';
 
+import { useSetPageTitle } from '@/shared/Context/page-title-context';
+
 import { Card } from '@/shared/components/ui/Card';
 import { useRouter } from 'next/navigation';
 import { 
@@ -83,6 +85,9 @@ const seccionesEstadisticas: TarjetaEstadisticaProps[] = [
 ];
 
 export default function EstadisticasPage() {
+
+  // ✅ TÍTULO DINÁMICO DE LA PÁGINA
+  useSetPageTitle('Estadísticas', 'Análisis y reportes del negocio');
   return (
     <div className="p-6 space-y-6">
       {/* Encabezado */}
@@ -128,6 +133,7 @@ export default function EstadisticasPage() {
     </div>
   );
 }
+
 
 
 

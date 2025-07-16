@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSetPageTitle } from '@/shared/Context/page-title-context';
 import { Loader2, Star, Heart, ArrowLeft } from 'lucide-react';
 import { Button } from '@/shared/components/ui/Button';
 import { Alert, AlertDescription } from '@/shared/components/ui/Alert';
@@ -260,6 +261,7 @@ export default function FavoritosPage(): JSX.Element {
     </div>
   );
 }
+
 
 
 

@@ -2,8 +2,12 @@
 'use client';
 
 import React from 'react';
+import { useSetPageTitle } from '@/shared/Context/page-title-context';
 
 export default function DashboardPage() {
+
+  // ✅ TÍTULO DINÁMICO DE LA PÁGINA
+  useSetPageTitle('Dashboard', 'Panel principal de control');
   // Datos de KPIs para restaurantes (adaptados a SPOON)
   const kpis = [
     { titulo: "Órdenes Hoy", valor: "127", subtitulo: "Clientes atendidos" },

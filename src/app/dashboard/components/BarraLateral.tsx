@@ -132,24 +132,8 @@ const elementosMenu: ElementoMenuProps[] = [
 {
   icono: SettingsSpoonIcon, // ✨ CAMBIADO: era Settings
   etiqueta: 'Configuración',
-  descripcion: 'Configuración del restaurante',
-  subElementos: [
-    {
-      etiqueta: 'Mi Restaurante',
-      ruta: '/dashboard/configuracion',
-      descripcion: 'Información general del restaurante'
-    },
-    {
-      etiqueta: 'Horarios Comerciales',
-      ruta: '/dashboard/configuracion/horario-comercial',
-      descripcion: 'Gestión de horarios de atención'
-    },
-    {
-      etiqueta: 'Usuarios y Roles',
-      ruta: '/dashboard/configuracion/usuarios',
-      descripcion: 'Gestión de usuarios del sistema'
-    },
-  ]
+  ruta: '/dashboard/configuracion',
+  descripcion: 'Información general del restaurante'
 },
 {
   icono: AuditSpoonIcon, // ✨ CAMBIADO: era FileText

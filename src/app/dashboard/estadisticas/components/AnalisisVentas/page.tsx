@@ -1,9 +1,14 @@
 'use client';
 
+import { useSetPageTitle } from '@/shared/Context/page-title-context';
+
 // Importar desde el index
 import { KPIsCards, FiltroPeriodo, GraficoVentasPeriodo, ComparativaMensual } from '../../components/AnalisisVentas';
 
 export default function AnalisisVentasPage() {
+
+  // ✅ TÍTULO DINÁMICO DE LA PÁGINA
+  useSetPageTitle('Análisis de Ventas', 'Componentes de análisis');
   const kpisData = [
     {
       id: 'ventas-totales',
@@ -85,6 +90,7 @@ export default function AnalisisVentasPage() {
     </div>
   );
 }
+
 
 
 

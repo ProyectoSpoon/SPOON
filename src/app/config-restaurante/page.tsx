@@ -1,89 +1,413 @@
 // src/app/config-restaurante/page.tsx
 'use client';
 
-import React from 'react';
-import { useConfigStore } from './store/config-store';
-import TarjetaConfig from './components/tarjeta-config';
-import Encabezado from './encabezado';
-import BarraLateral from './components/barra-lateral';
-import { Button } from '@/shared/components/ui/Button';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { calcularProgresoConfiguracion } from './utils/progress-validator';
 
-export default function ConfiguracionRestaurante() {
+interface ConfigProgress {
+  informacionGeneral: boolean;
+  ubicacion: boolean;
+  horarios: boolean;
+  logoPortada: boolean;
+  totalCompleto: number;
+  totalPasos: number;
+  porcentaje: number;
+}
+
+export default function ConfigRestaurantePage() {
   const router = useRouter();
-  const { tarjetas, puedeAvanzar } = useConfigStore();
+  const [progreso, setProgreso] = useState<ConfigProgress>({
+    informacionGeneral: false,
+    ubicacion: false,
+    horarios: false,
+    logoPortada: false,
+    totalCompleto: 0,
+    totalPasos: 4,
+    porcentaje: 0
+  });
+  const [cargando, setCargando] = useState(true);
+  const [restaurantId, setRestaurantId] = useState<string | null>(null);
 
-  const handleContinuar = () => {
-    if (puedeAvanzar) {
-      router.push('/dashboard');
-    }
+  /**
+   * Obtener ID del restaurante y calcular progreso real
+   */
+  useEffect(() => {
+    const cargarProgreso = async () => {
+      try {
+        setCargando(true);
+        
+        // Obtener ID del restaurante (mismo método que en logo-portada)
+        let id: string | null = null;
+        
+        const token = localStorage.getItem('token');
+        if (token) {
+          try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            id = payload.restaurantId || payload.restaurant?.id;
+          } catch (e) {
+            console.log('⚠️ No se pudo decodificar el token JWT');
+          }
+        }
+        
+        // Fallback con ID conocido
+        if (!id) {
+          id = "4073a4ad-b275-4e17-b197-844881f0319e";
+          console.log('🔧 Usando ID hardcodeado:', id);
+        }
+        
+        setRestaurantId(id);
+        
+        if (id) {
+          console.log('📊 Calculando progreso real para restaurante:', id);
+          const progresoCalculado = await calcularProgresoConfiguracion(id);
+          setProgreso(progresoCalculado);
+        }
+        
+      } catch (error) {
+        console.error('❌ Error cargando progreso:', error);
+      } finally {
+        setCargando(false);
+      }
+    };
+
+    cargarProgreso();
+  }, []);
+
+  /**
+   * Calcular progreso para cada paso individual
+   */
+  const calcularProgresoPaso = (completado: boolean, total: number) => {
+    return completado ? 100 : 0;
   };
 
+  /**
+   * Obtener color del porcentaje según el progreso
+   */
+  const getColorPorcentaje = (completado: boolean) => {
+    return completado ? 'text-green-600' : 'text-gray-500';
+  };
+
+  /**
+   * Obtener texto del estado
+   */
+  const getTextoEstado = (completado: boolean) => {
+    return completado ? 'Completado' : 'Pendiente';
+  };
+
+  /**
+   * Verificar si la configuración está completa (todos los pasos)
+   */
+  const configuracionCompleta = progreso.totalCompleto === progreso.totalPasos; // 4 de 4 pasos
+
+  if (cargando) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando configuración...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <BarraLateral />
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-6xl mx-auto">
         
-        <div className="mb-8">
-          <Encabezado />
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            ¡Bienvenido a SPOON! 🍴
+          </h1>
+          <p className="text-xl text-gray-600 mb-6">
+            Tu socio tecnológico para hacer crecer tu restaurante
+          </p>
+          <p className="text-gray-500 mb-8">
+            Estamos aquí para ayudarte a vender más con nuestro menú digital gratuito. Solo necesitamos configurar algunos detalles básicos para comenzar.
+          </p>
+          
+          {/* Info del usuario */}
+          <div className="flex items-center justify-center space-x-6 text-sm text-gray-500">
+            <span>👤 admin@spoon.com</span>
+            <span>🆔 ID: 4073a4ad-b275-4e17-b197-844881f0319e</span>
+            <span>👑 super_admin</span>
+          </div>
         </div>
 
-        {/* Grid de tarjetas - Una fila horizontal */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {tarjetas.map((tarjeta) => (
-            <TarjetaConfig
-              key={tarjeta.ruta}
-              tarjeta={tarjeta}
-            />
-          ))}
+        {/* Título de configuración */}
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">
+            Configuración Inicial
+          </h2>
+          <p className="text-gray-600">
+            Completa estos 4 pasos para activar todas las funcionalidades de SPOON
+          </p>
         </div>
 
-        {/* Botón de continuar */}
-        <div className="mt-8 flex justify-end">
-          <Button
-            onClick={handleContinuar}
-            disabled={!puedeAvanzar}
-            variant={puedeAvanzar ? 'default' : 'secondary'}
-            size="lg"
-            className={`w-full md:w-auto ${
-              puedeAvanzar 
-                ? 'bg-spoon-primary hover:bg-spoon-primary-dark text-white' 
-                : 'bg-spoon-success hover:bg-spoon-success/90 text-white'
-            }`}
-          >
-            {puedeAvanzar 
-              ? 'Continuar al Dashboard'
-              : 'Completar configuración'
-            }
-          </Button>
+        {/* Tarjetas de configuración */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          
+          {/* Información General */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 relative">
+            {/* Icono de triángulo */}
+            <div className="absolute top-4 right-4">
+              <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 0L20 20H0L10 0z"/>
+              </svg>
+            </div>
+            
+            {/* Icono principal */}
+            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-6 mx-auto">
+              <div className="w-8 h-8 bg-purple-600 rounded flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+                  <path fillRule="evenodd" d="M4 5a2 2 0 012-2v1a3 3 0 003 3h2a3 3 0 003-3V3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/>
+                </svg>
+              </div>
+            </div>
+            
+            <div className="text-center">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Información General</h3>
+              <p className="text-sm text-gray-600 mb-6">
+                Datos básicos del restaurante: nombre, contacto y tipo de cocina
+              </p>
+              
+              {/* Progreso */}
+              <div className="mb-4">
+                <div className={`text-2xl font-bold ${getColorPorcentaje(progreso.informacionGeneral)} mb-2`}>
+                  {calcularProgresoPaso(progreso.informacionGeneral, 4)}%
+                </div>
+                <div className="text-xs text-gray-500 mb-3">
+                  {progreso.informacionGeneral ? '4/4' : '0/4'}
+                </div>
+                <div className="flex items-center justify-center">
+                  <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium">
+                    📋 {getTextoEstado(progreso.informacionGeneral)}
+                  </span>
+                </div>
+              </div>
+              
+              <button 
+                onClick={() => router.push('/config-restaurante/informacion-general')}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+              >
+                Configurar →
+              </button>
+            </div>
+          </div>
+
+          {/* Ubicación */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 relative">
+            {/* Icono de triángulo */}
+            <div className="absolute top-4 right-4">
+              <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 0L20 20H0L10 0z"/>
+              </svg>
+            </div>
+            
+            {/* Icono principal */}
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-6 mx-auto">
+              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"/>
+                </svg>
+              </div>
+            </div>
+            
+            <div className="text-center">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Ubicación</h3>
+              <p className="text-sm text-gray-600 mb-6">
+                Dirección y ubicación geográfica del restaurante
+              </p>
+              
+              {/* Progreso */}
+              <div className="mb-4">
+                <div className={`text-2xl font-bold ${getColorPorcentaje(progreso.ubicacion)} mb-2`}>
+                  {calcularProgresoPaso(progreso.ubicacion, 3)}%
+                </div>
+                <div className="text-xs text-gray-500 mb-3">
+                  {progreso.ubicacion ? '3/3' : '0/3'}
+                </div>
+                <div className="flex items-center justify-center">
+                  <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium">
+                    📋 {getTextoEstado(progreso.ubicacion)}
+                  </span>
+                </div>
+              </div>
+              
+              <button 
+                onClick={() => router.push('/config-restaurante/ubicacion')}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+              >
+                Configurar →
+              </button>
+            </div>
+          </div>
+
+          {/* Horarios */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 relative">
+            {/* Icono de triángulo */}
+            <div className="absolute top-4 right-4">
+              <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 0L20 20H0L10 0z"/>
+              </svg>
+            </div>
+            
+            {/* Icono principal */}
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6 mx-auto">
+              <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"/>
+                </svg>
+              </div>
+            </div>
+            
+            <div className="text-center">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Horarios</h3>
+              <p className="text-sm text-gray-600 mb-6">
+                Horarios de atención y días de operación
+              </p>
+              
+              {/* Progreso real desde base de datos */}
+              <div className="mb-4">
+                <div className={`text-2xl font-bold ${getColorPorcentaje(progreso.horarios)} mb-2`}>
+                  {calcularProgresoPaso(progreso.horarios, 2)}%
+                </div>
+                <div className="text-xs text-gray-500 mb-3">
+                  {progreso.horarios ? '2/2' : '0/2'}
+                </div>
+                <div className="flex items-center justify-center">
+                  <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium">
+                    📋 {getTextoEstado(progreso.horarios)}
+                  </span>
+                </div>
+              </div>
+              
+              <button 
+                onClick={() => router.push('/config-restaurante/horario-comercial')}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+              >
+                Configurar →
+              </button>
+            </div>
+          </div>
+
+          {/* Logo y Portada */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 relative">
+            {/* Icono de triángulo */}
+            <div className="absolute top-4 right-4">
+              <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 0L20 20H0L10 0z"/>
+              </svg>
+            </div>
+            
+            {/* Icono principal */}
+            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-6 mx-auto">
+              <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"/>
+                </svg>
+              </div>
+            </div>
+            
+            <div className="text-center">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Logo y Portada</h3>
+              <p className="text-sm text-gray-600 mb-6">
+                Imágenes representativas del restaurante
+              </p>
+              
+              {/* Progreso */}
+              <div className="mb-4">
+                <div className={`text-2xl font-bold ${getColorPorcentaje(progreso.logoPortada)} mb-2`}>
+                  {calcularProgresoPaso(progreso.logoPortada, 2)}%
+                </div>
+                <div className="text-xs text-gray-500 mb-3">
+                  {progreso.logoPortada ? '2/2' : '0/2'}
+                </div>
+                <div className="flex items-center justify-center">
+                  <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium">
+                    📋 {getTextoEstado(progreso.logoPortada)}
+                  </span>
+                </div>
+              </div>
+              
+              <button 
+                onClick={() => router.push('/config-restaurante/logo-portada')}
+                className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+              >
+                Configurar →
+              </button>
+            </div>
+          </div>
         </div>
+
+        {/* Estado general */}
+        {!configuracionCompleta ? (
+          <div className="text-center bg-orange-50 rounded-lg p-6 border border-orange-200">
+            <div className="flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-orange-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"/>
+              </svg>
+              <h3 className="text-xl font-bold text-orange-800">
+                Faltan algunos pasos
+              </h3>
+            </div>
+            <p className="text-orange-700 mb-6">
+              Completa las configuraciones pendientes para activar todas las funciones
+            </p>
+            <p className="text-sm text-orange-600">
+              Progreso actual: {progreso.totalCompleto} de {progreso.totalPasos} pasos completados ({progreso.porcentaje}%)
+            </p>
+          </div>
+        ) : (
+          <div className="text-center bg-green-50 rounded-lg p-6 border border-green-200">
+            <div className="flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-green-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+              </svg>
+              <h3 className="text-xl font-bold text-green-800">
+                ¡Configuración Completa!
+              </h3>
+            </div>
+            <p className="text-green-700 mb-6">
+              Has completado todos los pasos de configuración. ¡Tu restaurante está completamente configurado!
+            </p>
+            <button 
+              onClick={() => router.push('/dashboard')}
+              className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg transition-colors"
+            >
+              ⏱️ Completar configuración
+            </button>
+          </div>
+        )}
+
+        {/* Debug Info (solo en desarrollo) */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-8 bg-gray-100 rounded-lg p-4 text-sm">
+            <h4 className="font-bold mb-2">Debug - Progreso Real:</h4>
+            <div className="grid grid-cols-4 gap-4 text-xs">
+              <div>
+                <strong>Información General:</strong> {progreso.informacionGeneral ? '✅ Completado' : '❌ Pendiente'}
+              </div>
+              <div>
+                <strong>Ubicación:</strong> {progreso.ubicacion ? '✅ Completado' : '❌ Pendiente'}
+              </div>
+              <div>
+                <strong>Horarios:</strong> {progreso.horarios ? '✅ Completado' : '⏳ No implementado'}
+              </div>
+              <div>
+                <strong>Logo y Portada:</strong> {progreso.logoPortada ? '✅ Completado' : '❌ Pendiente'}
+              </div>
+            </div>
+            <p className="mt-2">
+              <strong>Total:</strong> {progreso.totalCompleto}/{progreso.totalPasos} ({progreso.porcentaje}%)
+            </p>
+            <p><strong>Restaurant ID:</strong> {restaurantId}</p>
+          </div>
+        )}
+
       </div>
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
