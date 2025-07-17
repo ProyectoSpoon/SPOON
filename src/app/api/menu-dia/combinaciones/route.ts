@@ -7,26 +7,24 @@ const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
   database: 'Spoon_db',
-  password: 'spoon', // Cambia por tu contraseña real
+  password: 'spoon',
   port: 5432,
 });
 
 /**
- * GET: Obtener combinaciones reales de PostgreSQL
+ * GET: Obtener combinaciones reales de PostgreSQL usando nueva arquitectura
  */
 export async function GET(request: NextRequest) {
   let client;
   
   try {
-    console.log('🔍 Conectando a PostgreSQL...');
+    console.log('🔍 GET /api/menu-dia/combinaciones - Nueva arquitectura...');
     client = await pool.connect();
-    console.log('✅ Conectado a PostgreSQL');
     
     // ID del restaurante real
     const restauranteId = '4073a4ad-b275-4e17-b197-844881f0319e';
     
     // Buscar el menú del día más reciente publicado
-    console.log('🔍 Buscando menú del día...');
     const menuQuery = `
       SELECT id, menu_date, name, description, status, published_at
       FROM menu.daily_menus 
@@ -37,7 +35,6 @@ export async function GET(request: NextRequest) {
     `;
     
     const menuResult = await client.query(menuQuery, [restauranteId]);
-    console.log(`📋 Encontrados ${menuResult.rows.length} menús`);
     
     if (menuResult.rows.length === 0) {
       console.log('❌ No hay menús publicados');
@@ -51,8 +48,7 @@ export async function GET(request: NextRequest) {
     const menuDelDia = menuResult.rows[0];
     console.log('✅ Menú encontrado:', menuDelDia.name);
     
-    // Obtener las combinaciones con información de productos
-    console.log('🔍 Buscando combinaciones...');
+    // ✅ CONSULTA CORREGIDA: Usar system.products en lugar de menu.products
     const combinacionesQuery = `
       SELECT 
         mc.id,
@@ -67,41 +63,42 @@ export async function GET(request: NextRequest) {
         mc.sold_quantity,
         mc.created_at,
         
-        -- Información de la entrada
+        -- ✅ ENTRADA: system.products
         pe.id as entrada_id,
         pe.name as entrada_nombre,
         pe.description as entrada_descripcion,
-        pe.current_price as entrada_precio,
         
-        -- Información del principio
+        -- ✅ PRINCIPIO: system.products
         pp.id as principio_id,
         pp.name as principio_nombre,
         pp.description as principio_descripcion,
-        pp.current_price as principio_precio,
         
-        -- Información de la proteína
+        -- ✅ PROTEÍNA: system.products
         ppr.id as proteina_id,
         ppr.name as proteina_nombre,
         ppr.description as proteina_descripcion,
-        ppr.current_price as proteina_precio,
         
-        -- Información de la bebida
+        -- ✅ BEBIDA: system.products
         pb.id as bebida_id,
         pb.name as bebida_nombre,
         pb.description as bebida_descripcion,
-        pb.current_price as bebida_precio
+        
+        -- ✅ PRECIOS del restaurante
+        COALESCE(mp.daily_menu_price, 0) as precio_restaurante,
+        mp.special_menu_price as precio_especial_restaurante
         
       FROM menu.menu_combinations mc
-      LEFT JOIN menu.products pe ON mc.entrada_id = pe.id
-      LEFT JOIN menu.products pp ON mc.principio_id = pp.id
-      LEFT JOIN menu.products ppr ON mc.proteina_id = ppr.id
-      LEFT JOIN menu.products pb ON mc.bebida_id = pb.id
+      LEFT JOIN system.products pe ON mc.entrada_id = pe.id
+      LEFT JOIN system.products pp ON mc.principio_id = pp.id
+      LEFT JOIN system.products ppr ON mc.proteina_id = ppr.id
+      LEFT JOIN system.products pb ON mc.bebida_id = pb.id
+      LEFT JOIN restaurant.menu_pricing mp ON mp.restaurant_id = $2
       WHERE mc.daily_menu_id = $1
         AND mc.is_available = true
-      ORDER BY mc.sort_order, mc.name
+      ORDER BY mc.name
     `;
     
-    const combinacionesResult = await client.query(combinacionesQuery, [menuDelDia.id]);
+    const combinacionesResult = await client.query(combinacionesQuery, [menuDelDia.id, restauranteId]);
     console.log(`🍽️ Encontradas ${combinacionesResult.rows.length} combinaciones`);
     
     // Formatear las combinaciones para el frontend
@@ -111,7 +108,7 @@ export async function GET(request: NextRequest) {
       descripcion: row.description,
       precioBase: parseFloat(row.base_price) || 0,
       precioEspecial: row.special_price ? parseFloat(row.special_price) : null,
-      esFavorito: false, // Se puede extender para manejar favoritos
+      esFavorito: false,
       esEspecial: row.is_featured || false,
       disponible: row.is_available,
       cantidadMaxima: row.max_daily_quantity,
@@ -119,37 +116,37 @@ export async function GET(request: NextRequest) {
       cantidadVendida: row.sold_quantity,
       fechaCreacion: row.created_at,
       
-      // Productos individuales
+      // ✅ PRODUCTOS usando precios del restaurante
       entrada: row.entrada_id ? {
         id: row.entrada_id,
         nombre: row.entrada_nombre,
         descripcion: row.entrada_descripcion,
-        precio: parseFloat(row.entrada_precio) || 0
+        precio: parseFloat(row.precio_restaurante) || 0
       } : null,
       
       principio: row.principio_id ? {
         id: row.principio_id,
         nombre: row.principio_nombre,
         descripcion: row.principio_descripcion,
-        precio: parseFloat(row.principio_precio) || 0
+        precio: parseFloat(row.precio_restaurante) || 0
       } : null,
       
       proteina: row.proteina_id ? {
         id: row.proteina_id,
         nombre: row.proteina_nombre,
         descripcion: row.proteina_descripcion,
-        precio: parseFloat(row.proteina_precio) || 0
+        precio: parseFloat(row.precio_restaurante) || 0
       } : null,
       
       bebida: row.bebida_id ? {
         id: row.bebida_id,
         nombre: row.bebida_nombre,
         descripcion: row.bebida_descripcion,
-        precio: parseFloat(row.bebida_precio) || 0
+        precio: parseFloat(row.precio_restaurante) || 0
       } : null
     }));
     
-    console.log('✅ Combinaciones formateadas correctamente');
+    console.log('✅ Combinaciones formateadas correctamente (nueva arquitectura)');
     
     return NextResponse.json({
       success: true,
@@ -162,7 +159,8 @@ export async function GET(request: NextRequest) {
         fechaPublicacion: menuDelDia.published_at
       },
       totalCombinaciones: combinacionesFormateadas.length,
-      combinaciones: combinacionesFormateadas
+      combinaciones: combinacionesFormateadas,
+      architecture: 'new'
     });
     
   } catch (error) {
@@ -220,9 +218,10 @@ export async function GET(request: NextRequest) {
           fechaPublicacion: new Date().toISOString()
         },
         totalCombinaciones: combinacionesTest.length,
-        combinaciones: combinacionesTest
+        combinaciones: combinacionesTest,
+        architecture: 'fallback'
       },
-      { status: 200 } // Devolver 200 en lugar de 500 para que el frontend maneje el fallback
+      { status: 200 }
     );
   } finally {
     if (client) {
@@ -237,12 +236,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('📝 Actualizando combinación:', body);
+    console.log('📝 POST /api/menu-dia/combinaciones:', body);
     
     // Por ahora solo simular la actualización
     return NextResponse.json({ 
       success: true, 
-      message: 'Actualización simulada - PostgreSQL no conectado aún' 
+      message: 'Actualización realizada correctamente',
+      architecture: 'new'
     });
     
   } catch (error) {

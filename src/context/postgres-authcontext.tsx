@@ -10,7 +10,7 @@ interface User {
   role: string;
   permissions: string[];
   emailVerified: boolean;
-  restaurantId?: string; // ← YA EXISTE
+  restaurantId?: string;
   isActive: boolean;
   lastLogin?: Date;
 }
@@ -22,7 +22,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
-  refreshAuth: () => Promise<void>; // Nuevo método para refrescar
+  refreshAuth: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,6 +33,28 @@ export const useAuth = () => {
     throw new Error('useAuth debe ser usado dentro de un AuthProvider');
   }
   return context;
+};
+
+// Helper functions para manejo de cookies
+const setCookie = (name: string, value: string, days: number = 1) => {
+  const expires = new Date();
+  expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+  document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; secure; samesite=strict`;
+};
+
+const getCookie = (name: string): string | null => {
+  const nameEQ = name + "=";
+  const ca = document.cookie.split(';');
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+  }
+  return null;
+};
+
+const deleteCookie = (name: string) => {
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -68,7 +90,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         console.log('🔍 Verificando sesión existente...');
         
-        const token = localStorage.getItem('auth_token');
+        // Buscar token en localStorage primero, luego en cookies
+        let token = localStorage.getItem('auth_token');
+        if (!token) {
+          token = getCookie('auth-token');
+        }
+        
         if (!token) {
           setLoading(false);
           return;
@@ -83,6 +110,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.log('Token expirado, removiendo...');
             localStorage.removeItem('auth_token');
             localStorage.removeItem('refresh_token');
+            deleteCookie('auth-token');
+            deleteCookie('user-info');
             setLoading(false);
             return;
           }
@@ -99,7 +128,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               : payload.email,
             role: payload.role,
             permissions: payload.permissions || [],
-            emailVerified: true, // Asumimos verificado si tiene token válido
+            emailVerified: true,
             restaurantId: restaurantId,
             isActive: true,
             lastLogin: new Date()
@@ -108,10 +137,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(userData);
           console.log('✅ Sesión restaurada desde token válido');
           
+          // Sincronizar token en ambos lugares si solo estaba en uno
+          if (!localStorage.getItem('auth_token')) {
+            localStorage.setItem('auth_token', token);
+          }
+          if (!getCookie('auth-token')) {
+            setCookie('auth-token', token);
+          }
+          
         } catch (tokenError) {
           console.error('Token inválido:', tokenError);
           localStorage.removeItem('auth_token');
           localStorage.removeItem('refresh_token');
+          deleteCookie('auth-token');
+          deleteCookie('user-info');
         }
         
       } catch (err) {
@@ -150,10 +189,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(data.error || 'Credenciales incorrectas');
       }
 
-      // Guardar tokens
+      // Guardar tokens en localStorage
       localStorage.setItem('auth_token', data.token);
       if (data.refreshToken) {
         localStorage.setItem('refresh_token', data.refreshToken);
+      }
+
+      // ✅ NUEVO: Guardar tokens en cookies para el middleware
+      setCookie('auth-token', data.token);
+      if (data.refreshToken) {
+        setCookie('refresh-token', data.refreshToken);
       }
 
       // Obtener restaurant_id del usuario
@@ -168,15 +213,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           : data.user.email,
         role: data.user.role,
         permissions: data.user.permissions || [],
-        emailVerified: true, // Si llegó hasta aquí, está verificado
+        emailVerified: true,
         restaurantId: restaurantId,
         isActive: true,
         lastLogin: new Date()
       };
       
+      // ✅ NUEVO: Guardar info del usuario en cookie para el middleware
+      setCookie('user-info', JSON.stringify({
+        uid: userData.uid,
+        email: userData.email,
+        role: userData.role,
+        permissions: userData.permissions,
+        restaurantId: userData.restaurantId
+      }));
+      
       setUser(userData);
       console.log('✅ Login exitoso con PostgreSQL');
       console.log('🏪 Restaurant ID:', restaurantId);
+      
+      // ✅ AGREGADO: Redirección con pequeño delay
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 100);
       
     } catch (err: any) {
       console.error('❌ Error en login:', err);
@@ -213,7 +272,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('🚪 Cerrando sesión...');
       
       // Opcional: Notificar al servidor del logout
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem('auth_token') || getCookie('auth-token');
       if (token) {
         try {
           await fetch('/api/auth/logout', {
@@ -228,10 +287,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
       
-      // Limpiar estado local
+      // ✅ ACTUALIZADO: Limpiar estado local Y cookies
       setUser(null);
       localStorage.removeItem('auth_token');
       localStorage.removeItem('refresh_token');
+      deleteCookie('auth-token');
+      deleteCookie('refresh-token');
+      deleteCookie('user-info');
       
       console.log('✅ Logout exitoso');
       
@@ -247,14 +309,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('🔄 Refrescando autenticación...');
       
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem('auth_token') || getCookie('auth-token');
       if (!token) return;
       
       const payload = JSON.parse(atob(token.split('.')[1]));
       const restaurantId = await getRestaurantId(payload.userId, token);
       
       if (user && restaurantId !== user.restaurantId) {
-        setUser(prev => prev ? { ...prev, restaurantId } : null);
+        const updatedUser = { ...user, restaurantId };
+        setUser(updatedUser);
+        
+        // Actualizar cookie con nueva info
+        setCookie('user-info', JSON.stringify({
+          uid: updatedUser.uid,
+          email: updatedUser.email,
+          role: updatedUser.role,
+          permissions: updatedUser.permissions,
+          restaurantId: updatedUser.restaurantId
+        }));
       }
       
     } catch (error) {

@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/database';
 
-// Función helper para mapear categorías a campos
+// Función helper para mapear categorías a campos (sin cambios)
 function getCampoSegunCategoria(categoriaId: string): string {
   const categoriaMap: Record<string, string> = {
     'b4e792ba-b00d-4348-b9e3-f34992315c23': 'entrada_id',     // Entradas
     '2d4c3ea8-843e-4312-821e-54d1c4e79dce': 'principio_id',   // Principios  
     '342f0c43-7f98-48fb-b0ba-e4c5d3ee72b3': 'proteina_id',    // Proteínas
-    'a272bc20-464c-443f-9283-4b5e7bfb71cf': 'proteina_id',    // Acompañamientos → proteina_id (no hay campo específico)
+    'a272bc20-464c-443f-9283-4b5e7bfb71cf': 'proteina_id',    // Acompañamientos → proteina_id
     '6feba136-57dc-4448-8357-6f5533177cfd': 'bebida_id'       // Bebidas
   };
   return categoriaMap[categoriaId] || 'proteina_id';
@@ -15,7 +15,7 @@ function getCampoSegunCategoria(categoriaId: string): string {
 
 export async function GET() {
   try {
-    console.log('🔍 Obteniendo menú del día desde la base de datos...');
+    console.log('🔍 GET /api/menu-dia - Nueva arquitectura...');
     
     const restaurantQuery = 'SELECT id FROM restaurant.restaurants WHERE status = $1 ORDER BY created_at ASC LIMIT 1';
     const restaurantResult = await query(restaurantQuery, ['active']);
@@ -75,61 +75,38 @@ export async function GET() {
       } else {
         menuDia = menuResult.rows[0];
         
-        // ✅ CONSULTA CORREGIDA: Buscar en TODOS los campos desde el inicio
+        // ✅ CONSULTA CORREGIDA: Usar system.products + system.categories
         try {
           console.log('🔍 Buscando productos para menú ID:', menuDia.id);
           
-          // Debug: Ver estructura de combinaciones
-          const debugQuery = `SELECT * FROM menu.menu_combinations WHERE daily_menu_id = $1 LIMIT 1;`;
-          const debugResult = await query(debugQuery, [menuDia.id]);
-          console.log('🔍 DEBUG: Combinaciones encontradas:', debugResult.rows.length);
-          
-          if (debugResult.rows.length > 0) {
-            console.log('🔍 DEBUG: Estructura de combinación:', Object.keys(debugResult.rows[0]));
-            console.log('🔍 DEBUG: Valores de ejemplo:', {
-              entrada_id: debugResult.rows[0].entrada_id,
-              principio_id: debugResult.rows[0].principio_id,
-              proteina_id: debugResult.rows[0].proteina_id,
-              bebida_id: debugResult.rows[0].bebida_id
-            });
-          }
-          
-          // ✅ CONSULTA PRINCIPAL CORREGIDA: Buscar en TODOS los campos
           const productosMenuQuery = `
             SELECT DISTINCT
               p.id,
               p.name,
               p.description,
-              p.current_price,
               p.category_id,
-              p.gallery_images,
               c.name as categoria_nombre,
+              c.category_type,
               mc.current_quantity as cantidad,
-              mc.name as combinacion_nombre
+              mc.name as combinacion_nombre,
+              -- Precios del restaurante
+              COALESCE(mp.daily_menu_price, 0) as current_price
             FROM menu.menu_combinations mc
-            JOIN menu.products p ON (
+            JOIN system.products p ON (
               p.id = mc.entrada_id OR 
               p.id = mc.principio_id OR 
               p.id = mc.proteina_id OR 
               p.id = mc.bebida_id
             )
-            LEFT JOIN menu.categories c ON p.category_id = c.id
+            LEFT JOIN system.categories c ON p.category_id = c.id
+            LEFT JOIN restaurant.menu_pricing mp ON mp.restaurant_id = $2
             WHERE mc.daily_menu_id = $1
-              AND p.status = 'active'
-            ORDER BY c.name, p.name;
+              AND p.is_active = true
+            ORDER BY c.sort_order ASC, p.name ASC;
           `;
           
-          const productosMenuResult = await query(productosMenuQuery, [menuDia.id]);
+          const productosMenuResult = await query(productosMenuQuery, [menuDia.id, restaurantId]);
           console.log(`✅ Productos del menú cargados: ${productosMenuResult.rows.length}`);
-          
-          // Agrupar productos por categoría para debugging
-          const productosPorCategoria = productosMenuResult.rows.reduce((acc: Record<string, number>, producto: any) => {
-            const categoria = producto.categoria_nombre || 'Sin categoría';
-            acc[categoria] = (acc[categoria] || 0) + 1;
-            return acc;
-          }, {});
-          
-          console.log('📊 Productos por categoría:', productosPorCategoria);
           
           menuDia.productos = productosMenuResult.rows.map(row => ({
             id: row.id,
@@ -138,13 +115,12 @@ export async function GET() {
             categoriaId: row.category_id,
             categoria: row.categoria_nombre || 'Sin categoría',
             precio: row.current_price || 0,
-            imagen: row.gallery_images?.[0] || null,
+            imagen: null,
             cantidad: row.cantidad || 1
           }));
           
         } catch (productosError) {
           console.error('❌ Error al obtener productos del menú:', productosError);
-          console.error('❌ Error completo:', productosError instanceof Error ? productosError.stack : 'No stack trace');
           menuDia.productos = [];
         }
       }
@@ -153,44 +129,50 @@ export async function GET() {
       throw menuError;
     }
 
-    // Obtener categorías
+    // ✅ CATEGORÍAS CORREGIDAS: Usar system.categories
     let categorias: any[] = [];
     try {
       const categoriasQuery = `
-        SELECT c.id, c.name, c.category_type, c.sort_order, c.description, c.parent_id, c.is_active
-        FROM menu.categories c
-        WHERE c.restaurant_id = $1 AND c.is_active = true
-        ORDER BY c.parent_id NULLS FIRST, c.sort_order ASC, c.name ASC;
+        SELECT c.id, c.name, c.category_type, c.sort_order, c.description, c.is_active
+        FROM system.categories c
+        WHERE c.is_active = true
+        ORDER BY c.sort_order ASC, c.name ASC;
       `;
       
-      const categoriasResult = await query(categoriasQuery, [restaurantId]);
+      const categoriasResult = await query(categoriasQuery);
       categorias = categoriasResult.rows.map(row => ({
         id: row.id,
         nombre: row.name,
         tipo: row.category_type,
         orden: row.sort_order || 0,
         descripcion: row.description,
-        parentId: row.parent_id || undefined,
-        activo: row.is_active,
-        restaurantId
+        activo: row.is_active
       }));
     } catch (categoriasError) {
       console.error('❌ Error al obtener categorías:', categoriasError);
     }
 
-    // Obtener todos los productos disponibles
+    // ✅ PRODUCTOS DISPONIBLES CORREGIDOS: Usar system.products + restaurant.menu_items
     let todosLosProductos: any[] = [];
     try {
       const productosQuery = `
-        SELECT p.id, p.name, p.description, p.current_price, p.category_id, p.gallery_images, 
-               p.status, p.created_at, c.name as categoria_nombre
-        FROM menu.products p
-        LEFT JOIN menu.categories c ON p.category_id = c.id
-        WHERE p.status = 'active'
-        ORDER BY c.name NULLS LAST, p.name;
+        SELECT 
+          p.id, p.name, p.description, p.category_id, p.is_active, p.created_at,
+          c.name as categoria_nombre,
+          mi.is_available,
+          mi.is_featured,
+          COALESCE(mp.daily_menu_price, 0) as current_price
+        FROM system.products p
+        JOIN restaurant.menu_items mi ON p.id = mi.product_id
+        LEFT JOIN system.categories c ON p.category_id = c.id
+        LEFT JOIN restaurant.menu_pricing mp ON mi.restaurant_id = mp.restaurant_id
+        WHERE mi.restaurant_id = $1 
+          AND p.is_active = true
+          AND mi.is_available = true
+        ORDER BY c.sort_order ASC, p.name ASC;
       `;
       
-      const productosResult = await query(productosQuery);
+      const productosResult = await query(productosQuery, [restaurantId]);
       todosLosProductos = productosResult.rows.map(row => ({
         id: row.id,
         nombre: row.name,
@@ -201,11 +183,13 @@ export async function GET() {
         current_price: row.current_price,
         categoriaId: row.category_id,
         category_id: row.category_id,
-        imagen: row.gallery_images?.[0] || null,
-        image_url: row.gallery_images?.[0] || null,
+        imagen: null,
+        image_url: null,
         categoria_nombre: row.categoria_nombre,
-        status: row.status,
-        created_at: row.created_at
+        status: row.is_active ? 'active' : 'inactive',
+        created_at: row.created_at,
+        is_available: row.is_available,
+        is_featured: row.is_featured
       }));
     } catch (productosError) {
       console.error('❌ Error al obtener productos:', productosError);
@@ -219,7 +203,7 @@ export async function GET() {
       return acc;
     }, {});
 
-    console.log('✅ Menú del día obtenido exitosamente');
+    console.log('✅ Menú del día obtenido exitosamente (nueva arquitectura)');
 
     return NextResponse.json({
       menuDia: {
@@ -234,7 +218,8 @@ export async function GET() {
       categorias,
       productosPorCategoria,
       todosLosProductos,
-      restaurantId
+      restaurantId,
+      architecture: 'new'
     });
 
   } catch (error) {
@@ -250,7 +235,7 @@ export async function POST(request: Request) {
   try {
     const { productos } = await request.json();
     
-    console.log('💾 Guardando menú del día...');
+    console.log('💾 POST /api/menu-dia - Nueva arquitectura...');
     console.log(`📦 Recibidos ${productos?.length || 0} productos`);
     
     const restaurantQuery = 'SELECT id FROM restaurant.restaurants WHERE status = $1 ORDER BY created_at ASC LIMIT 1';
@@ -287,24 +272,20 @@ export async function POST(request: Request) {
       menuId = newMenuResult.rows[0].id;
     } else {
       menuId = menuResult.rows[0].id;
-      
-      // Actualizar status a published
       await query('UPDATE menu.daily_menus SET status = $1 WHERE id = $2', ['published', menuId]);
     }
 
     // Limpiar combinaciones existentes
     await query('DELETE FROM menu.menu_combinations WHERE daily_menu_id = $1', [menuId]);
 
-    // ✅ GUARDAR CORREGIDO: Crear una combinación POR CADA producto
+    // ✅ LÓGICA SIN CAMBIOS: Los productos ya vienen con los IDs correctos del sistema global
     if (productos && productos.length > 0) {
       console.log(`📦 Guardando ${productos.length} productos como combinaciones separadas...`);
       
-      // Crear UNA combinación por cada producto
       for (const producto of productos) {
         const campo = getCampoSegunCategoria(producto.categoriaId);
         console.log(`📝 Guardando: ${producto.nombre} en campo: ${campo}`);
         
-        // Preparar valores para todos los campos (NULL para los que no corresponden)
         const valores = {
           entrada_id: campo === 'entrada_id' ? producto.id : null,
           principio_id: campo === 'principio_id' ? producto.id : null,
@@ -353,7 +334,8 @@ export async function POST(request: Request) {
       message: 'Menú del día publicado correctamente',
       menuId,
       restaurantId,
-      productosGuardados: productos?.length || 0
+      productosGuardados: productos?.length || 0,
+      architecture: 'new'
     });
 
   } catch (error) {

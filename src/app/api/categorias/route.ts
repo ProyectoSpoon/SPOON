@@ -1,35 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/database';
 
-// GET - Obtener todas las categorías
+// GET - Obtener todas las categorías (ahora globales desde system.categories)
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    let restauranteId = searchParams.get('restauranteId');
     const tipo = searchParams.get('tipo'); // 'categoria' o 'subcategoria'
 
-    // Si no se proporciona restauranteId o es 'default', usar el primer restaurante
-    if (!restauranteId || restauranteId === 'default') {
-      console.log('🔍 Buscando restaurante por defecto...');
-      
-      const restaurantQuery = 'SELECT id FROM restaurant.restaurants WHERE status = $1 ORDER BY created_at ASC LIMIT 1';
-      const restaurantResult = await query(restaurantQuery, ['active']);
-      
-      if (restaurantResult.rows.length === 0) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'No hay restaurantes disponibles',
-            message: 'Debe existir al menos un restaurante activo'
-          },
-          { status: 400 }
-        );
-      }
-      
-      restauranteId = restaurantResult.rows[0].id;
-      console.log('✅ Usando restaurante por defecto:', restauranteId);
-    }
+    console.log('🔍 GET /api/categorias - Nueva arquitectura (system.categories)');
 
+    // ✅ NUEVA CONSULTA: system.categories (globales, sin restaurant_id)
     let queryText = `
       SELECT
         c.id,
@@ -37,17 +17,15 @@ export async function GET(request: NextRequest) {
         c.category_type,
         c.sort_order,
         c.description,
-        c.parent_id,
         c.is_active,
         c.created_at as "createdAt",
         c.updated_at as "updatedAt"
-      FROM menu.categories c
-      WHERE c.restaurant_id = $1
-        AND c.is_active = true
+      FROM system.categories c
+      WHERE c.is_active = true
     `;
 
-    const params = [restauranteId];
-    let paramIndex = 2;
+    const params: any[] = [];
+    let paramIndex = 1;
 
     if (tipo) {
       queryText += ` AND c.category_type = $${paramIndex}`;
@@ -55,35 +33,28 @@ export async function GET(request: NextRequest) {
       paramIndex++;
     }
 
-    queryText += ' ORDER BY c.parent_id NULLS FIRST, c.sort_order ASC, c.name ASC';
+    queryText += ' ORDER BY c.sort_order ASC, c.name ASC';
 
-    console.log('🔍 Ejecutando query para categorías...');
     const result = await query(queryText, params);
-    console.log(`✅ Encontradas ${result.rows.length} categorías`);
-
+    
     const categorias = result.rows.map(row => ({
       id: row.id,
       nombre: row.name,
       tipo: row.category_type,
       orden: row.sort_order || 0,
       descripcion: row.description,
-      parentId: row.parent_id || undefined, // NUEVO: incluir parent_id
       activo: row.is_active,
-      restauranteId,
       createdAt: new Date(row.createdAt),
       updatedAt: new Date(row.updatedAt)
     }));
 
-    // Log para debug de la estructura jerárquica
-    const principales = categorias.filter(c => !c.parentId);
-    const subcategorias = categorias.filter(c => c.parentId);
-    console.log(`📊 Estructura: ${principales.length} principales, ${subcategorias.length} subcategorías`);
+    console.log(`✅ Categorías globales encontradas: ${categorias.length}`);
 
     return NextResponse.json({
       success: true,
       data: categorias,
       count: categorias.length,
-      restauranteId: restauranteId
+      architecture: 'global' // Para debugging
     });
 
   } catch (error) {
@@ -99,18 +70,18 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Crear una nueva categoría
+// POST - Crear una nueva categoría global
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    let {
+    const {
       nombre,
       tipo = 'categoria',
       orden = 0,
-      descripcion,
-      parentId, // NUEVO: soporte para parent_id
-      restauranteId
+      descripcion
     } = body;
+
+    console.log('🔄 POST /api/categorias - Creando categoría global:', nombre);
 
     // Validaciones básicas
     if (!nombre) {
@@ -124,43 +95,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Si no se proporciona restauranteId, usar el primer restaurante
-    if (!restauranteId) {
-      const restaurantQuery = 'SELECT id FROM restaurant.restaurants WHERE status = $1 ORDER BY created_at ASC LIMIT 1';
-      const restaurantResult = await query(restaurantQuery, ['active']);
-      
-      if (restaurantResult.rows.length === 0) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'No hay restaurantes disponibles',
-            message: 'Debe existir al menos un restaurante activo'
-          },
-          { status: 400 }
-        );
-      }
-      
-      restauranteId = restaurantResult.rows[0].id;
-    }
-
+    // ✅ NUEVA INSERCIÓN: system.categories (sin restaurant_id)
     const queryText = `
-      INSERT INTO menu.categories (
-        name, category_type, sort_order, description, parent_id, restaurant_id,
-        is_active, created_at, updated_at
+      INSERT INTO system.categories (
+        name, category_type, sort_order, description, is_active, created_at, updated_at
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, true, NOW(), NOW()
+        $1, $2, $3, $4, true, NOW(), NOW()
       ) RETURNING *
     `;
 
-    const params = [
-      nombre,
-      tipo,
-      orden,
-      descripcion,
-      parentId || null, // NUEVO: incluir parent_id
-      restauranteId
-    ];
-
+    const params = [nombre, tipo, orden, descripcion];
     const result = await query(queryText, params);
     const newCategory = result.rows[0];
 
@@ -170,17 +114,18 @@ export async function POST(request: NextRequest) {
       tipo: newCategory.category_type,
       orden: newCategory.sort_order,
       descripcion: newCategory.description,
-      parentId: newCategory.parent_id || undefined, // NUEVO: incluir parent_id
       activo: newCategory.is_active,
-      restauranteId: newCategory.restaurant_id,
       createdAt: new Date(newCategory.created_at),
       updatedAt: new Date(newCategory.updated_at)
     };
 
+    console.log('✅ Categoría global creada:', categoria.id);
+
     return NextResponse.json({
       success: true,
       data: categoria,
-      message: 'Categoría creada exitosamente'
+      message: 'Categoría global creada exitosamente',
+      architecture: 'global'
     }, { status: 201 });
 
   } catch (error) {
