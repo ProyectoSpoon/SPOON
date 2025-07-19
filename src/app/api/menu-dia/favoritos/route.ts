@@ -41,7 +41,7 @@ export async function GET(request: Request) {
           rf.updated_at,
           p.name as product_name,
           p.description as product_description,
-           as product_image,
+          NULL as product_image,
           p.current_price as product_price,
           p.category_id,
           c.name as category_name,

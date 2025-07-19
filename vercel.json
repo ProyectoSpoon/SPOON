@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/limpiar-menus",
+      "schedule": "0 22 * * *"
+    }
+  ],
+  "functions": {
+    "src/app/api/cron/limpiar-menus/route.ts": {
+      "maxDuration": 300
+    }
+  },
+  "env": {
+    "CRON_SECRET": "@cron-secret"
+  }
+}

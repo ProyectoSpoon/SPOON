@@ -77,12 +77,35 @@ function generarCombinaciones(
 ): CombinacionGenerada[] {
   const combinaciones: CombinacionGenerada[] = [];
   
-  // Agrupar productos por categoría usando los IDs hardcodeados
-  const entradas = productos.filter(p => p.categoriaId === 'b4e792ba-b00d-4348-b9e3-f34992315c23');
-  const principios = productos.filter(p => p.categoriaId === '2d4c3ea8-843e-4312-821e-54d1c4e79dce');
-  const proteinas = productos.filter(p => p.categoriaId === '342f0c43-7f98-48fb-b0ba-e4c5d3ee72b3');
-  const acompanamientos = productos.filter(p => p.categoriaId === 'a272bc20-464c-443f-9283-4b5e7bfb71cf');
-  const bebidas = productos.filter(p => p.categoriaId === '6feba136-57dc-4448-8357-6f5533177cfd');
+  console.log('🔍 DEBUG: Productos recibidos:', productos.map(p => ({ id: p.id, nombre: p.nombre, categoriaId: p.categoriaId })));
+  
+  // ✅ CORREGIDO: Obtener categorías dinámicamente desde los productos
+  // Primero, obtener todos los categoriaId únicos
+  const categoriasUnicas = [...new Set(productos.map(p => p.categoriaId))];
+  console.log('🔍 DEBUG: Categorías únicas encontradas:', categoriasUnicas);
+  
+  // ✅ CORREGIDO: Agrupar productos por categoría REAL usando categoriaId
+  // IDs reales de categorías obtenidos de la base de datos
+  const CATEGORIA_IDS = {
+    ENTRADAS: '494fbac6-59ed-42af-af24-039298ba16b6',
+    PRINCIPIOS: 'de7f4731-3eb3-4d41-b830-d35e5125f4a3', 
+    PROTEINAS: '299b1ba0-0678-4e0e-ba53-90e5d95e5543',
+    ACOMPANAMIENTOS: '8b0751ae-1332-409e-a710-f229be0b9758',
+    BEBIDAS: 'c77ffc73-b65a-4f03-adb1-810443e61799'
+  };
+  
+  const entradas = productos.filter(p => p.categoriaId === CATEGORIA_IDS.ENTRADAS);
+  const principios = productos.filter(p => p.categoriaId === CATEGORIA_IDS.PRINCIPIOS);
+  const proteinas = productos.filter(p => p.categoriaId === CATEGORIA_IDS.PROTEINAS);
+  const acompanamientos = productos.filter(p => p.categoriaId === CATEGORIA_IDS.ACOMPANAMIENTOS);
+  const bebidas = productos.filter(p => p.categoriaId === CATEGORIA_IDS.BEBIDAS);
+  
+  // 🔍 DEBUGGING: Mostrar productos por categoría real
+  console.log('📋 Entradas encontradas:', entradas.map(p => p.nombre));
+  console.log('🍚 Principios encontrados:', principios.map(p => p.nombre));
+  console.log('🥩 Proteínas encontradas:', proteinas.map(p => p.nombre));
+  console.log('🥗 Acompañamientos encontrados:', acompanamientos.map(p => p.nombre));
+  console.log('🥤 Bebidas encontradas:', bebidas.map(p => p.nombre));
   
   console.log('📊 Productos por categoría:', {
     entradas: entradas.length,
@@ -230,7 +253,41 @@ export async function POST(request: Request) {
     
     // 6. ✅ VALIDAR PRODUCTOS: Verificar que existan en system.products
     console.log('🔍 Validando productos en system.products...');
+    console.log('📦 Productos recibidos del frontend:', productos.map((p: any) => ({ id: p.id, nombre: p.nombre })));
+    
     const productIds = productos.map((p: any) => p.id);
+    
+    // Validar que los IDs sean UUIDs válidos
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const invalidIds = productIds.filter(id => !uuidRegex.test(id));
+    
+    if (invalidIds.length > 0) {
+      console.error('❌ IDs inválidos (no son UUIDs):', invalidIds);
+      
+      // Obtener productos reales disponibles para ayudar al debugging
+      const availableProductsQuery = `
+        SELECT id, name, category_id FROM system.products 
+        WHERE is_active = true 
+        ORDER BY name 
+        LIMIT 10
+      `;
+      const availableProducts = await query(availableProductsQuery);
+      
+      return NextResponse.json({ 
+        error: 'IDs de productos inválidos',
+        details: `Los siguientes IDs no son UUIDs válidos: ${invalidIds.join(', ')}`,
+        invalidIds: invalidIds,
+        availableProducts: availableProducts.rows.map(p => ({
+          id: p.id,
+          name: p.name,
+          category_id: p.category_id
+        })),
+        hint: 'Usa los IDs reales de system.products mostrados en availableProducts'
+      }, { status: 400 });
+    }
+    
+    console.log('✅ Todos los IDs son UUIDs válidos');
+    
     const validationQuery = `
       SELECT id, name FROM system.products 
       WHERE id = ANY($1) AND is_active = true
@@ -239,13 +296,20 @@ export async function POST(request: Request) {
     
     if (validationResult.rows.length !== productos.length) {
       console.error('❌ Algunos productos no existen en system.products');
+      
+      const foundIds = validationResult.rows.map(p => p.id);
+      const missingIds = productIds.filter(id => !foundIds.includes(id));
+      
       return NextResponse.json({ 
         error: 'Algunos productos no existen en el catálogo global',
-        details: `Esperados: ${productos.length}, Encontrados: ${validationResult.rows.length}`
+        details: `Esperados: ${productos.length}, Encontrados: ${validationResult.rows.length}`,
+        missingIds: missingIds,
+        foundProducts: validationResult.rows
       }, { status: 400 });
     }
     
     console.log('✅ Todos los productos validados en system.products');
+    console.log('📋 Productos encontrados:', validationResult.rows.map(p => ({ id: p.id, name: p.name })));
     
     // 7. Generar combinaciones
     const combinaciones = generarCombinaciones(productos);
@@ -255,17 +319,22 @@ export async function POST(request: Request) {
     }
     
     // 8. Guardar combinaciones
+    // ✅ CORREGIDO: Eliminada columna 'base_price' que no existe en la tabla
     const insertQuery = `
       INSERT INTO menu.menu_combinations (
         daily_menu_id, name, description, entrada_id, principio_id, proteina_id, bebida_id, 
-        base_price, max_daily_quantity, current_quantity, is_available
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        max_daily_quantity, current_quantity, is_available
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING id;
     `;
     
     let combinacionesGuardadas = 0;
     
+    console.log(`🔄 Insertando ${combinaciones.length} combinaciones...`);
+    
     for (const combo of combinaciones) {
+      console.log(`📝 Insertando: ${combo.nombre}`);
+      
       const result = await query(insertQuery, [
         menuId,
         combo.nombre,
@@ -274,7 +343,6 @@ export async function POST(request: Request) {
         combo.principio_id,
         combo.proteina_id,
         combo.bebida_id,
-        combo.precio,
         combo.cantidad,
         combo.cantidad,
         true

@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/database';
 
-// Función helper para mapear categorías a campos (sin cambios)
+// Función helper para mapear categorías a campos - CORREGIDA con IDs reales
 function getCampoSegunCategoria(categoriaId: string): string {
   const categoriaMap: Record<string, string> = {
-    'b4e792ba-b00d-4348-b9e3-f34992315c23': 'entrada_id',     // Entradas
-    '2d4c3ea8-843e-4312-821e-54d1c4e79dce': 'principio_id',   // Principios  
-    '342f0c43-7f98-48fb-b0ba-e4c5d3ee72b3': 'proteina_id',    // Proteínas
-    'a272bc20-464c-443f-9283-4b5e7bfb71cf': 'proteina_id',    // Acompañamientos → proteina_id
-    '6feba136-57dc-4448-8357-6f5533177cfd': 'bebida_id'       // Bebidas
+    '494fbac6-59ed-42af-af24-039298ba16b6': 'entrada_id',     // Entradas (Ajiaco)
+    'de7f4731-3eb3-4d41-b830-d35e5125f4a3': 'principio_id',   // Principios (Arroz con Frijoles)
+    '299b1ba0-0678-4e0e-ba53-90e5d95e5543': 'proteina_id',    // Proteínas (Bandeja Paisa)
+    '8b0751ae-1332-409e-a710-f229be0b9758': 'proteina_id',    // Acompañamientos (Arepitas de Choclo)
+    'c77ffc73-b65a-4f03-adb1-810443e61799': 'bebida_id'       // Bebidas (Agua con Gas)
   };
   return categoriaMap[categoriaId] || 'proteina_id';
 }
@@ -87,6 +87,7 @@ export async function GET() {
               p.category_id,
               c.name as categoria_nombre,
               c.category_type,
+              c.sort_order,
               mc.current_quantity as cantidad,
               mc.name as combinacion_nombre,
               -- Precios del restaurante
@@ -102,6 +103,7 @@ export async function GET() {
             LEFT JOIN restaurant.menu_pricing mp ON mp.restaurant_id = $2
             WHERE mc.daily_menu_id = $1
               AND p.is_active = true
+              AND (mc.status IS NULL OR mc.status = 'active')
             ORDER BY c.sort_order ASC, p.name ASC;
           `;
           

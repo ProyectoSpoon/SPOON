@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSetPageTitle } from '@/shared/Context/page-title-context';
-import { Loader2, Badge, Percent, ArrowLeft, Edit3 } from 'lucide-react';
+import { Loader2, Badge, Percent, ArrowLeft, Edit3, Star, ChefHat, Sparkles } from 'lucide-react';
 import { Button } from '@/shared/components/ui/Button';
 import { Alert, AlertDescription } from '@/shared/components/ui/Alert';
 import { toast } from 'sonner';
@@ -44,10 +44,32 @@ export default function EspecialesPage(): JSX.Element {
     const fetchEspeciales = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/combinaciones/especiales');
+        
+        // Obtener token de autenticación
+        const token = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('auth-token='))
+          ?.split('=')[1];
+
+        if (!token) {
+          setError('No hay sesión activa');
+          return;
+        }
+
+        const response = await fetch('/api/combinaciones/especiales', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         
         if (!response.ok) {
-          throw new Error('Error al obtener especiales');
+          if (response.status === 401) {
+            setError('Sesión expirada. Por favor, inicia sesión nuevamente.');
+          } else {
+            throw new Error('Error al obtener especiales');
+          }
+          return;
         }
         
         const data = await response.json();
@@ -168,28 +190,60 @@ export default function EspecialesPage(): JSX.Element {
         </div>
       </div>
 
+      {/* Estado vacío - Sin especiales */}
+      {!isLoading && !error && especiales.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-16 px-4">
+          <div className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-full p-6 mb-6">
+            <Sparkles className="h-16 w-16 text-orange-500" />
+          </div>
+          
+          <h3 className="text-2xl font-bold text-gray-900 mb-3 text-center">
+            ¡Aún no hay especiales!
+          </h3>
+          
+          <p className="text-gray-600 text-center mb-6 max-w-md leading-relaxed">
+            Los platos especiales aparecerán aquí cuando configures ofertas y descuentos 
+            en tus combinaciones del menú.
+          </p>
+          
+          <div className="bg-white border border-gray-200 rounded-lg p-6 max-w-sm w-full">
+            <div className="flex items-center mb-4">
+              <ChefHat className="h-5 w-5 text-orange-500 mr-2" />
+              <span className="font-medium text-gray-900">¿Cómo crear especiales?</span>
+            </div>
+            
+            <ul className="space-y-2 text-sm text-gray-600">
+              <li className="flex items-start">
+                <Star className="h-4 w-4 text-yellow-500 mr-2 mt-0.5 flex-shrink-0" />
+                <span>Ve a Carta → Menú del Día</span>
+              </li>
+              <li className="flex items-start">
+                <Star className="h-4 w-4 text-yellow-500 mr-2 mt-0.5 flex-shrink-0" />
+                <span>Crea combinaciones de platos</span>
+              </li>
+              <li className="flex items-start">
+                <Star className="h-4 w-4 text-yellow-500 mr-2 mt-0.5 flex-shrink-0" />
+                <span>Asigna precios especiales con descuento</span>
+              </li>
+            </ul>
+          </div>
+          
+          <Button 
+            onClick={() => router.push('/dashboard/carta/menu-dia')}
+            className="mt-6 bg-orange-600 hover:bg-orange-700 text-white px-6 py-2"
+          >
+            <ChefHat className="h-4 w-4 mr-2" />
+            Ir al Menú del Día
+          </Button>
+        </div>
+      )}
+
       {/* Content */}
       {error ? (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
-      ) : especiales.length === 0 ? (
-        <div className="text-center py-12">
-          <Percent className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-600 mb-2">
-            No hay platos especiales
-          </h3>
-          <p className="text-gray-500 mb-6">
-            Marca combinaciones como especiales con precios promocionales
-          </p>
-          <Button
-            onClick={() => router.push('/dashboard/carta/combinaciones')}
-            className="bg-spoon-primary hover:bg-spoon-primary-dark text-white"
-          >
-            Ver Combinaciones
-          </Button>
-        </div>
-      ) : (
+      ) : especiales.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {especiales.map((especial) => (
             <div

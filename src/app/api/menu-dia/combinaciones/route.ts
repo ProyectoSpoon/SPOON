@@ -61,18 +61,15 @@ export async function GET(request: NextRequest) {
     const menuDelDia = menuResult.rows[0];
     console.log('✅ Menú encontrado:', menuDelDia.name);
     
-    // ✅ CONSULTA CORREGIDA: Usar system.products en lugar de system.products 
+    // ✅ CONSULTA CORREGIDA: Solo columnas que existen en menu.menu_combinations 
     const combinacionesQuery = `
       SELECT 
         mc.id,
         mc.name,
-        mmc.base_price,
-        mc.special_price,
+        mc.description,
         mc.is_available,
-        mc.is_featured,
         mc.max_daily_quantity,
         mc.current_quantity,
-        mc.sold_quantity,
         mc.created_at,
         
         -- ✅ ENTRADA: system.products
@@ -107,6 +104,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN restaurant.menu_pricing mp ON mp.restaurant_id = $2
       WHERE mc.daily_menu_id = $1
         AND mc.is_available = true
+        AND (mc.status IS NULL OR mc.status = 'active')
       ORDER BY mc.name
     `;
     

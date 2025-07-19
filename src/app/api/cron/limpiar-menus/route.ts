@@ -34,17 +34,22 @@ export async function GET(request: Request) {
       
       await query(deleteSidesQuery, [restaurantId]);
       
-      const deleteCombinationsQuery = `
-        DELETE FROM menu.menu_combinations 
+      // ✅ SOFT DELETE: Archivar combinaciones en lugar de eliminarlas
+      // Esto preserva el histórico para el registro de ventas
+      const archiveCombinationsQuery = `
+        UPDATE menu.menu_combinations 
+        SET status = 'archived',
+            updated_at = NOW()
         WHERE daily_menu_id IN (
           SELECT id 
           FROM menu.daily_menus 
           WHERE restaurant_id = $1 
             AND menu_date < CURRENT_DATE
         )
+        AND status != 'archived'
       `;
       
-      await query(deleteCombinationsQuery, [restaurantId]);
+      await query(archiveCombinationsQuery, [restaurantId]);
       
       const archiveMenusQuery = `
         UPDATE menu.daily_menus 

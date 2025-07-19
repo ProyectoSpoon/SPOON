@@ -1,11 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSetPageTitle } from '@/shared/Context/page-title-context';
+import { useSalesAnalytics } from '@/hooks/useSalesAnalytics';
+import { useAuthContext } from '@/hooks/useAuthContext';
+import { AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 
 // Tipos TypeScript
 type EstadoMesa = 'libre' | 'ocupada' | 'reservada' | 'limpieza';
-type CategoriaTipo = 'platos' | 'bebidas' | 'postres' | 'entradas';
+type CategoriaTipo = 'entrada' | 'principio' | 'proteina' | 'acompanamiento' | 'bebida' | 'especial';
 type MetodoPago = 'efectivo' | 'tarjeta' | 'transferencia';
 
 interface Mesa {
@@ -22,6 +25,7 @@ interface Producto {
   categoria: CategoriaTipo;
   precio: number;
   disponible: boolean;
+  destacado?: boolean;
 }
 
 interface ItemCarrito {
@@ -39,101 +43,121 @@ const RegistroVentasPage = () => {
 
   // ✅ TÍTULO DINÁMICO DE LA PÁGINA
   useSetPageTitle('Registro de Ventas', 'Control y registro de ventas diarias');
+  
+  // ✅ OBTENER DATOS DE AUTENTICACIÓN
+  const { restaurantId, loading: authLoading } = useAuthContext();
+  
+  // ✅ OBTENER DATOS DINÁMICOS DE SALES ANALYTICS
+  const { 
+    data: salesData, 
+    loading: salesLoading, 
+    error: salesError,
+    formatCurrency,
+    getEstadoColor,
+    getEstadoTexto,
+    refetch
+  } = useSalesAnalytics(restaurantId);
+  
   // Estados
   const [mesaSeleccionada, setMesaSeleccionada] = useState<string | null>(null);
-  const [categoriaActiva, setCategoriaActiva] = useState<CategoriaTipo>('platos');
+  const [categoriaActiva, setCategoriaActiva] = useState<CategoriaTipo>('entrada');
   const [carrito, setCarrito] = useState<ItemCarrito[]>([]);
   const [metodoPago, setMetodoPago] = useState<MetodoPago>('efectivo');
-  const [configRestaurante, setConfigRestaurante] = useState<ConfigRestaurante | null>(null);
 
-  // KPIs de operación diaria
-  const kpisOperacion = [
-    { titulo: "Mesas Libres", valor: "12/20", subtitulo: "disponibles" },
-    { titulo: "Órdenes Activas", valor: "8", subtitulo: "en proceso" },
-    { titulo: "Ventas Hoy", valor: "$847k", subtitulo: "vs objetivo" },
-    { titulo: "Tiempo Promedio", valor: "45 min", subtitulo: "por mesa" },
-    { titulo: "Plato Top", valor: "Bandeja Paisa", subtitulo: "28 vendidos" },
-    { titulo: "Pago Preferido", valor: "Tarjeta", subtitulo: "60% de órdenes" },
-    { titulo: "Ticket Promedio", valor: "$24.5k", subtitulo: "por orden" },
-    { titulo: "Eficiencia", valor: "92%", subtitulo: "servicio" }
-  ];
-
-  // Configuración dinámica de mesas (simulada)
-  useEffect(() => {
-    // Simular carga de configuración del restaurante
-    const mesas: Mesa[] = [];
-    const totalMesas = 20; // Esto vendría de la configuración del restaurante
+  // ✅ KPIs DINÁMICOS DE OPERACIÓN
+  const kpisOperacion = useMemo(() => {
+    if (!salesData) return [];
     
-    for (let i = 1; i <= totalMesas; i++) {
-      mesas.push({
-        id: `mesa-${i}`,
-        numero: i,
-        capacidad: i <= 12 ? 4 : i <= 16 ? 6 : 8,
-        estado: Math.random() > 0.6 ? 'libre' : Math.random() > 0.5 ? 'ocupada' : 'reservada'
-      });
+    const { kpisOperacion: kpisData } = salesData;
+    
+    return [
+      { titulo: "Mesas Libres", valor: kpisData.mesasLibres, subtitulo: "disponibles" },
+      { titulo: "Órdenes Activas", valor: kpisData.ordenesActivas.toString(), subtitulo: "en proceso" },
+      { titulo: "Ventas Hoy", valor: formatCurrency(kpisData.ventasHoy), subtitulo: "vs objetivo" },
+      { titulo: "Tiempo Promedio", valor: kpisData.tiempoPromedio, subtitulo: "por mesa" },
+      { titulo: "Plato Top", valor: kpisData.platoTop.nombre, subtitulo: `${kpisData.platoTop.cantidad} vendidos` },
+      { titulo: "Pago Preferido", valor: kpisData.pagoPreferido.metodo, subtitulo: `${kpisData.pagoPreferido.porcentaje}% de órdenes` },
+      { titulo: "Ticket Promedio", valor: formatCurrency(kpisData.ticketPromedio), subtitulo: "por orden" },
+      { titulo: "Eficiencia", valor: kpisData.eficiencia, subtitulo: "servicio" }
+    ];
+  }, [salesData, formatCurrency]);
+
+  // ✅ CONFIGURACIÓN DINÁMICA DE MESAS
+  const configRestaurante = useMemo(() => {
+    return salesData?.configRestaurante || null;
+  }, [salesData]);
+
+  // ✅ PRODUCTOS DINÁMICOS POR CATEGORÍA
+  const productosPorCategoria = useMemo(() => {
+    return salesData?.productosPorCategoria || {};
+  }, [salesData]);
+
+  // ✅ CATEGORÍAS DISPONIBLES DINÁMICAS
+  const categoriasDisponibles = useMemo(() => {
+    const categorias = Object.keys(productosPorCategoria) as CategoriaTipo[];
+    return categorias.length > 0 ? categorias : ['entrada', 'principio', 'proteina', 'bebida'] as CategoriaTipo[];
+  }, [productosPorCategoria]);
+
+  // ✅ AJUSTAR CATEGORÍA ACTIVA SI NO EXISTE
+  useEffect(() => {
+    if (categoriasDisponibles.length > 0 && !categoriasDisponibles.includes(categoriaActiva)) {
+      setCategoriaActiva(categoriasDisponibles[0]);
     }
+  }, [categoriasDisponibles, categoriaActiva]);
 
-    setConfigRestaurante({
-      totalMesas,
-      layoutMesas: mesas
-    });
-  }, []);
+  // ✅ MOSTRAR LOADING MIENTRAS SE CARGAN LOS DATOS
+  if (authLoading || salesLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <p className="text-gray-600">Cargando datos de ventas...</p>
+        </div>
+      </div>
+    );
+  }
 
-  // Productos por categoría (simulados)
-  const productosPorCategoria: Record<CategoriaTipo, Producto[]> = {
-    platos: [
-      { id: '1', nombre: 'Bandeja Paisa', categoria: 'platos', precio: 28000, disponible: true },
-      { id: '2', nombre: 'Sancocho', categoria: 'platos', precio: 22000, disponible: true },
-      { id: '3', nombre: 'Pescado Frito', categoria: 'platos', precio: 32000, disponible: true },
-      { id: '4', nombre: 'Pollo Asado', categoria: 'platos', precio: 25000, disponible: false }
-    ],
-    bebidas: [
-      { id: '5', nombre: 'Jugo Natural', categoria: 'bebidas', precio: 8000, disponible: true },
-      { id: '6', nombre: 'Gaseosa', categoria: 'bebidas', precio: 5000, disponible: true },
-      { id: '7', nombre: 'Cerveza', categoria: 'bebidas', precio: 6000, disponible: true }
-    ],
-    entradas: [
-      { id: '8', nombre: 'Empanadas', categoria: 'entradas', precio: 3000, disponible: true },
-      { id: '9', nombre: 'Arepa con Queso', categoria: 'entradas', precio: 4000, disponible: true }
-    ],
-    postres: [
-      { id: '10', nombre: 'Flan', categoria: 'postres', precio: 8000, disponible: true },
-      { id: '11', nombre: 'Tres Leches', categoria: 'postres', precio: 10000, disponible: true }
-    ]
+  // ✅ MOSTRAR ERROR SI HAY PROBLEMAS
+  if (salesError) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+              <div>
+                <h3 className="text-lg font-medium text-red-800">Error cargando datos</h3>
+                <p className="text-red-600 mt-1">{salesError}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => refetch()}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Reintentar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ MOSTRAR MENSAJE PARA SERVICIO NUEVO SIN DATOS
+  const tieneVentas = salesData?.metadata?.tieneVentas || false;
+  const productosDisponibles = salesData?.metadata?.productosDisponibles || 0;
+
+  const getEstadoColorLocal = (estado: EstadoMesa): string => {
+    return getEstadoColor(estado); 
   };
 
-  const getEstadoColor = (estado: EstadoMesa): string => {
-    const colors = {
-      libre: '#22c55e',
-      ocupada: '#ef4444', 
-      reservada: '#f59e0b',
-      limpieza: '#6b7280'
-    };
-    return colors[estado];
-  };
-
-  const getEstadoTexto = (estado: EstadoMesa): string => {
-    const textos = {
-      libre: 'Libre',
-      ocupada: 'Ocupada',
-      reservada: 'Reservada', 
-      limpieza: 'Limpieza'
-    };
-    return textos[estado];
-  };
-
-  const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
+  const getEstadoTextoLocal = (estado: EstadoMesa): string => {
+    return getEstadoTexto(estado);
   };
 
   const agregarAlCarrito = (producto: Producto) => {
-
-  // ✅ TÍTULO DINÁMICO DE LA PÁGINA
+    // ✅ TÍTULO DINÁMICO DE LA PÁGINA
+    useSetPageTitle('Registro de Ventas', 'Control y registro de ventas diarias');
   useSetPageTitle('Registro de Ventas', 'Control y registro de ventas diarias');
     setCarrito(carritoActual => {
       const existente = carritoActual.find(item => item.producto.id === producto.id);
@@ -278,9 +302,9 @@ const RegistroVentasPage = () => {
           <div className="bg-white p-5 border border-gray-100 rounded-lg shadow-sm">
             <h3 className="text-sm text-gray-500 mb-4">Productos disponibles</h3>
             
-            {/* Filtros de categoría */}
-            <div className="flex gap-1 mb-4">
-              {(['platos', 'bebidas', 'entradas', 'postres'] as CategoriaTipo[]).map((categoria) => (
+            {/* ✅ FILTROS DE CATEGORÍA DINÁMICOS */}
+            <div className="flex gap-1 mb-4 flex-wrap">
+              {categoriasDisponibles.map((categoria) => (
                 <button
                   key={categoria}
                   onClick={() => setCategoriaActiva(categoria)}
@@ -295,40 +319,53 @@ const RegistroVentasPage = () => {
               ))}
             </div>
 
-            {/* Lista de productos */}
+            {/* ✅ LISTA DE PRODUCTOS DINÁMICOS */}
             <div className="grid grid-cols-1 gap-2 max-h-80 overflow-y-auto">
-              {productosPorCategoria[categoriaActiva].map((producto) => (
-                <div 
-                  key={producto.id} 
-                  className={`p-3 border rounded-lg ${
-                    producto.disponible 
-                      ? 'border-gray-200 hover:border-gray-300 bg-white' 
-                      : 'border-gray-100 bg-gray-50'
-                  }`}
-                >
-                  <div className="flex justify-between items-center">
-                    <div className="flex-1">
-                      <div className={`font-medium text-sm ${!producto.disponible ? 'text-gray-400' : 'text-gray-900'}`}>
-                        {producto.nombre}
-                      </div>
-                      <div className={`text-sm ${!producto.disponible ? 'text-gray-400' : 'text-green-600'}`}>
-                        {formatCurrency(producto.precio)}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => agregarAlCarrito(producto)}
-                      disabled={!producto.disponible || !mesaSeleccionada}
-                      className={`px-3 py-1 text-sm rounded ${
-                        producto.disponible && mesaSeleccionada
-                          ? 'bg-blue-500 text-white hover:bg-blue-600'
-                          : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      }`}
-                    >
-                      +
-                    </button>
-                  </div>
+              {!tieneVentas && productosDisponibles === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <p className="text-sm">No hay productos configurados</p>
+                  <p className="text-xs mt-1">Ve a Dashboard → Carta para agregar productos</p>
                 </div>
-              ))}
+              ) : (
+                (productosPorCategoria[categoriaActiva] || []).map((producto: any) => (
+                  <div 
+                    key={producto.id} 
+                    className={`p-3 border rounded-lg ${
+                      producto.disponible 
+                        ? 'border-gray-200 hover:border-gray-300 bg-white' 
+                        : 'border-gray-100 bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="flex-1">
+                        <div className={`font-medium text-sm ${!producto.disponible ? 'text-gray-400' : 'text-gray-900'}`}>
+                          {producto.nombre}
+                        </div>
+                        <div className={`text-sm ${!producto.disponible ? 'text-gray-400' : 'text-green-600'}`}>
+                          {formatCurrency(producto.precio)}
+                        </div>
+                        {producto.destacado && (
+                          <div className="text-xs text-orange-600 font-medium">★ Destacado</div>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => agregarAlCarrito({
+                          ...producto,
+                          categoria: producto.categoria as CategoriaTipo
+                        })}
+                        disabled={!producto.disponible || !mesaSeleccionada}
+                        className={`px-3 py-1 text-sm rounded ${
+                          producto.disponible && mesaSeleccionada
+                            ? 'bg-blue-500 text-white hover:bg-blue-600'
+                            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        }`}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

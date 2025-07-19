@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSetPageTitle } from '@/shared/Context/page-title-context';
-import { Loader2, Star, Heart, ArrowLeft } from 'lucide-react';
+import { Loader2, Star, Heart, ArrowLeft, ChefHat, Sparkles } from 'lucide-react';
 import { Button } from '@/shared/components/ui/Button';
 import { Alert, AlertDescription } from '@/shared/components/ui/Alert';
 import { toast } from 'sonner';
@@ -43,10 +43,32 @@ export default function FavoritosPage(): JSX.Element {
     const fetchFavoritos = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/combinaciones/favoritos');
+        
+        // Obtener token de autenticación
+        const token = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('auth-token='))
+          ?.split('=')[1];
+
+        if (!token) {
+          setError('No hay sesión activa');
+          return;
+        }
+
+        const response = await fetch('/api/combinaciones/favoritos', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         
         if (!response.ok) {
-          throw new Error('Error al obtener favoritos');
+          if (response.status === 401) {
+            setError('Sesión expirada. Por favor, inicia sesión nuevamente.');
+          } else {
+            throw new Error('Error al obtener favoritos');
+          }
+          return;
         }
         
         const data = await response.json();
@@ -68,6 +90,10 @@ export default function FavoritosPage(): JSX.Element {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${document.cookie
+            .split('; ')
+            .find(row => row.startsWith('auth-token='))
+            ?.split('=')[1]}`,
         },
         body: JSON.stringify({
           combinacionId: id,
@@ -121,19 +147,48 @@ export default function FavoritosPage(): JSX.Element {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : favoritos.length === 0 ? (
-        <div className="text-center py-12">
-          <Heart className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-600 mb-2">
-            No hay platos favoritos
+        <div className="flex flex-col items-center justify-center py-16 px-4">
+          <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-full p-6 mb-6">
+            <Heart className="h-16 w-16 text-red-500" />
+          </div>
+          
+          <h3 className="text-2xl font-bold text-gray-900 mb-3 text-center">
+            ¡Aún no hay favoritos!
           </h3>
-          <p className="text-gray-500 mb-6">
-            Marca combinaciones como favoritas para verlas aquí
+          
+          <p className="text-gray-600 text-center mb-6 max-w-md leading-relaxed">
+            Los platos favoritos aparecerán aquí cuando marques combinaciones 
+            especiales que quieras destacar en tu menú.
           </p>
-          <Button
-            onClick={() => router.push('/dashboard/carta/combinaciones')}
-            className="bg-spoon-primary hover:bg-spoon-primary-dark text-white"
+          
+          <div className="bg-white border border-gray-200 rounded-lg p-6 max-w-sm w-full">
+            <div className="flex items-center mb-4">
+              <ChefHat className="h-5 w-5 text-red-500 mr-2" />
+              <span className="font-medium text-gray-900">¿Cómo crear favoritos?</span>
+            </div>
+            
+            <ul className="space-y-2 text-sm text-gray-600">
+              <li className="flex items-start">
+                <Star className="h-4 w-4 text-yellow-500 mr-2 mt-0.5 flex-shrink-0" />
+                <span>Ve a Carta → Menú del Día</span>
+              </li>
+              <li className="flex items-start">
+                <Star className="h-4 w-4 text-yellow-500 mr-2 mt-0.5 flex-shrink-0" />
+                <span>Crea combinaciones de platos</span>
+              </li>
+              <li className="flex items-start">
+                <Star className="h-4 w-4 text-yellow-500 mr-2 mt-0.5 flex-shrink-0" />
+                <span>Márcalas como favoritas</span>
+              </li>
+            </ul>
+          </div>
+          
+          <Button 
+            onClick={() => router.push('/dashboard/carta/menu-dia')}
+            className="mt-6 bg-red-600 hover:bg-red-700 text-white px-6 py-2"
           >
-            Ver Combinaciones
+            <ChefHat className="h-4 w-4 mr-2" />
+            Ir al Menú del Día
           </Button>
         </div>
       ) : (

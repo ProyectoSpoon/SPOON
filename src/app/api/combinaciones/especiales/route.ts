@@ -1,85 +1,147 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/database';
+import jwt from 'jsonwebtoken';
 
 // GET - Obtener combinaciones especiales
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    console.log('⭐ Obteniendo combinaciones especiales...');
+    console.log('⭐ [DEBUG] Iniciando API de especiales...');
     
-    // Obtener restaurante activo
-    const restaurantQuery = 'SELECT id FROM restaurant.restaurants WHERE status = $1 ORDER BY created_at ASC LIMIT 1';
-    const restaurantResult = await query(restaurantQuery, ['active']);
+    // Obtener token de autenticación
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('❌ [DEBUG] No hay token de autorización');
+      return NextResponse.json({ error: 'Token de autenticación requerido' }, { status: 401 });
+    }
+
+    const token = authHeader.substring(7);
+    console.log('🔑 [DEBUG] Token extraído, longitud:', token.length);
     
-    if (restaurantResult.rows.length === 0) {
-      return NextResponse.json({ error: 'No hay restaurantes disponibles' }, { status: 400 });
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+      console.log('✅ [DEBUG] Token verificado, userId:', decoded.userId);
+    } catch (error) {
+      console.log('❌ [DEBUG] Error verificando token:', error);
+      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
+    }
+
+    // Obtener restaurantId del usuario autenticado
+    console.log('🔍 [DEBUG] Buscando restaurante para usuario:', decoded.userId);
+    
+    // Verificar la estructura de auth.users
+    const userCheckQuery = 'SELECT * FROM auth.users WHERE id = $1 LIMIT 1';
+    const userCheck = await query(userCheckQuery, [decoded.userId]);
+    
+    if (userCheck.rows.length === 0) {
+      console.log('❌ [DEBUG] Usuario no encontrado en auth.users');
+      return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
     }
     
-    const restaurantId = restaurantResult.rows[0].id;
+    const userData = userCheck.rows[0];
+    console.log('🔍 [DEBUG] Estructura usuario:', Object.keys(userData));
+    console.log('🔍 [DEBUG] Datos del usuario:', {
+      id: userData.id,
+      email: userData.email,
+      restaurant_id: userData.restaurant_id || 'NO TIENE',
+      role: userData.role || 'NO DEFINIDO',
+      status: userData.status || 'NO DEFINIDO'
+    });
     
-    // Obtener combinaciones especiales (special_price IS NOT NULL)
+    // Intentar diferentes formas de obtener el restaurant_id
+    let restaurantId = null;
+    const user = userCheck.rows[0];
+    
+    // Opción 1: Directo desde auth.users
+    if (user.restaurant_id) {
+      restaurantId = user.restaurant_id;
+      console.log('🏪 [DEBUG] RestaurantId desde auth.users:', restaurantId);
+    }
+    // Opción 2: Desde restaurant.restaurant_users
+    else {
+      console.log('🔍 [DEBUG] Buscando en restaurant.restaurant_users...');
+      const restaurantUserQuery = `
+        SELECT ru.restaurant_id 
+        FROM restaurant.restaurant_users ru
+        WHERE ru.user_id = $1
+      `;
+      const restaurantUserResult = await query(restaurantUserQuery, [decoded.userId]);
+      
+      if (restaurantUserResult.rows.length > 0) {
+        restaurantId = restaurantUserResult.rows[0].restaurant_id;
+        console.log('🏪 [DEBUG] RestaurantId desde restaurant_users:', restaurantId);
+      }
+    }
+    
+    // Manejar caso especial para super_admin
+    if (!restaurantId) {
+      if (userData.role === 'super_admin') {
+        console.log('🔧 [DEBUG] Super admin detectado, buscando primer restaurante disponible...');
+        const firstRestaurantQuery = 'SELECT id FROM restaurant.restaurants ORDER BY created_at ASC LIMIT 1';
+        const firstRestaurant = await query(firstRestaurantQuery, []);
+        
+        if (firstRestaurant.rows.length > 0) {
+          restaurantId = firstRestaurant.rows[0].id;
+          console.log('🏪 [DEBUG] Usando restaurante por defecto para super_admin:', restaurantId);
+        } else {
+          console.log('❌ [DEBUG] No hay restaurantes disponibles en el sistema');
+          return NextResponse.json({ 
+            error: 'No hay restaurantes disponibles', 
+            especiales: [],
+            message: 'No se encontraron restaurantes en el sistema'
+          }, { status: 200 });
+        }
+      } else {
+        console.log('❌ [DEBUG] Usuario regular sin restaurant_id asignado');
+        return NextResponse.json({ error: 'No autorizado - Usuario sin restaurante asignado' }, { status: 403 });
+      }
+    }
+    
+    console.log('🏪 [DEBUG] RestaurantId final obtenido:', restaurantId);
+    
+    // Verificar si existen productos especiales
+    console.log('🔍 [DEBUG] Verificando productos especiales para restaurante:', restaurantId);
+    
+    const countQuery = 'SELECT COUNT(*) FROM restaurant.favorite_products WHERE restaurant_id = $1';
+    const countResult = await query(countQuery, [restaurantId]);
+    console.log('📊 [DEBUG] Productos especiales encontrados:', countResult.rows[0].count);
+    
+    if (parseInt(countResult.rows[0].count) === 0) {
+      console.log('ℹ️ [DEBUG] No hay productos especiales configurados');
+      return NextResponse.json({
+        success: true,
+        especiales: [],
+        total: 0,
+        message: 'No hay productos especiales configurados'
+      });
+    }
+    
+    // Consulta simplificada para obtener productos especiales
+    console.log('🔍 [DEBUG] Obteniendo detalles de productos especiales...');
     const especialesQuery = `
       SELECT 
-        mc.id,
-        mc.name,
-        mmc.base_price,
-        mc.special_price,
-        mc.is_available,
-        mc.is_featured,
-        dm.menu_date,
-        dm.name as menu_name,
-        -- Productos de la combinación
-        pe.name as entrada_nombre,
-        pe.image_url as entrada_imagen,
-        pp.name as principio_nombre,
-        pp.image_url as principio_imagen,
-        ppr.name as proteina_nombre,
-        ppr.image_url as proteina_imagen,
-        pb.name as bebida_nombre,
-        pb.image_url as bebida_imagen,
-        -- Acompañamientos
-        COALESCE(
-          json_agg(
-            CASE WHEN pa.id IS NOT NULL THEN
-              json_build_object(
-                'id', pa.id,
-                'nombre', pa.name,
-                'imagen', pa.image_url,
-                'cantidad', cs.quantity
-              )
-            END
-          ) FILTER (WHERE pa.id IS NOT NULL),
-          '[]'::json
-        ) as acompanamientos,
-        -- Calcular descuento
-        CASE 
-          WHEN mc.special_price IS NOT NULL AND mc.special_price < mc.base_price 
-          THEN ROUND(((mc.base_price - mc.special_price) / mc.base_price * 100)::numeric, 0)
-          ELSE 0
-        END as descuento_porcentaje
-      FROM menu.menu_combinations mc
-      JOIN menu.daily_menus dm ON mc.daily_menu_id = dm.id
-      LEFT JOIN system.products pe ON mc.entrada_id = pe.id
-      LEFT JOIN system.products pp ON mc.principio_id = pp.id
-      LEFT JOIN system.products ppr ON mc.proteina_id = ppr.id
-      LEFT JOIN system.products pb ON mc.bebida_id = pb.id
-      LEFT JOIN menu.combination_sides cs ON mc.id = cs.combination_id
-      LEFT JOIN system.products pa ON cs.product_id = pa.id
-      WHERE dm.restaurant_id = $1 
-        AND mc.special_price IS NOT NULL
-        AND mc.special_price < mc.base_price
-        AND dm.status = 'published'
-      GROUP BY mc.id, dm.id, pe.id, pp.id, ppr.id, pb.id
-      ORDER BY descuento_porcentaje DESC, dm.menu_date DESC, mc.name ASC;
+        fp.id,
+        fp.product_id,
+        fp.created_at,
+        p.name,
+        p.description,
+        p.base_price,
+        p.is_available
+      FROM restaurant.favorite_products fp
+      JOIN system.products p ON fp.product_id = p.id
+      WHERE fp.restaurant_id = $1
+      ORDER BY fp.created_at DESC;
     `;
     
+    console.log('🔍 [DEBUG] Ejecutando consulta SQL...');
     const result = await query(especialesQuery, [restaurantId]);
-    
-    console.log(`✅ ${result.rows.length} combinaciones especiales encontradas`);
+    console.log('✅ [DEBUG] Consulta exitosa, filas:', result.rows.length);
     
     return NextResponse.json({
       success: true,
       especiales: result.rows,
-      total: result.rows.length
+      total: result.rows.length,
+      message: `${result.rows.length} productos especiales encontrados`
     });
     
   } catch (error) {

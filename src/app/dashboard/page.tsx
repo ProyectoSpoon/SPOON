@@ -1,57 +1,160 @@
-// app/dashboard/page.tsx - Dashboard Minimalista SPOON
+// app/dashboard/page.tsx - Dashboard SPOON con Datos Reales
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useSetPageTitle } from '@/shared/Context/page-title-context';
+import { useDashboardAnalytics } from '@/hooks/useDashboardAnalytics';
+import { useAuthContext } from '@/hooks/useAuthContext';
+import { TrendingUp, Users, DollarSign, ShoppingCart, AlertCircle, BarChart3 } from 'lucide-react';
 
 export default function DashboardPage() {
 
   // ✅ TÍTULO DINÁMICO DE LA PÁGINA
   useSetPageTitle('Dashboard', 'Panel principal de control');
   
-  // Nota: La verificación de restaurante se hace en el login
-  // Si llegamos aquí, es porque el usuario ya tiene restaurante configurado
-  // Datos de KPIs para restaurantes (adaptados a SPOON)
-  const kpis = [
-    { titulo: "Órdenes Hoy", valor: "127", subtitulo: "Clientes atendidos" },
-    { titulo: "Clientes Únicos", valor: "98", subtitulo: "" },
-    { titulo: "Ingresos", valor: "$847k", subtitulo: "" },
-    { titulo: "Ganancia", valor: "$124k", subtitulo: "" },
-    { titulo: "Plato Popular", valor: "Bandeja Paisa", subtitulo: "35% de ventas" },
-    { titulo: "Gastos", valor: "$89k", subtitulo: "Desglose por tipo" },
-    { titulo: "Devoluciones", valor: "$12k", subtitulo: "" },
-    { titulo: "Nómina", valor: "$156k", subtitulo: "" }
-  ];
+  // ✅ OBTENER DATOS DE AUTENTICACIÓN
+  const { restaurantId, loading: authLoading } = useAuthContext();
+  
+  // ✅ OBTENER DATOS DINÁMICOS DE ANALYTICS
+  const { 
+    data: analyticsData, 
+    loading: analyticsLoading, 
+    error: analyticsError,
+    formatCurrency,
+    formatKPI
+  } = useDashboardAnalytics(restaurantId, 'hoy');
 
-  // Datos de platos populares (colombianos)
-  const platosPopulares = [
-    { nombre: "Bandeja Paisa", cantidad: 28, revenue: "$658k" },
-    { nombre: "Sancocho Trifásico", cantidad: 15, revenue: "$285k" },
-    { nombre: "Arepa con Queso", cantidad: 42, revenue: "$210k" },
-    { nombre: "Pollo Asado", cantidad: 18, revenue: "$324k" },
-    { nombre: "Pescado Frito", cantidad: 8, revenue: "$144k" },
-    { nombre: "Empanadas", cantidad: 35, revenue: "$175k" },
-    { nombre: "Ensalada César", cantidad: 12, revenue: "$96k" }
-  ];
+  // ✅ FORMATEAR KPIs DINÁMICOS BASADOS EN DATOS REALES
+  const kpis = useMemo(() => {
+    if (!analyticsData) return [];
+    
+    const { kpis: kpisData } = analyticsData;
+    
+    return [
+      { 
+        titulo: "Ventas Hoy", 
+        valor: formatCurrency(kpisData.ventas_hoy.valor), 
+        subtitulo: kpisData.ventas_hoy.descripcion,
+        cambio: kpisData.ventas_hoy.cambio,
+        icono: <DollarSign className="h-4 w-4" />,
+        color: "text-emerald-600"
+      },
+      { 
+        titulo: "Órdenes Hoy", 
+        valor: kpisData.ordenes_hoy.valor.toString(), 
+        subtitulo: kpisData.ordenes_hoy.descripcion,
+        cambio: kpisData.ordenes_hoy.cambio,
+        icono: <ShoppingCart className="h-4 w-4" />,
+        color: "text-blue-600"
+      },
+      { 
+        titulo: "Clientes Hoy", 
+        valor: kpisData.clientes_hoy.valor.toString(), 
+        subtitulo: kpisData.clientes_hoy.descripcion,
+        cambio: kpisData.clientes_hoy.cambio,
+        icono: <Users className="h-4 w-4" />,
+        color: "text-purple-600"
+      },
+      { 
+        titulo: "Ticket Promedio", 
+        valor: formatCurrency(kpisData.ticket_promedio.valor), 
+        subtitulo: kpisData.ticket_promedio.descripcion,
+        cambio: kpisData.ticket_promedio.cambio,
+        icono: <TrendingUp className="h-4 w-4" />,
+        color: "text-orange-600"
+      }
+    ];
+  }, [analyticsData, formatCurrency]);
+
+  // ✅ FORMATEAR PLATOS POPULARES DINÁMICOS
+  const platosPopulares = useMemo(() => {
+    if (!analyticsData?.popular_dishes) return [];
+    
+    return analyticsData.popular_dishes.map(plato => ({
+      nombre: plato.nombre,
+      categoria: plato.categoria,
+      cantidad: plato.cantidad,
+      ingresos: formatCurrency(plato.ingresos)
+    }));
+  }, [analyticsData, formatCurrency]);
+
+  // ✅ FORMATEAR VENTAS POR CATEGORÍA
+  const ventasPorCategoria = useMemo(() => {
+    if (!analyticsData?.sales_by_category) return [];
+    
+    return analyticsData.sales_by_category.map(categoria => ({
+      categoria: categoria.categoria,
+      total_ventas: formatCurrency(categoria.total_ventas),
+      clientes_unicos: categoria.clientes_unicos
+    }));
+  }, [analyticsData, formatCurrency]);
+
+  // ✅ MOSTRAR LOADING MIENTRAS SE CARGAN LOS DATOS
+  if (authLoading || analyticsLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="animate-pulse">
+          {/* Loading KPIs */}
+          <div className="grid grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
+            {[...Array(8)].map((_, index) => (
+              <div key={index} className="text-center p-4 border border-gray-200 rounded-lg shadow-sm bg-white">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto mb-2"></div>
+                <div className="h-8 bg-gray-200 rounded w-full mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/2 mx-auto"></div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Loading Charts */}
+          <div className="grid grid-cols-12 gap-3">
+            <div className="col-span-12 lg:col-span-4">
+              <div className="bg-white p-5 border border-gray-100 rounded-lg shadow-sm h-64">
+                <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+                <div className="h-40 bg-gray-100 rounded"></div>
+              </div>
+            </div>
+            <div className="col-span-12 lg:col-span-8">
+              <div className="bg-white p-5 border border-gray-100 rounded-lg shadow-sm h-64">
+                <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+                <div className="h-40 bg-gray-100 rounded"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ NO MOSTRAR ERRORES - SIEMPRE MOSTRAR DASHBOARD CON DATOS EN CERO
+  // El dashboard debe ser visible incluso si hay errores de conexión
+
+  // ✅ MOSTRAR MENSAJE PARA SERVICIO NUEVO SIN DATOS
+  const tieneVentas = analyticsData?.insights?.tiene_datos || false;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       
-      {/* KPIs Horizontales - Parte Superior */}
-      <div className="grid grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
+      {/* ✅ DASHBOARD SIEMPRE VISIBLE - SIN BANNERS INFORMATIVOS */}
+      
+      {/* ✅ KPIs DINÁMICOS CON DATOS REALES */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {kpis.map((kpi, index) => (
-          <div key={index} className="text-center p-4 border border-gray-200 rounded-lg shadow-sm bg-white">
-            <div className="text-sm text-gray-500 font-bold mb-1">
-              {kpi.titulo}
-            </div>
-            <div className="text-2xl font-bold text-gray-900 mb-1">
-              {kpi.valor}
-            </div>
-            {kpi.subtitulo && (
-              <div className="text-xs text-gray-400">
-                {kpi.subtitulo}
+          <div key={index} className="bg-white p-6 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <div className={`p-2 rounded-lg ${kpi.color.replace('text-', 'bg-').replace('-600', '-100')}`}>
+                <span className={kpi.color}>{kpi.icono}</span>
               </div>
-            )}
+              {kpi.cambio !== 0 && (
+                <div className={`text-sm font-medium ${
+                  kpi.cambio > 0 ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {kpi.cambio > 0 ? '+' : ''}{kpi.cambio.toFixed(1)}%
+                </div>
+              )}
+            </div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">{kpi.valor}</div>
+            <div className="text-sm font-medium text-gray-700">{kpi.titulo}</div>
+            <div className="text-xs text-gray-500 mt-1">{kpi.subtitulo}</div>
           </div>
         ))}
       </div>
@@ -163,7 +266,7 @@ export default function DashboardPage() {
                   <div key={index} className="grid grid-cols-3 text-sm py-1">
                     <div className="text-gray-900">{plato.nombre}</div>
                     <div className="text-center text-gray-600">{plato.cantidad}</div>
-                    <div className="text-right text-gray-900 font-medium">{plato.revenue}</div>
+                    <div className="text-right text-gray-900 font-medium">{plato.ingresos}</div>
                   </div>
                 ))}
               </div>

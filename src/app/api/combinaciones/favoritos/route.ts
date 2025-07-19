@@ -1,78 +1,215 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/database';
+import jwt from 'jsonwebtoken';
 
 // GET - Obtener combinaciones favoritas
-export async function GET() {
+export async function GET(request: Request) {
   try {
     console.log('🌟 Obteniendo combinaciones favoritas...');
     
-    // Obtener restaurante activo
-    const restaurantQuery = 'SELECT id FROM restaurant.restaurants WHERE status = $1 ORDER BY created_at ASC LIMIT 1';
-    const restaurantResult = await query(restaurantQuery, ['active']);
+    // Obtener token de autenticación
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Token de autenticación requerido' }, { status: 401 });
+    }
+
+    const token = authHeader.substring(7);
+    let decoded;
     
-    if (restaurantResult.rows.length === 0) {
-      return NextResponse.json({ error: 'No hay restaurantes disponibles' }, { status: 400 });
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    } catch (error) {
+      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
+    }
+
+    // Obtener información del usuario y restaurantId
+    console.log('🔍 [DEBUG] Buscando usuario:', decoded.userId);
+    const userCheckQuery = 'SELECT * FROM auth.users WHERE id = $1 LIMIT 1';
+    const userCheck = await query(userCheckQuery, [decoded.userId]);
+    
+    if (userCheck.rows.length === 0) {
+      console.log('❌ [DEBUG] Usuario no encontrado');
+      return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
     }
     
-    const restaurantId = restaurantResult.rows[0].id;
+    const userData = userCheck.rows[0];
+    console.log('🔍 [DEBUG] Usuario encontrado:', {
+      email: userData.email,
+      role: userData.role,
+      restaurant_id: userData.restaurant_id || 'NO TIENE'
+    });
     
-    // Obtener combinaciones favoritas (is_featured = true)
+    // Intentar obtener restaurant_id
+    let restaurantId = userData.restaurant_id;
+    
+    // Si no tiene restaurant_id directo, buscar en restaurant_users
+    if (!restaurantId) {
+      console.log('🔍 [DEBUG] Buscando en restaurant.restaurant_users...');
+      const relationQuery = `
+        SELECT ru.restaurant_id 
+        FROM restaurant.restaurant_users ru
+        WHERE ru.user_id = $1
+      `;
+      const relationResult = await query(relationQuery, [decoded.userId]);
+      
+      if (relationResult.rows.length > 0) {
+        restaurantId = relationResult.rows[0].restaurant_id;
+        console.log('🏪 [DEBUG] RestaurantId desde relación:', restaurantId);
+      }
+    }
+    
+    // Manejar caso especial para super_admin
+    if (!restaurantId) {
+      if (userData.role === 'super_admin') {
+        console.log('🔧 [DEBUG] Super admin detectado, buscando primer restaurante disponible...');
+        const firstRestaurantQuery = 'SELECT id FROM restaurant.restaurants WHERE status = \'active\' ORDER BY created_at ASC LIMIT 1';
+        const firstRestaurant = await query(firstRestaurantQuery, []);
+        
+        if (firstRestaurant.rows.length > 0) {
+          restaurantId = firstRestaurant.rows[0].id;
+          console.log('🏪 [DEBUG] Usando restaurante por defecto para super_admin:', restaurantId);
+        } else {
+          console.log('❌ [DEBUG] No hay restaurantes activos en el sistema');
+          return NextResponse.json({ 
+            success: true,
+            favoritos: [],
+            total: 0,
+            message: 'No hay restaurantes activos en el sistema',
+            tipos: { productos: 0, combinaciones: 0, restaurantes: 0 }
+          }, { status: 200 });
+        }
+      } else {
+        console.log('❌ [DEBUG] Usuario regular sin restaurant_id asignado');
+        return NextResponse.json({ error: 'Usuario no autorizado o restaurante inactivo' }, { status: 403 });
+      }
+    }
+    
+    console.log('📊 [DEBUG] Consultando favoritos para restaurante:', restaurantId);
+    
+    // Verificar si hay favoritos en la tabla (tabla nueva, probablemente vacía)
+    const countQuery = 'SELECT COUNT(*) as total FROM mobile.user_favorites WHERE is_active = true';
+    const countResult = await query(countQuery, []);
+    const totalFavoritos = parseInt(countResult.rows[0].total);
+    
+    console.log('📊 [DEBUG] Total de favoritos en sistema:', totalFavoritos);
+    
+    if (totalFavoritos === 0) {
+      console.log('ℹ️ [DEBUG] No hay favoritos configurados en el sistema');
+      return NextResponse.json({
+        success: true,
+        favoritos: [],
+        total: 0,
+        message: 'No hay favoritos configurados',
+        tipos: {
+          productos: 0,
+          combinaciones: 0,
+          restaurantes: 0
+        }
+      });
+    }
+    
+    // Obtener favoritos simplificado (sin columnas problemáticas)
     const favoritosQuery = `
       SELECT 
-        mc.id,
-        mc.name,
-        mmc.base_price,
-        mc.special_price,
-        mc.is_available,
-        mc.is_featured,
-        dm.menu_date,
-        dm.name as menu_name,
-        -- Productos de la combinación
-        pe.name as entrada_nombre,
-        pe.image_url as entrada_imagen,
-        pp.name as principio_nombre,
-        pp.image_url as principio_imagen,
-        ppr.name as proteina_nombre,
-        ppr.image_url as proteina_imagen,
-        pb.name as bebida_nombre,
-        pb.image_url as bebida_imagen,
-        -- Acompañamientos
-        COALESCE(
-          json_agg(
-            CASE WHEN pa.id IS NOT NULL THEN
-              json_build_object(
-                'id', pa.id,
-                'nombre', pa.name,
-                'imagen', pa.image_url,
-                'cantidad', cs.quantity
-              )
-            END
-          ) FILTER (WHERE pa.id IS NOT NULL),
-          '[]'::json
-        ) as acompanamientos
-      FROM menu.menu_combinations mc
-      JOIN menu.daily_menus dm ON mc.daily_menu_id = dm.id
-      LEFT JOIN system.products pe ON mc.entrada_id = pe.id
-      LEFT JOIN system.products pp ON mc.principio_id = pp.id
-      LEFT JOIN system.products ppr ON mc.proteina_id = ppr.id
-      LEFT JOIN system.products pb ON mc.bebida_id = pb.id
-      LEFT JOIN menu.combination_sides cs ON mc.id = cs.combination_id
-      LEFT JOIN system.products pa ON cs.product_id = pa.id
-      WHERE dm.restaurant_id = $1 
-        AND mc.is_featured = true
-        AND dm.status = 'published'
-      GROUP BY mc.id, dm.id, pe.id, pp.id, ppr.id, pb.id
-      ORDER BY dm.menu_date DESC, mc.name ASC;
+        uf.id,
+        uf.favorite_type,
+        uf.notes,
+        uf.favorite_count,
+        uf.last_ordered,
+        uf.created_at,
+        -- Datos del producto (si es favorito de producto)
+        CASE WHEN uf.favorite_type = 'product' THEN p.id END as product_id,
+        CASE WHEN uf.favorite_type = 'product' THEN p.name END as product_name,
+        CASE WHEN uf.favorite_type = 'product' THEN p.description END as product_description,
+        CASE WHEN uf.favorite_type = 'product' THEN c.name END as categoria_nombre,
+        -- Datos de la combinación (si es favorito de combinación)
+        CASE WHEN uf.favorite_type = 'combination' THEN mc.id END as combination_id,
+        CASE WHEN uf.favorite_type = 'combination' THEN mc.name END as combination_name,
+        CASE WHEN uf.favorite_type = 'combination' THEN mc.description END as combination_description,
+        -- Datos del restaurante (si es favorito de restaurante)
+        CASE WHEN uf.favorite_type = 'restaurant' THEN r.id END as restaurant_id,
+        CASE WHEN uf.favorite_type = 'restaurant' THEN r.name END as restaurant_name
+      FROM mobile.user_favorites uf
+      LEFT JOIN system.products p ON uf.product_id = p.id AND uf.favorite_type = 'product'
+      LEFT JOIN system.categories c ON p.category_id = c.id
+      LEFT JOIN menu.menu_combinations mc ON uf.combination_id = mc.id AND uf.favorite_type = 'combination'
+      LEFT JOIN restaurant.restaurants r ON uf.restaurant_id = r.id AND uf.favorite_type = 'restaurant'
+      WHERE uf.is_active = true
+        AND (
+          (uf.favorite_type = 'restaurant' AND uf.restaurant_id = $1) OR
+          (uf.favorite_type = 'product' AND p.id IS NOT NULL) OR
+          (uf.favorite_type = 'combination' AND mc.id IS NOT NULL)
+        )
+      ORDER BY uf.favorite_count DESC, uf.created_at DESC;
     `;
     
     const result = await query(favoritosQuery, [restaurantId]);
     
-    console.log(`✅ ${result.rows.length} combinaciones favoritas encontradas`);
+    console.log(`✅ Favoritos encontrados: ${result.rows.length}`);
+    
+    // Formatear datos para el frontend
+    const favoritos = result.rows.map(row => {
+      const baseData = {
+        id: row.id,
+        tipo: row.favorite_type,
+        notas: row.notes || '',
+        veces_favorito: row.favorite_count || 1,
+        ultimo_pedido: row.last_ordered,
+        fecha_agregado: row.created_at
+      };
+
+      // Formatear según el tipo de favorito
+      switch (row.favorite_type) {
+        case 'product':
+          return {
+            ...baseData,
+            product_id: row.product_id,
+            nombre: row.product_name || 'Producto sin nombre',
+            descripcion: row.product_description || 'Producto favorito',
+            imagen: '/images/placeholder-dish.jpg',
+            precio: 0,
+            precio_formateado: '$0',
+            categoria: {
+              nombre: row.categoria_nombre || 'Sin categoría',
+              color: '#6B7280'
+            }
+          };
+        
+        case 'combination':
+          return {
+            ...baseData,
+            combination_id: row.combination_id,
+            nombre: row.combination_name || 'Combinación sin nombre',
+            descripcion: row.combination_description || 'Combinación favorita',
+            imagen: '/images/placeholder-combo.jpg',
+            tipo_item: 'Combinación'
+          };
+        
+        case 'restaurant':
+          return {
+            ...baseData,
+            restaurant_id: row.restaurant_id,
+            nombre: row.restaurant_name || 'Restaurante',
+            descripcion: 'Restaurante favorito',
+            imagen: '/images/placeholder-restaurant.jpg',
+            tipo_item: 'Restaurante'
+          };
+        
+        default:
+          return baseData;
+      }
+    });
     
     return NextResponse.json({
       success: true,
-      favoritos: result.rows,
-      total: result.rows.length
+      favoritos: favoritos,
+      total: favoritos.length,
+      message: favoritos.length === 0 ? 'No hay favoritos configurados' : `${favoritos.length} favoritos encontrados`,
+      tipos: {
+        productos: favoritos.filter(f => f.tipo === 'product').length,
+        combinaciones: favoritos.filter(f => f.tipo === 'combination').length,
+        restaurantes: favoritos.filter(f => f.tipo === 'restaurant').length
+      }
     });
     
   } catch (error) {

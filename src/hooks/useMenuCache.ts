@@ -37,7 +37,8 @@ const safeLocalStorage = {
  */
 export const useMenuCache = () => {
   // Estado para controlar si el caché está habilitado o deshabilitado
-  const [isCacheEnabled, setIsCacheEnabled] = useState<boolean>(true); // Valor predeterminado: true
+  // ✅ CORREGIDO: Caché deshabilitado por defecto para menú diario
+  const [isCacheEnabled, setIsCacheEnabled] = useState<boolean>(false); // Valor predeterminado: false
   
   // Estados para categorías desde API
   const [categoriasLoading, setCategoriasLoading] = useState<boolean>(false);
