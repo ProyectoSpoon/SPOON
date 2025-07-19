@@ -86,17 +86,15 @@ export async function GET(request: NextRequest) {
     client = await pool.connect();
     console.log('✅ DEBUG: Conectado a PostgreSQL');
     
-    // Obtener horarios regulares
+    // Obtener horarios regulares (usando solo columnas básicas)
     const horariosQuery = `
       SELECT 
         day_of_week,
         open_time,
         close_time,
         is_closed,
-        is_24_hours,
-        break_start_time,
-        break_end_time,
-        notes
+        created_at,
+        updated_at
       FROM restaurant.business_hours 
       WHERE restaurant_id = $1
       ORDER BY day_of_week
@@ -170,7 +168,7 @@ export async function GET(request: NextRequest) {
       _debug: {
         horariosEnBD: horariosResult.rows.length,
         especialesEnBD: especialesResult.rows.length,
-        restaurantId: RESTAURANT_ID
+        restaurantId: restaurantId
       }
     };
     
@@ -230,21 +228,17 @@ export async function POST(request: NextRequest) {
       await client.query('BEGIN');
       console.log('🔄 DEBUG: Iniciando transacción...');
       
-      // Eliminar horarios existentes
-      await client.query(
-        'DELETE FROM restaurant.business_hours WHERE restaurant_id = $1',
-        [restaurantId]
-      );
-      console.log('🗑️ DEBUG: Horarios anteriores eliminados');
+      // Usar UPSERT en lugar de DELETE + INSERT para mejor rendimiento
+      console.log('🔄 DEBUG: Actualizando horarios con UPSERT...');
       
-      // Insertar nuevos horarios
       for (const [dia, horario] of Object.entries(data.horarioRegular)) {
         const dayOfWeek = DAYS_REVERSE_MAP[dia as keyof typeof DAYS_REVERSE_MAP];
         
         if (dayOfWeek !== undefined && horario && typeof horario === 'object') {
           const horarioTyped = horario as { abierto: boolean; horaApertura: string; horaCierre: string };
           
-          const insertQuery = `
+          // UPSERT optimizado: INSERT con ON CONFLICT DO UPDATE
+          const upsertQuery = `
             INSERT INTO restaurant.business_hours (
               restaurant_id, 
               day_of_week, 
@@ -254,6 +248,12 @@ export async function POST(request: NextRequest) {
               created_at,
               updated_at
             ) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT (restaurant_id, day_of_week) 
+            DO UPDATE SET 
+              open_time = EXCLUDED.open_time,
+              close_time = EXCLUDED.close_time,
+              is_closed = EXCLUDED.is_closed,
+              updated_at = CURRENT_TIMESTAMP
           `;
           
           const values = [
@@ -264,8 +264,8 @@ export async function POST(request: NextRequest) {
             !horarioTyped.abierto
           ];
           
-          await client.query(insertQuery, values);
-          console.log(`✅ DEBUG: Horario ${dia} guardado`);
+          await client.query(upsertQuery, values);
+          console.log(`✅ DEBUG: Horario ${dia} actualizado`);
         }
       }
       

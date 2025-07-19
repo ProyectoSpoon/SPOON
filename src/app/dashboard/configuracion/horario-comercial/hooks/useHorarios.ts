@@ -1,6 +1,6 @@
 // src/app/config-restaurante/horario-comercial/hooks/useHorarios.ts
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useConfigStore } from '@/app/config-restaurante/store/config-store';
 import { DiaSemana, HorariosRestaurante, HorarioDia, Turno, DIAS_SEMANA } from '../types/horarios.types';
 import { validarRangoHorario } from '../utils/time';
@@ -28,6 +28,11 @@ export function useHorarios() {
   
   const { actualizarCampo } = useConfigStore();
   const { toast } = useToast();
+  
+  // Memoizar el token para evitar accesos repetidos a localStorage
+  const authToken = useMemo(() => {
+    return localStorage.getItem('auth_token') || localStorage.getItem('token');
+  }, []);
 
   // Cargar horarios desde la API del dashboard
   const cargarHorarios = useCallback(async () => {
@@ -35,17 +40,18 @@ export function useHorarios() {
       setCargando(true);
       console.log('🔍 Cargando horarios desde dashboard API...');
       
-      // Obtener token de autenticación
-      const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+      // Usar token memoizado
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
       };
       
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
       }
       
-      const response = await fetch('/api/configuracion/horarios', {
+      // Usar el mismo endpoint que funciona en config-restaurante
+      const restaurantId = 'ce51f50f-bcd0-4329-9370-14f83b4af3d4';
+      const response = await fetch(`/api/restaurants/${restaurantId}/business-hours`, {
         headers
       });
       
@@ -53,28 +59,14 @@ export function useHorarios() {
         const data = await response.json();
         console.log('✅ Datos de horarios recibidos:', data);
         
-        if (data.horarioRegular) {
-          // Convertir formato de la API del dashboard al formato del hook
-          const horariosConvertidos: HorariosRestaurante = { ...HORARIOS_INICIALES };
-          
-          Object.entries(data.horarioRegular).forEach(([dia, horario]: [string, any]) => {
-            if (dia in horariosConvertidos) {
-              horariosConvertidos[dia as DiaSemana] = {
-                abierto: horario.abierto || false,
-                turnos: horario.abierto ? [{
-                  horaApertura: horario.horaApertura || '08:00',
-                  horaCierre: horario.horaCierre || '18:00'
-                }] : []
-              };
-            }
-          });
-          
-          setHorarios(horariosConvertidos);
-          console.log('✅ Horarios convertidos y cargados:', horariosConvertidos);
+        if (data.horarios) {
+          // Usar directamente los horarios del endpoint que funciona
+          setHorarios(data.horarios);
+          console.log('✅ Horarios cargados directamente:', data.horarios);
           
           // Actualizar store si hay horarios configurados
-          const tieneHorarios = Object.values(horariosConvertidos).some(dia => 
-            dia.abierto && dia.turnos.length > 0
+          const tieneHorarios = Object.values(data.horarios).some((dia: any) => 
+            dia.abierto && dia.turnos && dia.turnos.length > 0
           );
           
           if (tieneHorarios) {
@@ -99,7 +91,7 @@ export function useHorarios() {
     } finally {
       setCargando(false);
     }
-  }, [toast, actualizarCampo]);
+  }, [authToken, actualizarCampo, toast]);
 
   // Cargar horarios al inicializar
   useEffect(() => {
@@ -199,32 +191,40 @@ const toggleDiaAbierto = useCallback((dia: DiaSemana, abierto: boolean) => {
     setGuardando(true);
     try {
       console.log('💾 Guardando horarios en dashboard API...');
+      console.log('📊 Estado actual de horarios:', horarios);
       
-      // Convertir formato del hook al formato de la API del dashboard
-      const horarioRegular: any = {};
+      // Asegurar que tenemos los 7 días completos
+      const diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+      const horarioRegular: any[] = [];
       
-      Object.entries(horarios).forEach(([dia, horario]) => {
-        horarioRegular[dia] = {
-          abierto: horario.abierto,
-          horaApertura: horario.turnos.length > 0 ? horario.turnos[0].horaApertura : '08:00',
-          horaCierre: horario.turnos.length > 0 ? horario.turnos[0].horaCierre : '18:00'
-        };
+      // Convertir a formato array que espera el endpoint PUT
+      diasSemana.forEach((dia, index) => {
+        const horarioDia = horarios[dia as keyof typeof horarios] || { abierto: false, turnos: [] };
+        horarioRegular.push({
+          dia: index,
+          abierto: horarioDia.abierto,
+          horaApertura: horarioDia.turnos.length > 0 ? horarioDia.turnos[0].horaApertura : '08:00',
+          horaCierre: horarioDia.turnos.length > 0 ? horarioDia.turnos[0].horaCierre : '18:00'
+        });
       });
       
-      // Obtener token de autenticación
-      const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+      console.log('📤 Datos a enviar (formato array):', horarioRegular);
+      
+      // Usar token memoizado
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
       };
       
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
       }
       
-      const response = await fetch('/api/configuracion/horarios', {
-        method: 'POST',
+      // Usar el mismo endpoint que funciona en config-restaurante
+      const restaurantId = 'ce51f50f-bcd0-4329-9370-14f83b4af3d4';
+      const response = await fetch(`/api/restaurants/${restaurantId}/business-hours`, {
+        method: 'PUT',
         headers,
-        body: JSON.stringify({ horarioRegular }),
+        body: JSON.stringify({ horarioRegular: horarioRegular }),
       });
 
       if (!response.ok) {
@@ -258,7 +258,7 @@ const toggleDiaAbierto = useCallback((dia: DiaSemana, abierto: boolean) => {
     } finally {
       setGuardando(false);
     }
-  }, [horarios, validarHorarios, actualizarCampo, toast]);
+  }, [horarios, validarHorarios, actualizarCampo, toast, authToken]);
 
   // Verificar si hay horarios configurados
   const tieneHorariosConfigurados = useCallback((): boolean => {

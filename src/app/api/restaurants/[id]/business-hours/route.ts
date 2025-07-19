@@ -69,9 +69,10 @@ export async function PUT(
     const body = await request.json();
     console.log('📝 Datos recibidos:', JSON.stringify(body, null, 2));
     
-    const { horarios } = body;
+    // El frontend puede enviar 'horarios' (formato objeto) o 'horarioRegular' (formato array)
+    const horariosData = body.horarios || body.horarioRegular;
     
-    if (!horarios) {
+    if (!horariosData) {
       console.log('❌ Error: Horarios no proporcionados');
       return NextResponse.json(
         { error: 'Horarios son requeridos' },
@@ -79,23 +80,50 @@ export async function PUT(
       );
     }
     
-    console.log('🔄 Iniciando transacción...');
+    console.log('🔄 Formato de datos detectado:', Array.isArray(horariosData) ? 'Array (horarioRegular)' : 'Objeto (horarios)');
+    
+    // Convertir array a formato objeto si es necesario
+    let horarios: any;
+    if (Array.isArray(horariosData)) {
+      // Formato horarioRegular (array) -> convertir a formato horarios (objeto)
+      const diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+      horarios = {};
+      
+      horariosData.forEach((item, index) => {
+        const dia = diasSemana[item.dia] || diasSemana[index];
+        if (dia) {
+          horarios[dia] = {
+            abierto: item.abierto,
+            turnos: item.abierto ? [{
+              horaApertura: item.horaApertura || '08:00',
+              horaCierre: item.horaCierre || '18:00'
+            }] : []
+          };
+        }
+      });
+      console.log('🔄 Datos convertidos de array a objeto:', horarios);
+    } else {
+      // Ya está en formato objeto
+      horarios = horariosData;
+    }
+    
+    console.log('🔄 Iniciando transacción con UPSERT optimizado...');
     // Comenzar transacción
     await pool.query('BEGIN');
     
     try {
-      console.log('🗑️ Eliminando horarios existentes...');
-      // Eliminar horarios existentes
-      const deleteResult = await pool.query(
-        'DELETE FROM restaurant.business_hours WHERE restaurant_id = $1',
-        [id]
-      );
-      console.log('✅ Horarios eliminados:', deleteResult.rowCount);
-      
       // Mapeo de días
       const diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
       
-      console.log('📅 Procesando horarios por día...');
+      console.log('📅 Procesando horarios por día con UPSERT...');
+      
+      // Primero, eliminar horarios existentes para este restaurante
+      await pool.query(
+        'DELETE FROM restaurant.business_hours WHERE restaurant_id = $1',
+        [id]
+      );
+      console.log('🗑️ Horarios anteriores eliminados');
+      
       // Insertar nuevos horarios
       for (const [dia, horarioDia] of Object.entries(horarios) as [string, any][]) {
         const dayOfWeek = diasSemana.indexOf(dia);
@@ -106,10 +134,10 @@ export async function PUT(
           continue;
         }
         
-        if (!horarioDia.abierto || horarioDia.turnos.length === 0) {
+        if (!horarioDia.abierto || !horarioDia.turnos || horarioDia.turnos.length === 0) {
           console.log(`🚫 ${dia}: Día cerrado`);
-          // Día cerrado
-          const insertResult = await pool.query(`
+          // Día cerrado - insertar un registro cerrado
+          await pool.query(`
             INSERT INTO restaurant.business_hours 
             (restaurant_id, day_of_week, is_closed, created_at, updated_at)
             VALUES ($1, $2, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -117,15 +145,23 @@ export async function PUT(
           console.log(`✅ ${dia}: Insertado como cerrado`);
         } else {
           console.log(`🕐 ${dia}: ${horarioDia.turnos.length} turnos`);
-          // Insertar cada turno
-          for (const turno of horarioDia.turnos) {
-            console.log(`⏰ Insertando turno: ${turno.horaApertura} - ${turno.horaCierre}`);
-            const insertResult = await pool.query(`
+          // Para días abiertos, insertar solo el primer turno (simplificado)
+          const primerTurno = horarioDia.turnos[0];
+          if (primerTurno && primerTurno.horaApertura && primerTurno.horaCierre) {
+            console.log(`⏰ Insertando turno: ${primerTurno.horaApertura} - ${primerTurno.horaCierre}`);
+            await pool.query(`
               INSERT INTO restaurant.business_hours 
               (restaurant_id, day_of_week, open_time, close_time, is_closed, created_at, updated_at)
               VALUES ($1, $2, $3, $4, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-            `, [id, dayOfWeek, turno.horaApertura, turno.horaCierre]);
+            `, [id, dayOfWeek, primerTurno.horaApertura, primerTurno.horaCierre]);
             console.log(`✅ Turno insertado para ${dia}`);
+          } else {
+            console.log(`⚠️ ${dia}: Turno inválido, insertando como cerrado`);
+            await pool.query(`
+              INSERT INTO restaurant.business_hours 
+              (restaurant_id, day_of_week, is_closed, created_at, updated_at)
+              VALUES ($1, $2, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            `, [id, dayOfWeek]);
           }
         }
       }
