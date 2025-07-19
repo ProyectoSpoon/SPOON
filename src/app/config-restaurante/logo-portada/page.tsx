@@ -6,10 +6,13 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/shared/Hooks/use-toast';
 import { FaArrowLeft, FaCheck } from 'react-icons/fa';
 import { useConfigStore } from '../store/config-store';
+import { useAuth } from '@/context/postgres-authcontext'; // ← AGREGAR IMPORT
 import { IndicadorProgreso } from '@/shared/components/ui/IndicadorProgreso';
 import SubirLogo from './components/subirlogo';
 import SubirPortada from './components/subirportada';
 import VistaPrevia from './components/vistaprevia';
+import { useConfigSync } from '@/hooks/use-config-sync';
+
 // Tipos TypeScript
 interface PasoFormulario {
   titulo: string;
@@ -57,86 +60,53 @@ const estadoInicial: ArchivoImagen = {
 export default function LogoPortadaPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { syncAfterSave } = useConfigSync();
+  const { user, loading: authLoading } = useAuth(); // ← USAR AUTH CONTEXT
+  const restaurantId = user?.restaurantId; // ← ID DINÁMICO
+  
   const [pasoActual, setPasoActual] = useState(0);
   const [estaEnviando, setEstaEnviando] = useState(false);
   const [logo, setLogo] = useState<ArchivoImagen>(estadoInicial);
   const [portada, setPortada] = useState<ArchivoImagen>(estadoInicial);
-  const [restaurantId, setRestaurantId] = useState<string | null>(null);
-  const [restaurantName, setRestaurantName] = useState<string>('');
   const [cargandoInfo, setCargandoInfo] = useState(true);
   
   const { actualizarCampo } = useConfigStore();
 
   /**
-   * Obtiene la información del restaurante desde el localStorage o configuración
+   * Efecto para manejar la carga inicial y cambios en la autenticación
    */
   useEffect(() => {
-    const obtenerInfoRestaurante = () => {
-      try {
-        setCargandoInfo(true);
-        
-        // Intentar obtener el ID desde diferentes fuentes
-        let id: string | null = null;
-        let nombre: string = '';
-        
-        // 1. Intentar desde localStorage (token JWT decodificado)
-        const token = localStorage.getItem('token');
-        if (token) {
-          try {
-            // Decodificar JWT manualmente (solo para obtener el payload)
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            id = payload.restaurantId || payload.restaurant?.id;
-            nombre = payload.restaurant?.nombre || payload.restaurantName || '';
-            console.log('🎯 ID obtenido desde token JWT:', id, nombre);
-          } catch (e) {
-            console.log('⚠️ No se pudo decodificar el token JWT');
-          }
-        }
-        
-        // 2. Intentar desde config store
-        if (!id) {
-          const configData = useConfigStore.getState();
-          // Revisar si hay alguna forma de obtener el ID desde el store
-          console.log('🔍 Config store data:', configData);
-        }
-        
-        // 3. Usar ID hardcodeado como fallback (temporal)
-        if (!id) {
-          // Del log vemos: "restaurant: 4073a4ad-b275-4e17-b197-844881f0319e"
-          id = "4073a4ad-b275-4e17-b197-844881f0319e";
-          nombre = "Restaurante Spoon";
-          console.log('🔧 Usando ID hardcodeado como fallback:', id);
-        }
-        
-        if (id) {
-          setRestaurantId(id);
-          setRestaurantName(nombre);
-          console.log('✅ Restaurante configurado:', id, nombre);
-        } else {
-          console.error('❌ No se pudo obtener el ID del restaurante');
-        }
-        
-      } catch (error) {
-        console.error('❌ Error obteniendo info restaurante:', error);
-        toast({
-          title: 'Error',
-          description: 'No se pudo cargar la información del restaurante',
-          variant: 'destructive'
-        });
-      } finally {
-        setCargandoInfo(false);
-      }
-    };
+    if (authLoading) {
+      setCargandoInfo(true);
+      return;
+    }
 
-    obtenerInfoRestaurante();
-  }, [toast]);
+    if (!user) {
+      console.log('⚠️ Usuario no autenticado, redirigiendo...');
+      router.push('/login');
+      return;
+    }
+
+    if (!restaurantId) {
+      console.log('⚠️ No hay restaurantId, esperando...');
+      setCargandoInfo(true);
+      return;
+    }
+
+    // Si llegamos aquí, tenemos usuario y restaurantId
+    console.log('🚀 Logo-Portada iniciado');
+    console.log('👤 Usuario:', user.email);
+    console.log('🏪 Restaurant ID:', restaurantId);
+    setCargandoInfo(false);
+    
+  }, [authLoading, user, restaurantId, router]);
 
   /**
    * Carga las imágenes existentes del restaurante cuando tenemos el ID
    */
   useEffect(() => {
     const cargarImagenesExistentes = async () => {
-      if (!restaurantId) {
+      if (!restaurantId || cargandoInfo) {
         return;
       }
 
@@ -175,13 +145,13 @@ export default function LogoPortadaPage() {
     };
 
     cargarImagenesExistentes();
-  }, [restaurantId]); // Se ejecuta cuando cambia restaurantId
+  }, [restaurantId, cargandoInfo]); // ← DEPENDE DE restaurantId DINÁMICO
 
   /**
    * Maneja el botón volver
    */
   const handleVolver = () => {
-    router.push('/config-restaurante');
+    router.push('/config-restaurante/horario-comercial');
   };
 
   /**
@@ -221,7 +191,7 @@ export default function LogoPortadaPage() {
    * Sube una imagen al servidor
    */
   const subirImagen = async (archivo: File, tipo: 'logo' | 'cover'): Promise<string> => {
-    if (!restaurantId) {
+    if (!restaurantId) { // ← USAR restaurantId DINÁMICO
       throw new Error('No se encontró información del restaurante');
     }
 
@@ -229,9 +199,9 @@ export default function LogoPortadaPage() {
     formData.append('file', archivo);
     formData.append('type', tipo);
 
-    console.log(`📤 Subiendo ${tipo}:`, archivo.name);
+    console.log(`📤 Subiendo ${tipo} para restaurante ${restaurantId}:`, archivo.name);
 
-    const response = await fetch(`/api/restaurants/${restaurantId}/images`, {
+    const response = await fetch(`/api/restaurants/${restaurantId}/images`, { // ← USAR restaurantId DINÁMICO
       method: 'POST',
       body: formData
     });
@@ -275,7 +245,7 @@ export default function LogoPortadaPage() {
    * @param {boolean} finalizar - Indica si es el guardado final
    */
   const handleGuardar = async (finalizar: boolean = false) => {
-    if (!restaurantId) {
+    if (!restaurantId) { // ← USAR restaurantId DINÁMICO
       toast({
         title: 'Error',
         description: 'No se encontró información del restaurante',
@@ -336,6 +306,9 @@ export default function LogoPortadaPage() {
         actualizarCampo('/config-restaurante/logo-portada', 'logo', logo.estado === 'completado');
         actualizarCampo('/config-restaurante/logo-portada', 'portada', portada.estado === 'completado');
         
+        // ✅ Sincronizar progreso después de guardar exitosamente
+        await syncAfterSave();
+        
         toast({
           title: '¡Configuración Completada!',
           description: 'Logo y portada guardados exitosamente. Redirigiendo al dashboard...',
@@ -347,6 +320,9 @@ export default function LogoPortadaPage() {
         }, 2000);
         
       } else {
+        // ✅ Sincronizar progreso también en guardado parcial
+        await syncAfterSave();
+        
         toast({
           title: 'Progreso Guardado',
           description: 'Las imágenes han sido guardadas correctamente',
@@ -370,12 +346,30 @@ export default function LogoPortadaPage() {
    * @returns {JSX.Element | null} Componente del paso actual
    */
   const renderizarContenido = () => {
-    if (cargandoInfo) {
+    if (authLoading || cargandoInfo) {
       return (
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">Cargando información del restaurante...</p>
+            <p className="text-gray-600">
+              {authLoading ? 'Verificando autenticación...' : 'Cargando información del restaurante...'}
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    if (!user) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">Usuario no autenticado</p>
+            <button
+              onClick={() => router.push('/login')}
+              className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+            >
+              Ir a Login
+            </button>
           </div>
         </div>
       );
@@ -385,12 +379,12 @@ export default function LogoPortadaPage() {
       return (
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
-            <p className="text-red-600 mb-4">No se pudo cargar la información del restaurante</p>
+            <p className="text-red-600 mb-4">No se encontró información del restaurante</p>
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => router.push('/config-restaurante/informacion-general')}
               className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
             >
-              Reintentar
+              Volver a Información General
             </button>
           </div>
         </div>
@@ -442,7 +436,7 @@ export default function LogoPortadaPage() {
             </button>
             
             <div className="text-center flex-1">
-              <span className="text-sm text-gray-500 font-medium">Paso 3 de 3</span>
+              <span className="text-sm text-gray-500 font-medium">Paso 4 de 4</span>
             </div>
             
             <div className="w-20"></div>
@@ -453,8 +447,13 @@ export default function LogoPortadaPage() {
               Logo y Portada
             </h1>
             <p className="text-gray-600">
-              {restaurantName ? `Personaliza la imagen de ${restaurantName}` : 'Personaliza la imagen de tu restaurante'}
+              {user?.displayName ? `Personaliza la imagen de ${user.displayName}` : 'Personaliza la imagen de tu restaurante'}
             </p>
+            {restaurantId && (
+              <p className="text-xs text-blue-600 mt-2">
+                ID: {restaurantId}
+              </p>
+            )}
           </div>
         </div>
 

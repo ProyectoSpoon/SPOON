@@ -21,8 +21,7 @@ export async function GET() {
       SELECT 
         mc.id,
         mc.name,
-        mc.description,
-        mc.base_price,
+        mmc.base_price,
         mc.special_price,
         mc.is_available,
         mc.is_featured,
@@ -53,12 +52,12 @@ export async function GET() {
         ) as acompanamientos
       FROM menu.menu_combinations mc
       JOIN menu.daily_menus dm ON mc.daily_menu_id = dm.id
-      LEFT JOIN menu.products pe ON mc.entrada_id = pe.id
-      LEFT JOIN menu.products pp ON mc.principio_id = pp.id
-      LEFT JOIN menu.products ppr ON mc.proteina_id = ppr.id
-      LEFT JOIN menu.products pb ON mc.bebida_id = pb.id
+      LEFT JOIN system.products pe ON mc.entrada_id = pe.id
+      LEFT JOIN system.products pp ON mc.principio_id = pp.id
+      LEFT JOIN system.products ppr ON mc.proteina_id = ppr.id
+      LEFT JOIN system.products pb ON mc.bebida_id = pb.id
       LEFT JOIN menu.combination_sides cs ON mc.id = cs.combination_id
-      LEFT JOIN menu.products pa ON cs.product_id = pa.id
+      LEFT JOIN system.products pa ON cs.product_id = pa.id
       WHERE dm.restaurant_id = $1 
         AND mc.is_featured = true
         AND dm.status = 'published'
@@ -132,3 +131,5 @@ export async function POST(request: Request) {
     );
   }
 }
+
+

@@ -7,6 +7,7 @@ import { useToast } from '@/shared/Hooks/use-toast';
 import { FaArrowLeft, FaCheck, FaBuilding, FaPhone, FaEnvelope, FaUtensils } from 'react-icons/fa';
 import { useConfigStore } from '../store/config-store';
 import { useAuth } from '@/context/postgres-authcontext'; // ← USAR AUTH EXISTENTE
+import { useConfigSync } from '@/hooks/use-config-sync';
 
 interface RestaurantInfo {
   name: string;
@@ -20,7 +21,8 @@ export default function InformacionGeneralPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { actualizarCampo, sincronizarConBD } = useConfigStore();
-  const { user, loading: authLoading } = useAuth(); // ← AUTH EXISTENTE
+  const { user, loading: authLoading, updateRestaurantId } = useAuth(); // ← AGREGAR updateRestaurantId
+  const { syncAfterSave } = useConfigSync(); // ← Hook de sincronización
   
   const [formData, setFormData] = useState<RestaurantInfo>({
     name: '',
@@ -36,21 +38,35 @@ export default function InformacionGeneralPage() {
   // Cargar datos existentes cuando se tiene el restaurantId
   useEffect(() => {
     const cargarDatos = async () => {
-      if (!user?.restaurantId || !user) return;
+      if (!user?.restaurantId || !user) {
+        console.log('🔍 No hay restaurantId, saltando carga de datos');
+        return;
+      }
       
       try {
         setCargando(true);
+        console.log('📊 Cargando datos del restaurante:', user.restaurantId);
         
         const token = localStorage.getItem('auth_token');
+        if (!token) {
+          console.error('❌ No hay token de autenticación');
+          return;
+        }
+        
         const response = await fetch(`/api/restaurants/${user.restaurantId}/general-info`, {
+          method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
         
+        console.log('📡 Respuesta de la API:', response.status, response.statusText);
+        
         if (response.ok) {
           const data = await response.json();
+          console.log('✅ Datos recibidos:', data);
+          
           setFormData({
             name: data.nombreRestaurante || '',
             description: data.descripcion || '',
@@ -58,18 +74,28 @@ export default function InformacionGeneralPage() {
             email: data.email || '',
             cuisineType: data.tipoComida || ''
           });
+          
+          console.log('✅ Formulario actualizado con datos existentes');
         } else if (response.status === 404) {
           // Restaurante no encontrado, mantener formulario vacío
-          console.log('Restaurante no encontrado, usando datos vacíos');
+          console.log('ℹ️ Restaurante no encontrado (404), usando formulario vacío');
         } else {
-          throw new Error('Error cargando datos del restaurante');
+          // Error de servidor
+          const errorText = await response.text();
+          console.error('❌ Error del servidor:', response.status, errorText);
+          
+          toast({
+            title: 'Información',
+            description: 'No se pudieron cargar los datos existentes. Puedes continuar completando el formulario.',
+            variant: 'default'
+          });
         }
       } catch (error) {
-        console.error('Error cargando datos:', error);
+        console.error('❌ Error de red cargando datos:', error);
         toast({
-          title: 'Error',
-          description: 'Error cargando información del restaurante',
-          variant: 'destructive'
+          title: 'Información',
+          description: 'No se pudieron cargar los datos existentes. Verifica tu conexión e intenta nuevamente.',
+          variant: 'default'
         });
       } finally {
         setCargando(false);
@@ -105,22 +131,13 @@ export default function InformacionGeneralPage() {
       return;
     }
 
-    if (!user?.restaurantId) {
-      toast({
-        title: 'Error',
-        description: 'No se pudo identificar el restaurante',
-        variant: 'destructive'
-      });
-      return;
-    }
-
     try {
       setGuardando(true);
       
       const token = localStorage.getItem('auth_token');
       
-      // Guardar en PostgreSQL
-      const response = await fetch(`/api/restaurants/${user.restaurantId}/general-info`, {
+      // Usar la API original que funcionaba
+      const response = await fetch(`/api/restaurants/${user?.restaurantId || 'new'}/general-info`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -136,22 +153,42 @@ export default function InformacionGeneralPage() {
       });
 
       if (response.ok) {
-        // Actualizar store local
-        actualizarCampo('/config-restaurante/informacion-general', 'nombre', Boolean(formData.name.trim()));
-        actualizarCampo('/config-restaurante/informacion-general', 'contacto', Boolean(formData.phone.trim() && formData.email.trim()));
-        actualizarCampo('/config-restaurante/informacion-general', 'descripcion', Boolean(formData.description.trim()));
-        actualizarCampo('/config-restaurante/informacion-general', 'tipoComida', Boolean(formData.cuisineType.trim()));
-        
-        // Sincronizar con BD para asegurar consistencia
-        await sincronizarConBD(user.restaurantId);
+        const result = await response.json();
         
         toast({
           title: 'Éxito',
-          description: 'Información guardada correctamente'
+          description: result.message || 'Información guardada correctamente'
         });
         
-        // Navegar al siguiente paso
-        router.push('/config-restaurante/ubicacion');
+        // ✅ SINCRONIZAR STORE DESPUÉS DEL GUARDADO EXITOSO
+        await syncAfterSave();
+        
+        // ✅ FLUJO UNIFICADO: Siempre usar router.push
+        if (result.isNew) {
+          console.log('🆕 Restaurante nuevo creado, actualizando contexto...');
+          
+          // ✅ NUEVO: Actualizar contexto sin recargar página
+          updateRestaurantId(result.data.id);
+          
+          // ✅ NAVEGACIÓN NORMAL (sin recargar)
+          router.push('/config-restaurante/ubicacion');
+        } else {
+          // Actualizar store local si existe y es actualización
+          if (actualizarCampo && user?.restaurantId) {
+            actualizarCampo('/config-restaurante/informacion-general', 'nombre', Boolean(formData.name.trim()));
+            actualizarCampo('/config-restaurante/informacion-general', 'contacto', Boolean(formData.phone.trim() && formData.email.trim()));
+            actualizarCampo('/config-restaurante/informacion-general', 'descripcion', Boolean(formData.description.trim()));
+            actualizarCampo('/config-restaurante/informacion-general', 'tipoComida', Boolean(formData.cuisineType.trim()));
+            
+            // Sincronizar con BD para asegurar consistencia
+            if (sincronizarConBD) {
+              await sincronizarConBD(user.restaurantId);
+            }
+          }
+          
+          // Navegar al siguiente paso (ubicación)
+          router.push('/config-restaurante/ubicacion');
+        }
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Error al guardar');
@@ -198,28 +235,8 @@ export default function InformacionGeneralPage() {
     return null;
   }
 
-  // Mostrar mensaje si no tiene restaurante asignado
-  if (!user.restaurantId) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center bg-white p-8 rounded-lg shadow-sm border">
-          <div className="text-red-500 text-5xl mb-4">⚠️</div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">
-            Sin Restaurante Asignado
-          </h2>
-          <p className="text-gray-600 mb-4">
-            Tu cuenta no tiene un restaurante asignado. Contacta al administrador.
-          </p>
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-          >
-            Ir al Dashboard
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Si no tiene restaurante, mostrar formulario de creación (no error)
+  // El formulario manejará la creación del restaurante
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">

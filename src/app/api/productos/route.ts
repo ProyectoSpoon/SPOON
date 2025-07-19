@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/database';
 import { VersionedProduct } from '@/app/dashboard/carta/types/product-versioning.types';
 
-// GET - Obtener todos los productos usando la nueva arquitectura
+// GET - Obtener todos los productos del catálogo global para que el restaurante pueda escoger
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const categoriaId = searchParams.get('categoriaId');
     const restauranteId = searchParams.get('restauranteId') || 'default';
 
-    console.log('🔍 GET /api/productos - Nueva arquitectura:', { categoriaId, restauranteId });
+    console.log('🔍 GET /api/productos - Catálogo global:', { categoriaId, restauranteId });
 
     // Si es 'default', buscar el primer restaurante activo
     let finalRestaurantId = restauranteId;
@@ -30,7 +30,8 @@ export async function GET(request: NextRequest) {
       console.log('✅ Usando restaurante por defecto:', finalRestaurantId);
     }
 
-    // ✅ NUEVA CONSULTA: Usar system.products + restaurant.menu_items + restaurant.menu_pricing
+    // ✅ NUEVA CONSULTA: Mostrar TODO el catálogo global (system.products)
+    // + información de si ya está en el menú del restaurante + precios del restaurante
     let queryText = `
       SELECT 
         p.id,
@@ -41,25 +42,24 @@ export async function GET(request: NextRequest) {
         p.created_at as "createdAt",
         p.updated_at as "updatedAt",
         
-        -- Información del menú del restaurante
-        mi.is_available,
-        mi.is_featured,
-        mi.created_at as menu_item_created_at,
-        
-        -- Precios del restaurante
-        COALESCE(mp.daily_menu_price, 0) as "currentPrice",
-        mp.special_menu_price as "specialPrice",
-        
         -- Información de categoría
         c.name as category_name,
-        c.category_type
+        c.category_type,
+        
+        -- Verificar si ya está en el menú del restaurante (OPCIONAL)
+        CASE WHEN mi.id IS NOT NULL THEN true ELSE false END as "yaEnMenu",
+        mi.is_available as "disponibleEnMenu",
+        mi.is_featured as "destacadoEnMenu",
+        
+        -- Precios del restaurante (si los tiene configurados)
+        COALESCE(mp.daily_menu_price, 0) as "currentPrice",
+        mp.special_menu_price as "specialPrice"
         
       FROM system.products p
-      JOIN restaurant.menu_items mi ON p.id = mi.product_id
-      LEFT JOIN restaurant.menu_pricing mp ON mi.restaurant_id = mp.restaurant_id
       LEFT JOIN system.categories c ON p.category_id = c.id
-      WHERE mi.restaurant_id = $1
-        AND p.is_active = true
+      LEFT JOIN restaurant.menu_items mi ON (p.id = mi.product_id AND mi.restaurant_id = $1)
+      LEFT JOIN restaurant.menu_pricing mp ON mp.restaurant_id = $1
+      WHERE p.is_active = true
     `;
     
     const params = [finalRestaurantId];
@@ -74,10 +74,10 @@ export async function GET(request: NextRequest) {
 
     queryText += ' ORDER BY c.sort_order ASC, p.name ASC';
 
-    console.log('🗄️ Ejecutando consulta con nueva arquitectura...');
+    console.log('🗄️ Ejecutando consulta del catálogo global...');
     const result = await query(queryText, params);
     
-    console.log(`✅ Productos encontrados: ${result.rows.length}`);
+    console.log(`✅ Productos del catálogo encontrados: ${result.rows.length}`);
     
     // Transformar los datos al formato VersionedProduct
     const productos: VersionedProduct[] = result.rows.map(row => ({
@@ -92,7 +92,10 @@ export async function GET(request: NextRequest) {
       versions: [], // Se cargaría por separado si es necesario
       status: row.status ? 'active' : 'discontinued',
       
-      // ✅ NUEVO: Stock simplificado (sin tabla separada)
+      // ✅ Información adicional (sin conflictos de tipos)
+      // yaEnMenu, disponibleEnMenu, destacadoEnMenu se pueden agregar después
+      
+      // ✅ Stock simplificado (sin tabla separada)
       stock: {
         currentQuantity: 100, // Cantidad por defecto - ajustar según necesidades
         minQuantity: 10,
@@ -122,11 +125,12 @@ export async function GET(request: NextRequest) {
       data: productos,
       count: productos.length,
       restaurantId: finalRestaurantId,
-      architecture: 'new' // Para debugging
+      architecture: 'global_catalog', // Para debugging
+      message: `Catálogo global cargado con ${productos.length} productos disponibles.`
     });
 
   } catch (error) {
-    console.error('❌ Error al obtener productos:', error);
+    console.error('❌ Error al obtener catálogo de productos:', error);
     return NextResponse.json(
       { 
         success: false, 
@@ -138,28 +142,26 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Crear un nuevo producto usando la nueva arquitectura
+// POST - Agregar un producto del catálogo global al menú del restaurante
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
-      nombre,
-      descripcion,
-      precio,
-      categoriaId,
-      imagen,
-      restauranteId = 'default'
+      productId, // ID del producto del catálogo global
+      restauranteId = 'default',
+      isAvailable = true,
+      isFeatured = false
     } = body;
 
-    console.log('🔄 POST /api/productos - Nueva arquitectura:', { nombre, categoriaId, precio });
+    console.log('🔄 POST /api/productos - Agregando al menú del restaurante:', { productId, restauranteId });
 
     // Validaciones básicas
-    if (!nombre || !descripcion || !categoriaId) {
+    if (!productId) {
       return NextResponse.json(
         { 
           success: false, 
-          error: 'Datos requeridos faltantes',
-          message: 'Nombre, descripción y categoría son requeridos'
+          error: 'Product ID es requerido',
+          message: 'Debe especificar el ID del producto a agregar al menú'
         },
         { status: 400 }
       );
@@ -181,137 +183,63 @@ export async function POST(request: NextRequest) {
       finalRestaurantId = restaurantResult.rows[0].id;
     }
 
-    // ✅ PASO 1: Verificar si el producto ya existe en system.products
-    const existingProductQuery = `
-      SELECT id FROM system.products 
-      WHERE name = $1 AND category_id = $2 AND is_active = true
-    `;
+    // ✅ VERIFICAR QUE EL PRODUCTO EXISTE EN EL CATÁLOGO GLOBAL
+    const productQuery = 'SELECT id, name, description, category_id FROM system.products WHERE id = $1 AND is_active = true';
+    const productResult = await query(productQuery, [productId]);
     
-    const existingResult = await query(existingProductQuery, [nombre, categoriaId]);
-    
-    let productId;
-    
-    if (existingResult.rows.length > 0) {
-      // El producto ya existe globalmente
-      productId = existingResult.rows[0].id;
-      console.log('✅ Producto ya existe en catálogo global:', productId);
-    } else {
-      // ✅ PASO 2: Crear nuevo producto en system.products
-      const createProductQuery = `
-        INSERT INTO system.products (
-          name, description, category_id, is_active, created_at, updated_at
-        ) VALUES (
-          $1, $2, $3, true, NOW(), NOW()
-        ) RETURNING id
-      `;
-
-      const productResult = await query(createProductQuery, [nombre, descripcion, categoriaId]);
-      productId = productResult.rows[0].id;
-      console.log('✅ Nuevo producto creado en catálogo global:', productId);
+    if (productResult.rows.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Producto no encontrado en el catálogo global' },
+        { status: 404 }
+      );
     }
 
-    // ✅ PASO 3: Verificar si ya está en el menú del restaurante
-    const menuItemQuery = `
-      SELECT id FROM restaurant.menu_items 
-      WHERE restaurant_id = $1 AND product_id = $2
-    `;
-    
+    const product = productResult.rows[0];
+
+    // ✅ VERIFICAR SI YA ESTÁ EN EL MENÚ DEL RESTAURANTE
+    const menuItemQuery = 'SELECT id FROM restaurant.menu_items WHERE restaurant_id = $1 AND product_id = $2';
     const menuItemResult = await query(menuItemQuery, [finalRestaurantId, productId]);
     
     if (menuItemResult.rows.length > 0) {
       return NextResponse.json(
         { 
           success: false, 
-          error: 'El producto ya está en el menú de este restaurante' 
+          error: 'El producto ya está en el menú de este restaurante',
+          message: 'Use PUT para actualizar la configuración del producto en el menú'
         },
         { status: 409 }
       );
     }
 
-    // ✅ PASO 4: Agregar producto al menú del restaurante
+    // ✅ AGREGAR PRODUCTO AL MENÚ DEL RESTAURANTE
     const addToMenuQuery = `
       INSERT INTO restaurant.menu_items (
         restaurant_id, product_id, is_available, is_featured, created_at, updated_at
       ) VALUES (
-        $1, $2, true, false, NOW(), NOW()
+        $1, $2, $3, $4, NOW(), NOW()
       ) RETURNING id
     `;
 
-    await query(addToMenuQuery, [finalRestaurantId, productId]);
+    const addResult = await query(addToMenuQuery, [finalRestaurantId, productId, isAvailable, isFeatured]);
 
-    // ✅ PASO 5: Actualizar precios del restaurante si se especifica
-    if (precio && precio > 0) {
-      const updatePricingQuery = `
-        INSERT INTO restaurant.menu_pricing (restaurant_id, daily_menu_price, created_at, updated_at)
-        VALUES ($1, $2, NOW(), NOW())
-        ON CONFLICT (restaurant_id) 
-        DO UPDATE SET daily_menu_price = $2, updated_at = NOW()
-      `;
-      
-      await query(updatePricingQuery, [finalRestaurantId, precio]);
-    }
-
-    // ✅ PASO 6: Obtener el producto completo creado
-    const completProductQuery = `
-      SELECT 
-        p.id,
-        p.name,
-        p.description,
-        p.category_id,
-        p.created_at,
-        p.updated_at,
-        mp.daily_menu_price
-      FROM system.products p
-      LEFT JOIN restaurant.menu_pricing mp ON mp.restaurant_id = $2
-      WHERE p.id = $1
-    `;
-
-    const completeResult = await query(completProductQuery, [productId, finalRestaurantId]);
-    const newProduct = completeResult.rows[0];
-
-    // Transformar al formato VersionedProduct
-    const producto: VersionedProduct = {
-      id: newProduct.id,
-      nombre: newProduct.name,
-      descripcion: newProduct.description,
-      currentPrice: parseFloat(newProduct.daily_menu_price) || 0,
-      categoriaId: newProduct.category_id,
-      imagen: imagen || undefined,
-      currentVersion: 1,
-      priceHistory: [],
-      versions: [],
-      status: 'active',
-      stock: {
-        currentQuantity: 100,
-        minQuantity: 10,
-        maxQuantity: 100,
-        status: 'in_stock',
-        lastUpdated: new Date(),
-        alerts: {
-          lowStock: false,
-          overStock: false,
-          thresholds: { low: 10, high: 90 }
-        }
-      },
-      metadata: {
-        createdAt: new Date(newProduct.created_at),
-        createdBy: 'api',
-        lastModified: new Date(newProduct.updated_at),
-        lastModifiedBy: 'api'
-      }
-    };
-
-    console.log('✅ Producto creado y agregado al menú exitosamente');
+    console.log('✅ Producto agregado al menú del restaurante exitosamente');
 
     return NextResponse.json({
       success: true,
-      data: producto,
-      message: 'Producto creado exitosamente en el catálogo global y agregado al menú del restaurante',
-      architecture: 'new'
+      data: {
+        menuItemId: addResult.rows[0].id,
+        productId: productId,
+        productName: product.name,
+        restaurantId: finalRestaurantId,
+        isAvailable,
+        isFeatured
+      },
+      message: `${product.name} agregado al menú del restaurante exitosamente`,
+      architecture: 'global_catalog'
     }, { status: 201 });
 
   } catch (error) {
-    console.error('❌ Error al crear producto:', error);
+    console.error('❌ Error al agregar producto al menú:', error);
     return NextResponse.json(
       { 
         success: false, 

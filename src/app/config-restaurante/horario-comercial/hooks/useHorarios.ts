@@ -5,6 +5,7 @@ import { useConfigStore } from '../../store/config-store';
 import { DiaSemana, HorariosRestaurante, HorarioDia, Turno, DIAS_SEMANA } from '../types/horarios.types';
 import { validarRangoHorario } from '../utils/time';
 import { useToast } from '@/shared/Hooks/use-toast';
+import { useAuth } from '@/context/postgres-authcontext'; // ← AGREGAR IMPORT
 
 // Horarios por defecto
 const HORARIOS_INICIALES: HorariosRestaurante = {
@@ -17,10 +18,10 @@ const HORARIOS_INICIALES: HorariosRestaurante = {
   domingo: { abierto: false, turnos: [] }
 };
 
-// Obtener ID del restaurante actual
-const RESTAURANT_ID = '4073a4ad-b275-4e17-b197-844881f0319e';
-
 export function useHorarios() {
+  const { user } = useAuth(); // ← USAR AUTH CONTEXT
+  const restaurantId = user?.restaurantId; // ← ID DINÁMICO
+
   const [horarios, setHorarios] = useState<HorariosRestaurante>(HORARIOS_INICIALES);
   const [guardando, setGuardando] = useState(false);
   const [cargando, setCargando] = useState(false);
@@ -29,75 +30,103 @@ export function useHorarios() {
   const { actualizarCampo } = useConfigStore();
   const { toast } = useToast();
 
-  // Cargar horarios desde la API
-  const cargarHorarios = useCallback(async () => {
-    if (!RESTAURANT_ID) return;
+  // Cargar horarios al inicializar o cuando cambie el restaurantId
+  useEffect(() => {
+    if (!restaurantId) {
+      console.log('⚠️ No hay restaurantId, esperando...');
+      return;
+    }
 
-    try {
-      setCargando(true);
-      const response = await fetch(`/api/restaurants/${RESTAURANT_ID}/business-hours`);
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.horarios && Object.keys(data.horarios).length > 0) {
-          setHorarios(data.horarios);
-          
-          // Actualizar store si hay horarios configurados
-          const tieneHorarios = Object.values(data.horarios).some((dia: any) => 
-            dia.abierto && dia.turnos.length > 0
-          );
-          
-          if (tieneHorarios) {
-            actualizarCampo('/config-restaurante/horario-comercial', 'horarios', true);
+    console.log('🚀 Hook useHorarios iniciado');
+    console.log('👤 Usuario actual:', user?.email);
+    console.log('🏪 Restaurant ID:', restaurantId);
+
+    const cargarHorarios = async () => {
+      try {
+        setCargando(true);
+        console.log('📅 Cargando horarios para restaurante:', restaurantId);
+        
+        const response = await fetch(`/api/restaurants/${restaurantId}/business-hours`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.horarios && Object.keys(data.horarios).length > 0) {
+            setHorarios(data.horarios);
+            
+            // Actualizar store si hay horarios configurados
+            const tieneHorarios = Object.values(data.horarios).some((dia: any) => 
+              dia.abierto && dia.turnos.length > 0
+            );
+            
+            if (tieneHorarios) {
+              actualizarCampo('/config-restaurante/horario-comercial', 'horarios', true);
+            }
+            
+            console.log('✅ Horarios cargados desde BD');
+          } else {
+            // Si no hay datos de la API, mantener horarios iniciales
+            console.log('No se encontraron horarios guardados, usando por defecto');
+            setHorarios(HORARIOS_INICIALES);
           }
         } else {
-          // Si no hay datos de la API, mantener horarios iniciales
           console.log('No se encontraron horarios guardados, usando por defecto');
           setHorarios(HORARIOS_INICIALES);
         }
-      } else {
-        console.log('No se encontraron horarios guardados, usando por defecto');
+      } catch (error) {
+        console.error('Error cargando horarios:', error);
+        // En caso de error, usar horarios por defecto
         setHorarios(HORARIOS_INICIALES);
+        toast({
+          title: 'Aviso',
+          description: 'Usando horarios por defecto. Los horarios guardados no se pudieron cargar.',
+          variant: 'default'
+        });
+      } finally {
+        setCargando(false);
+      }
+    };
+
+    cargarHorarios();
+  }, [restaurantId]); // ← SOLO restaurantId como dependencia
+
+  // Función para cargar horarios manualmente (si se necesita)
+  const cargarHorarios = useCallback(async () => {
+    if (!restaurantId) return;
+    
+    try {
+      setCargando(true);
+      const response = await fetch(`/api/restaurants/${restaurantId}/business-hours`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.horarios) {
+          setHorarios(data.horarios);
+        }
       }
     } catch (error) {
-      console.error('Error cargando horarios:', error);
-      // En caso de error, usar horarios por defecto
-      setHorarios(HORARIOS_INICIALES);
-      toast({
-        title: 'Aviso',
-        description: 'Usando horarios por defecto. Los horarios guardados no se pudieron cargar.',
-        variant: 'default'
-      });
+      console.error('Error recargando horarios:', error);
     } finally {
       setCargando(false);
     }
-  }, [toast, actualizarCampo]);
-
-  // Cargar horarios al inicializar
-  useEffect(() => {
-    console.log('🚀 Hook useHorarios iniciado');
-    console.log('Estado inicial:', HORARIOS_INICIALES);
-    cargarHorarios();
-  }, []);
+  }, [restaurantId]);
 
   // Cambiar estado de un día (abierto/cerrado)
-const toggleDiaAbierto = useCallback((dia: DiaSemana, abierto: boolean) => {
-  console.log('🔥 toggleDiaAbierto llamado:', { dia, abierto }); // ← AGREGAR ESTO
-  
-  setHorarios(prev => {
-    const nuevosHorarios = {
-      ...prev,
-      [dia]: {
-        abierto,
-        turnos: abierto ? 
-          (prev[dia].turnos.length === 0 ? [{ horaApertura: '08:00', horaCierre: '18:00' }] : prev[dia].turnos) 
-          : []
-      }
-    };
-    console.log('🔥 Nuevos horarios:', nuevosHorarios); // ← AGREGAR ESTO
-    return nuevosHorarios;
-  });
-}, []);
+  const toggleDiaAbierto = useCallback((dia: DiaSemana, abierto: boolean) => {
+    console.log('🔥 toggleDiaAbierto llamado:', { dia, abierto });
+    
+    setHorarios(prev => {
+      const nuevosHorarios = {
+        ...prev,
+        [dia]: {
+          abierto,
+          turnos: abierto ? 
+            (prev[dia].turnos.length === 0 ? [{ horaApertura: '08:00', horaCierre: '18:00' }] : prev[dia].turnos) 
+            : []
+        }
+      };
+      console.log('🔥 Nuevos horarios:', nuevosHorarios);
+      return nuevosHorarios;
+    });
+  }, []);
 
   // Actualizar un turno específico
   const actualizarTurno = useCallback((dia: DiaSemana, indice: number, turno: Partial<Turno>) => {
@@ -168,7 +197,7 @@ const toggleDiaAbierto = useCallback((dia: DiaSemana, abierto: boolean) => {
       return false;
     }
 
-    if (!RESTAURANT_ID) {
+    if (!restaurantId) { // ← USAR restaurantId DINÁMICO
       toast({
         title: 'Error',
         description: 'No se encontró el ID del restaurante',
@@ -179,7 +208,9 @@ const toggleDiaAbierto = useCallback((dia: DiaSemana, abierto: boolean) => {
 
     setGuardando(true);
     try {
-      const response = await fetch(`/api/restaurants/${RESTAURANT_ID}/business-hours`, {
+      console.log('💾 Guardando horarios para restaurante:', restaurantId);
+      
+      const response = await fetch(`/api/restaurants/${restaurantId}/business-hours`, { // ← USAR restaurantId DINÁMICO
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -198,10 +229,7 @@ const toggleDiaAbierto = useCallback((dia: DiaSemana, abierto: boolean) => {
         // Actualizar store de configuración
         actualizarCampo('/config-restaurante/horario-comercial', 'horarios', true);
         
-        toast({
-          title: 'Éxito',
-          description: 'Horarios guardados correctamente'
-        });
+        console.log('✅ Horarios guardados exitosamente');
         
         return true;
       }
@@ -217,7 +245,7 @@ const toggleDiaAbierto = useCallback((dia: DiaSemana, abierto: boolean) => {
     } finally {
       setGuardando(false);
     }
-  }, [horarios, validarHorarios, actualizarCampo, toast]);
+  }, [horarios, validarHorarios, actualizarCampo, toast, restaurantId]); // ← AGREGAR restaurantId A DEPENDENCIAS
 
   // Verificar si hay horarios configurados
   const tieneHorariosConfigurados = useCallback((): boolean => {
@@ -238,6 +266,7 @@ const toggleDiaAbierto = useCallback((dia: DiaSemana, abierto: boolean) => {
     guardarHorarios,
     validarHorarios,
     tieneHorariosConfigurados,
-    cargarHorarios
+    cargarHorarios,
+    restaurantId // ← EXPONER PARA DEBUGGING
   };
 }

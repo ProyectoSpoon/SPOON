@@ -133,8 +133,10 @@ const getInitialState = useCallback((): MenuCrearMenuData => {
       
       // Fusionar datos de sesión del caché con el estado actual
       setMenuData(prev => ({
-        // Mantener categorías desde API si ya están cargadas
-        categorias: prev.categorias.length > 0 ? prev.categorias : (categoriasFromAPI.length > 0 ? categoriasFromAPI : []),
+        // ✅ CORREGIDO: Usar categorías del caché si existen, sino las de API, sino mantener previas
+        categorias: Array.isArray(cachedData.categorias) && cachedData.categorias.length > 0 
+          ? cachedData.categorias 
+          : (categoriasFromAPI.length > 0 ? categoriasFromAPI : prev.categorias),
         // Mantener productos seleccionados si ya están cargados desde BD, sino usar caché
         productosSeleccionados: prev.productosSeleccionados.length > 0 ? prev.productosSeleccionados : (Array.isArray(cachedData.productosSeleccionados) ? cachedData.productosSeleccionados : []),
         
@@ -164,10 +166,10 @@ const getInitialState = useCallback((): MenuCrearMenuData => {
       return;
     }
     
-    // Solo guardar los datos de sesión del usuario
+    // ✅ CORREGIDO: Guardar categorías en el caché para mantener estado
     const sessionData = {
-      // No guardar categorías en caché, se cargan desde API
-      categorias: [], 
+      // ✅ CAMBIO CRÍTICO: Guardar categorías para mantener el estado entre recargas
+      categorias: Array.isArray(menuData.categorias) ? menuData.categorias : [],
       // Guardar productos seleccionados para mantener la lista disponible
       productosSeleccionados: Array.isArray(menuData.productosSeleccionados) ? menuData.productosSeleccionados : [],
 
@@ -186,25 +188,23 @@ const getInitialState = useCallback((): MenuCrearMenuData => {
     menuCacheUtils.set(sessionData);
   }, [isCacheEnabled, menuData]);
 
-  // Cargar categorías desde API al montar el componente
+  // ✅ CORREGIDO: Cargar categorías y actualizar estado
   useEffect(() => {
-    loadCategoriasFromAPI().catch(error => {
-      console.error('Error inicial al cargar categorías:', error);
-      // Continuar con el flujo normal aunque falle la carga de categorías
-    });
+    loadCategoriasFromAPI()
+      .then(categorias => {
+        // ✅ NUEVA FUNCIONALIDAD: Actualizar el estado con las categorías cargadas
+        console.log('📂 Actualizando estado con categorías cargadas:', categorias.length);
+        setMenuData(prev => ({
+          ...prev,
+          categorias: categorias
+        }));
+        setHasUnsavedChanges(true); // Marcar para guardar en cache
+      })
+      .catch(error => {
+        console.error('Error inicial al cargar categorías:', error);
+        // Continuar con el flujo normal aunque falle la carga de categorías
+      });
   }, []); // Solo ejecutar una vez al montar
-
-  // Reemplazado por getInitialStateMemoized, ya no es necesario este efecto separado
-  // useEffect(() => {
-  //   if (categoriasFromAPI.length > 0) {
-  //     setMenuData(prev => ({
-  //       ...prev,
-  //       categorias: categoriasFromAPI
-  //     }));
-  //   }
-  // }, [categoriasFromAPI]);
-  
-  
 
   // Cargar datos del caché al montar el componente
   useEffect(() => {
@@ -239,6 +239,7 @@ const getInitialState = useCallback((): MenuCrearMenuData => {
    * @param categorias Nuevas categorías
    */
   const updateCategorias = useCallback((categorias: Categoria[]) => {
+    console.log('📂 Actualizando categorías manualmente:', categorias.length);
     setMenuData(prev => ({ ...prev, categorias }));
     setHasUnsavedChanges(true);
   }, []);
@@ -514,7 +515,9 @@ const getInitialState = useCallback((): MenuCrearMenuData => {
         return Array.isArray(menuData.productosMenu) ? menuData.productosMenu : [];
     }
   }, [menuData]);
+  
   const getProductosSubmenuActivoMemoized = useRef(getProductosSubmenuActivo).current;
+  
   return {
     menuData,
     isLoaded,
@@ -544,7 +547,7 @@ const getInitialState = useCallback((): MenuCrearMenuData => {
     categoriasLoading,
     categoriasError,
     categoriasFromAPI,
-        hasCache,
+    hasCache,
     idMapping
   };
 };

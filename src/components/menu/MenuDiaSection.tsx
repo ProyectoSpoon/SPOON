@@ -135,7 +135,8 @@ export function MenuDiaSection() {
     switch (nombreCategoria.toLowerCase()) {
       case 'entradas': return '🍲';
       case 'principios': return '🍚';
-      case 'proteinas': return '🍖';
+      case 'proteínas': return '🍖'; // Corregido: con tilde
+      case 'proteinas': return '🍖'; // Mantener sin tilde por compatibilidad
       case 'acompañamientos': return '🥗';
       case 'bebidas': return '🥤';
       default: return '🍽️';
@@ -303,30 +304,3 @@ export function MenuDiaSection() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

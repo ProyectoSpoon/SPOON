@@ -103,8 +103,42 @@ const LoginPage = () => {
 
       toast.success('¡Bienvenido!');
       
-      // Navegar al dashboard
-      router.push('/dashboard');
+      // ✅ VERIFICAR SI TIENE RESTAURANTE ANTES DE REDIRIGIR
+      console.log('🔍 Verificando configuración de restaurante...');
+      
+      try {
+        // Obtener el token que acabamos de guardar
+        const token = localStorage.getItem('auth_token');
+        
+        const restaurantResponse = await fetch('/api/auth/current-user/restaurant', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (restaurantResponse.status === 404) {
+          // Usuario no tiene restaurante - redirigir a configuración
+          console.log('❌ Usuario no tiene restaurante, redirigiendo a configuración...');
+          toast.success('¡Bienvenido! Vamos a configurar tu restaurante.');
+          router.push('/config-restaurante');
+        } else if (restaurantResponse.ok) {
+          // Usuario tiene restaurante - ir al dashboard
+          const restaurantData = await restaurantResponse.json();
+          console.log('✅ Usuario tiene restaurante:', restaurantData.restaurantName);
+          toast.success(`¡Bienvenido de vuelta a ${restaurantData.restaurantName || 'tu restaurante'}!`);
+          router.push('/dashboard');
+        } else {
+          // Error al verificar - ir al dashboard por defecto
+          console.warn('⚠️ Error al verificar restaurante, redirigiendo al dashboard...');
+          router.push('/dashboard');
+        }
+      } catch (restaurantError) {
+        console.error('❌ Error al verificar restaurante:', restaurantError);
+        // En caso de error, ir al dashboard (el dashboard manejará la validación)
+        router.push('/dashboard');
+      }
       
     } catch (err: any) {
       console.error('Error al iniciar sesión:', err);

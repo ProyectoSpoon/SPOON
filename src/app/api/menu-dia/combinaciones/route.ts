@@ -21,8 +21,21 @@ export async function GET(request: NextRequest) {
     console.log('🔍 GET /api/menu-dia/combinaciones - Nueva arquitectura...');
     client = await pool.connect();
     
-    // ID del restaurante real
-    const restauranteId = '4073a4ad-b275-4e17-b197-844881f0319e';
+    // Obtener el restaurante dinámicamente
+    const restaurantQuery = 'SELECT id FROM restaurant.restaurants WHERE status = $1 ORDER BY created_at ASC LIMIT 1';
+    const restaurantResult = await client.query(restaurantQuery, ['active']);
+    
+    if (restaurantResult.rows.length === 0) {
+      console.log('❌ No hay restaurantes disponibles');
+      return NextResponse.json({
+        success: false,
+        message: 'No hay restaurantes disponibles',
+        combinaciones: []
+      });
+    }
+    
+    const restauranteId = restaurantResult.rows[0].id;
+    console.log('✅ Usando restaurante:', restauranteId);
     
     // Buscar el menú del día más reciente publicado
     const menuQuery = `
@@ -48,13 +61,12 @@ export async function GET(request: NextRequest) {
     const menuDelDia = menuResult.rows[0];
     console.log('✅ Menú encontrado:', menuDelDia.name);
     
-    // ✅ CONSULTA CORREGIDA: Usar system.products en lugar de menu.products
+    // ✅ CONSULTA CORREGIDA: Usar system.products en lugar de system.products 
     const combinacionesQuery = `
       SELECT 
         mc.id,
         mc.name,
-        mc.description,
-        mc.base_price,
+        mmc.base_price,
         mc.special_price,
         mc.is_available,
         mc.is_featured,
@@ -105,7 +117,7 @@ export async function GET(request: NextRequest) {
     const combinacionesFormateadas = combinacionesResult.rows.map(row => ({
       id: row.id,
       nombre: row.name,
-      descripcion: row.description,
+      descripcion: '',
       precioBase: parseFloat(row.base_price) || 0,
       precioEspecial: row.special_price ? parseFloat(row.special_price) : null,
       esFavorito: false,

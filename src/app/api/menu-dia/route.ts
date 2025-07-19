@@ -133,9 +133,8 @@ export async function GET() {
     let categorias: any[] = [];
     try {
       const categoriasQuery = `
-        SELECT c.id, c.name, c.category_type, c.sort_order, c.description, c.is_active
+        SELECT c.id, c.name, c.category_type, c.sort_order
         FROM system.categories c
-        WHERE c.is_active = true
         ORDER BY c.sort_order ASC, c.name ASC;
       `;
       
@@ -145,8 +144,8 @@ export async function GET() {
         nombre: row.name,
         tipo: row.category_type,
         orden: row.sort_order || 0,
-        descripcion: row.description,
-        activo: row.is_active
+        descripcion: '',
+        activo: true
       }));
     } catch (categoriasError) {
       console.error('❌ Error al obtener categorías:', categoriasError);
@@ -177,8 +176,8 @@ export async function GET() {
         id: row.id,
         nombre: row.name,
         name: row.name,
-        descripcion: row.description,
-        description: row.description,
+        descripcion: '',
+        description: '',
         precio: row.current_price,
         current_price: row.current_price,
         categoriaId: row.category_id,

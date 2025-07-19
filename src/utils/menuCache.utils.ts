@@ -16,10 +16,12 @@ export interface Categoria {
   activa?: boolean;
   color?: string;
   icono?: string;
-  parent_id?: string | null;
+  parentId?: string | null;
   restaurant_id?: string;
   created_at?: Date;
   updated_at?: Date;
+  // **NEW: Added 'tipo' property to Categoria interface**
+  tipo?: 'principal' | 'subcategoria';
   // Para compatibilidad con diferentes sistemas
   category_id?: string;
   name?: string;
@@ -102,7 +104,7 @@ function safeGetItem(key: string): string | null {
     console.warn('🔒 safeGetItem: No disponible en servidor');
     return null;
   }
-  
+
   try {
     return localStorage.getItem(key);
   } catch (error) {
@@ -119,14 +121,15 @@ function safeSetItem(key: string, value: string): boolean {
     console.warn('🔒 safeSetItem: No disponible en servidor');
     return false;
   }
-  
+
   try {
     localStorage.setItem(key, value);
     return true;
   } catch (error) {
     console.error(`❌ Error al escribir localStorage[${key}]:`, error);
     // Intentar limpiar espacio si el error es por cuota
-    if (error instanceof DOMException && error.code === 22) {
+    // if (error instanceof DOMException && error.code === 22) { // Removed since DOMException not always defined in all environments
+    if (error && typeof error === 'object' && 'code' in error && error.code === 22) { // More robust check
       console.log('🧹 Cuota excedida, intentando limpiar caché antiguo...');
       cleanOldCache();
       try {
@@ -148,7 +151,7 @@ function safeRemoveItem(key: string): boolean {
     console.warn('🔒 safeRemoveItem: No disponible en servidor');
     return false;
   }
-  
+
   try {
     localStorage.removeItem(key);
     return true;
@@ -163,14 +166,14 @@ function safeRemoveItem(key: string): boolean {
  */
 function cleanOldCache(): void {
   if (!isClient()) return;
-  
+
   const keysToClean = [
     'menu_crear_menu_old',
-    'menu_dia_old', 
+    'menu_dia_old',
     'combinaciones_cache_old',
     'productos_temp'
   ];
-  
+
   keysToClean.forEach((key: string) => {
     try {
       localStorage.removeItem(key);
@@ -188,21 +191,21 @@ function validateMenuData(data: any): data is MenuCrearMenuData {
     console.warn('⚠️ validateMenuData: data no es objeto válido');
     return false;
   }
-  
+
   const requiredFields = [
     'categorias',
-    'productosSeleccionados', 
+    'productosSeleccionados',
     'productosMenu',
     'productosFavoritos',
     'productosEspeciales'
   ];
-  
+
   const isValid = requiredFields.every((field: string) => Array.isArray(data[field]));
-  
+
   if (!isValid) {
     console.warn('⚠️ validateMenuData: campos requeridos faltantes o inválidos');
   }
-  
+
   return isValid;
 }
 
@@ -213,7 +216,7 @@ function migrateDataIfNeeded(cacheItem: CacheItem): CacheItem {
   // Si no hay versión, es una versión antigua
   if (!cacheItem.version) {
     console.log('🔄 Migrando datos de caché a versión actual...');
-    
+
     // Asegurar que todos los arrays existen
     const migratedData: MenuCrearMenuData = {
       categorias: Array.isArray(cacheItem.data.categorias) ? cacheItem.data.categorias : [],
@@ -225,14 +228,14 @@ function migrateDataIfNeeded(cacheItem: CacheItem): CacheItem {
       subcategoriaSeleccionada: cacheItem.data.subcategoriaSeleccionada || null,
       submenuActivo: cacheItem.data.submenuActivo || 'menu-dia'
     };
-    
+
     return {
       ...cacheItem,
       data: migratedData,
       version: CURRENT_VERSION
     };
   }
-  
+
   return cacheItem;
 }
 
@@ -257,10 +260,10 @@ const menuCacheUtilsImplementation = {
       console.log('ℹ️ No hay datos en caché del menú');
       return null;
     }
-    
+
     try {
       const cacheItem: CacheItem<MenuCrearMenuData> = JSON.parse(cached);
-      
+
       // Verificar expiración
       const isExpired = Date.now() - cacheItem.timestamp > (cacheItem.ttl * 60 * 1000);
       if (isExpired) {
@@ -268,20 +271,20 @@ const menuCacheUtilsImplementation = {
         this.clear();
         return null;
       }
-      
+
       // Migrar si es necesario
       const migratedItem = migrateDataIfNeeded(cacheItem);
-      
+
       // Validar estructura
       if (!validateMenuData(migratedItem.data)) {
         console.warn('⚠️ Estructura de caché inválida, eliminando...');
         this.clear();
         return null;
       }
-      
+
       console.log('✅ Datos cargados desde caché del menú');
       return migratedItem.data;
-      
+
     } catch (error) {
       console.error('❌ Error al parsear caché del menú:', error);
       this.clear();
@@ -303,20 +306,20 @@ const menuCacheUtilsImplementation = {
       console.error('❌ Datos inválidos para caché del menú');
       return false;
     }
-    
+
     const cacheItem: CacheItem<MenuCrearMenuData> = {
       data,
       timestamp: Date.now(),
       ttl,
       version: CURRENT_VERSION
     };
-    
+
     const success = safeSetItem(CACHE_KEY, JSON.stringify(cacheItem));
-    
+
     if (success) {
       console.log(`💾 Datos del menú guardados en caché (TTL: ${ttl} min)`);
     }
-    
+
     return success;
   },
 
@@ -325,11 +328,11 @@ const menuCacheUtilsImplementation = {
    */
   clear(): boolean {
     const success = safeRemoveItem(CACHE_KEY);
-    
+
     if (success) {
       console.log('🗑️ Caché del menú eliminado');
     }
-    
+
     return success;
   },
 
@@ -343,14 +346,14 @@ const menuCacheUtilsImplementation = {
 
     const cached = safeGetItem(CACHE_KEY);
     if (!cached) return false;
-    
+
     try {
       const cacheItem: CacheItem = JSON.parse(cached);
-      
+
       // Verificar si no está expirado
       const isExpired = Date.now() - cacheItem.timestamp > (cacheItem.ttl * 60 * 1000);
       return !isExpired;
-      
+
     } catch (error) {
       console.error('❌ Error al verificar caché:', error);
       return false;
@@ -367,15 +370,15 @@ const menuCacheUtilsImplementation = {
 
     const cached = safeGetItem(CACHE_KEY);
     if (!cached) return 0;
-    
+
     try {
       const cacheItem: CacheItem = JSON.parse(cached);
       const elapsedTime = Date.now() - cacheItem.timestamp;
       const totalTime = cacheItem.ttl * 60 * 1000;
       const remainingTime = Math.max(0, totalTime - elapsedTime);
-      
+
       return Math.ceil(remainingTime / (60 * 1000)); // Convertir a minutos
-      
+
     } catch (error) {
       console.error('❌ Error al calcular tiempo restante:', error);
       return 0;
@@ -392,19 +395,19 @@ const menuCacheUtilsImplementation = {
 
     const cached = safeGetItem(CACHE_KEY);
     if (!cached) return false;
-    
+
     try {
       const cacheItem: CacheItem = JSON.parse(cached);
       cacheItem.ttl += additionalMinutes;
-      
+
       const success = safeSetItem(CACHE_KEY, JSON.stringify(cacheItem));
-      
+
       if (success) {
         console.log(`⏱️ TTL del caché extendido en ${additionalMinutes} minutos`);
       }
-      
+
       return success;
-      
+
     } catch (error) {
       console.error('❌ Error al extender TTL:', error);
       return false;
@@ -432,7 +435,7 @@ const menuCacheUtilsImplementation = {
     }
 
     const cached = safeGetItem(CACHE_KEY);
-    
+
     if (!cached) {
       return {
         exists: false,
@@ -442,11 +445,11 @@ const menuCacheUtilsImplementation = {
         version: null
       };
     }
-    
+
     try {
       const cacheItem: CacheItem = JSON.parse(cached);
       const size = new Blob([cached]).size;
-      
+
       return {
         exists: true,
         size: Math.round(size / 1024), // KB
@@ -454,7 +457,7 @@ const menuCacheUtilsImplementation = {
         lastUpdated: new Date(cacheItem.timestamp),
         version: cacheItem.version || 'legacy'
       };
-      
+
     } catch (error) {
       console.error('❌ Error al obtener stats:', error);
       return {
@@ -477,51 +480,51 @@ const menuCacheUtilsImplementation = {
   } {
     const issues: string[] = [];
     const recommendations: string[] = [];
-    
+
     if (!isClient()) {
       issues.push('No está en el cliente');
       return { isHealthy: false, issues, recommendations };
     }
-    
+
     const cached = safeGetItem(CACHE_KEY);
-    
+
     if (!cached) {
       recommendations.push('No hay caché disponible - esto es normal en primera carga');
       return { isHealthy: true, issues, recommendations };
     }
-    
+
     try {
       const cacheItem: CacheItem = JSON.parse(cached);
-      
+
       // Verificar estructura
       if (!validateMenuData(cacheItem.data)) {
         issues.push('Estructura de datos inválida');
         recommendations.push('Limpiar y regenerar caché');
       }
-      
+
       // Verificar tamaño
       const size = new Blob([cached]).size;
       if (size > 5 * 1024 * 1024) { // 5MB
         issues.push('Caché muy grande (>5MB)');
         recommendations.push('Optimizar datos almacenados');
       }
-      
+
       // Verificar tiempo
       const remainingTime = this.getRemainingTime();
       if (remainingTime < 5) {
         recommendations.push('Caché próximo a expirar');
       }
-      
+
       // Verificar versión
       if (!cacheItem.version || cacheItem.version !== CURRENT_VERSION) {
         recommendations.push('Actualizar versión de caché');
       }
-      
+
     } catch (error) {
       issues.push('Error al parsear caché');
       recommendations.push('Limpiar caché corrupto');
     }
-    
+
     return {
       isHealthy: issues.length === 0,
       issues,

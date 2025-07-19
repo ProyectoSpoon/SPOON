@@ -41,14 +41,14 @@ export async function GET(request: Request) {
           rf.updated_at,
           p.name as product_name,
           p.description as product_description,
-          p.gallery_images as product_image,
+           as product_image,
           p.current_price as product_price,
           p.category_id,
           c.name as category_name,
           COALESCE(u.first_name || ' ' || u.last_name, 'Usuario desconocido') as created_by_name
         FROM restaurant.favorite_products rf
-        JOIN menu.products p ON rf.product_id = p.id
-        LEFT JOIN menu.categories c ON p.category_id = c.id
+        JOIN system.products p ON rf.product_id = p.id
+        LEFT JOIN system.categories c ON p.category_id = c.id
         LEFT JOIN auth.users u ON rf.created_by = u.id
         WHERE rf.restaurant_id = $1
           AND p.status = 'active'
@@ -143,7 +143,7 @@ export async function POST(request: Request) {
     }
 
     // ✅ VERIFICAR QUE EL PRODUCTO EXISTE (consulta simplificada)
-    const productQuery = 'SELECT id, name FROM menu.products WHERE id = $1 AND status = $2';
+    const productQuery = 'SELECT id, name FROM system.products WHERE id = $1 AND status = $2';
     const productResult = await query(productQuery, [productId, 'active']);
     
     if (productResult.rows.length === 0) {
@@ -264,3 +264,6 @@ export async function DELETE(request: Request) {
     );
   }
 }
+
+
+

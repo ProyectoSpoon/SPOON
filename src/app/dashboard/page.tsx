@@ -8,6 +8,9 @@ export default function DashboardPage() {
 
   // ✅ TÍTULO DINÁMICO DE LA PÁGINA
   useSetPageTitle('Dashboard', 'Panel principal de control');
+  
+  // Nota: La verificación de restaurante se hace en el login
+  // Si llegamos aquí, es porque el usuario ya tiene restaurante configurado
   // Datos de KPIs para restaurantes (adaptados a SPOON)
   const kpis = [
     { titulo: "Órdenes Hoy", valor: "127", subtitulo: "Clientes atendidos" },

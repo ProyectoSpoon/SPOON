@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+// ✅ CORREGIDO: IDs reales de la base de datos PostgreSQL
 const CATEGORIAS_MENU = [
-  { id: 'b4e792ba-b00d-4348-b9e3-f34992315c23', nombre: 'Entradas' },
-  { id: '2d4c3ea8-843e-4312-821e-54d1c4e79dce', nombre: 'Principios' },
-  { id: '342f0c43-7f98-48fb-b0ba-e4c5d3ee72b3', nombre: 'Proteínas' },
-  { id: 'a272bc20-464c-443f-9283-4b5e7bfb71cf', nombre: 'Acompañamientos' },
-  { id: '6feba136-57dc-4448-8357-6f5533177cfd', nombre: 'Bebidas' }
+  { id: '494fbac6-59ed-42af-af24-039298ba16b6', nombre: 'Entradas' },
+  { id: 'de7f4731-3eb3-4d41-b830-d35e5125f4a3', nombre: 'Principios' },
+  { id: '299b1ba0-0678-4e0e-ba53-90e5d95e5543', nombre: 'Proteínas' },
+  { id: '8b0751ae-1332-409e-a710-f229be0b9758', nombre: 'Acompañamientos' },
+  { id: 'c77ffc73-b65a-4f03-adb1-810443e61799', nombre: 'Bebidas' },
+  { id: 'eac729e6-e216-4e45-9d6f-2698c757b096', nombre: 'ALMUERZOS' }
 ];
 
 export function useMenuDiaActions(
@@ -79,7 +81,8 @@ export function useMenuDiaActions(
         id: producto.id,
         nombre: producto.nombre.trim(),
         descripcion: producto.descripcion?.trim() || 'Sin descripción',
-        categoriaId: producto.categoriaId || 'b4e792ba-b00d-4348-b9e3-f34992315c23', // Default a Entradas
+        // ✅ CORREGIDO: Default a Entradas con ID real de BD
+        categoriaId: producto.categoriaId || '494fbac6-59ed-42af-af24-039298ba16b6',
         precio: typeof producto.currentPrice === 'string'
           ? parseFloat(producto.currentPrice)
           : (producto.currentPrice || 10000)

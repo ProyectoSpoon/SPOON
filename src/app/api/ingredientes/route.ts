@@ -80,8 +80,8 @@ export async function GET(request: NextRequest) {
       id: row.id,
       nombre: row.name,
       name: row.name, // Para compatibilidad
-      descripcion: row.description || '',
-      description: row.description || '',
+      descripcion: '' || '',
+      description: '' || '',
       
       // Información como ingrediente
       unidad_medida: 'unidad', // Por defecto, se puede extender

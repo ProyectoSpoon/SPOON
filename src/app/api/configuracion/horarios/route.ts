@@ -1,18 +1,48 @@
 // app/api/configuracion/horarios/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { Pool } from 'pg';
+import pool from '@/lib/database';
+import jwt from 'jsonwebtoken';
 
-// Configuración de PostgreSQL
-const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'Spoon_db',
-  password: 'spoon', // Cambiar por tu contraseña real
-  port: 5432,
-});
+interface JWTPayload {
+  userId: string;
+  email: string;
+  restaurantId?: string;
+  restaurant?: {
+    id: string;
+    nombre?: string;
+  };
+}
 
-// ID del restaurante hardcodeado para debug
-const RESTAURANT_ID = '4073a4ad-b275-4e17-b197-844881f0319e';
+/**
+ * Obtiene el ID del restaurante desde el token JWT o usa fallback
+ */
+async function getRestaurantId(request: NextRequest): Promise<string | null> {
+  // Primero intentar obtener desde el token
+  try {
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      const JWT_SECRET = process.env.JWT_SECRET;
+      
+      if (JWT_SECRET) {
+        const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+        const restaurantId = decoded.restaurantId || decoded.restaurant?.id;
+        
+        if (restaurantId) {
+          console.log('✅ RestaurantId extraído del token:', restaurantId);
+          return restaurantId;
+        }
+      }
+    }
+  } catch (error) {
+    console.log('⚠️ Error decodificando token, usando fallback:', error);
+  }
+
+  // Fallback: ID hardcodeado (temporal para desarrollo)
+  const FALLBACK_RESTAURANT_ID = "4073a4ad-b275-4e17-b197-844881f0319e";
+  console.log('⚠️ Usando restaurantId fallback:', FALLBACK_RESTAURANT_ID);
+  return FALLBACK_RESTAURANT_ID;
+}
 
 // Mapeo de días de la semana
 const DAYS_MAP = {
@@ -44,6 +74,15 @@ export async function GET(request: NextRequest) {
   try {
     console.log('🕐 DEBUG: Obteniendo horarios comerciales...');
     
+    // Obtener ID del restaurante
+    const restaurantId = await getRestaurantId(request);
+    if (!restaurantId) {
+      return NextResponse.json(
+        { error: 'No se pudo determinar el restaurante' },
+        { status: 400 }
+      );
+    }
+    
     client = await pool.connect();
     console.log('✅ DEBUG: Conectado a PostgreSQL');
     
@@ -63,7 +102,7 @@ export async function GET(request: NextRequest) {
       ORDER BY day_of_week
     `;
     
-    const horariosResult = await client.query(horariosQuery, [RESTAURANT_ID]);
+    const horariosResult = await client.query(horariosQuery, [restaurantId]);
     console.log('📊 DEBUG: Horarios encontrados:', horariosResult.rows.length);
     
     // Obtener días festivos/especiales
@@ -81,7 +120,7 @@ export async function GET(request: NextRequest) {
       ORDER BY date
     `;
     
-    const especialesResult = await client.query(especialesQuery, [RESTAURANT_ID]);
+    const especialesResult = await client.query(especialesQuery, [restaurantId]);
     console.log('🎉 DEBUG: Días especiales encontrados:', especialesResult.rows.length);
     
     // Crear estructura por defecto si no hay datos
@@ -165,8 +204,18 @@ export async function POST(request: NextRequest) {
   try {
     console.log('💾 DEBUG: Actualizando horarios comerciales...');
     
+    // Obtener ID del restaurante
+    const restaurantId = await getRestaurantId(request);
+    if (!restaurantId) {
+      return NextResponse.json(
+        { error: 'No se pudo determinar el restaurante' },
+        { status: 400 }
+      );
+    }
+    
     const data = await request.json();
     console.log('📝 DEBUG: Datos recibidos:', Object.keys(data));
+    console.log('🎯 DEBUG: Restaurant ID:', restaurantId);
     
     if (!data.horarioRegular) {
       return NextResponse.json(
@@ -184,7 +233,7 @@ export async function POST(request: NextRequest) {
       // Eliminar horarios existentes
       await client.query(
         'DELETE FROM restaurant.business_hours WHERE restaurant_id = $1',
-        [RESTAURANT_ID]
+        [restaurantId]
       );
       console.log('🗑️ DEBUG: Horarios anteriores eliminados');
       
@@ -208,7 +257,7 @@ export async function POST(request: NextRequest) {
           `;
           
           const values = [
-            RESTAURANT_ID,
+            restaurantId,
             dayOfWeek,
             horarioTyped.abierto ? horarioTyped.horaApertura : null,
             horarioTyped.abierto ? horarioTyped.horaCierre : null,
@@ -225,7 +274,7 @@ export async function POST(request: NextRequest) {
         // Eliminar días especiales existentes
         await client.query(
           'DELETE FROM restaurant.special_hours WHERE restaurant_id = $1',
-          [RESTAURANT_ID]
+          [restaurantId]
         );
         
         // Insertar nuevos días especiales
@@ -242,7 +291,7 @@ export async function POST(request: NextRequest) {
             `;
             
             await client.query(insertSpecialQuery, [
-              RESTAURANT_ID,
+              restaurantId,
               festivo.fecha,
               true, // Asumimos que los festivos están cerrados
               festivo.nombre

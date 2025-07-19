@@ -13,8 +13,8 @@ interface CantidadProductoProps {
 export function CantidadProducto({ id, cantidad, categoriaId, onCantidadChange }: CantidadProductoProps) {
   const [cantidadActual, setCantidadActual] = useState(cantidad);
   
-  // Solo mostrar el componente para productos de categoría proteína (CAT_003)
-  if (categoriaId !== 'CAT_003') {
+  // Solo mostrar el componente para productos de categoría proteína (UUID real de la BD)
+  if (categoriaId !== '342f0c43-7f98-48fb-b0ba-e4c5d3ee72b3') {
     return null;
   }
 
@@ -68,30 +68,3 @@ export function CantidadProducto({ id, cantidad, categoriaId, onCantidadChange }
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

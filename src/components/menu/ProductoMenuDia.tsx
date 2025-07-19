@@ -20,14 +20,14 @@ interface ProductoMenuDiaProps {
 }
 
 export function ProductoMenuDia({ producto, onRemove, onCantidadChange }: ProductoMenuDiaProps) {
-  // Obtener el emoji según la categoría
+  // Obtener el emoji según la categoría usando los UUIDs reales de la BD
   const getEmojiCategoria = (categoriaId: string) => {
     switch (categoriaId) {
-      case 'CAT_001': return '🍲'; // Entradas
-      case 'CAT_002': return '🍚'; // Principio
-      case 'CAT_003': return '🍖'; // Proteína
-      case 'CAT_004': return '🥗'; // Acompañamientos
-      case 'CAT_005': return '🥤'; // Bebida
+      case 'b4e792ba-b00d-4348-b9e3-f34992315c23': return '🍲'; // Entradas
+      case '2d4c3ea8-843e-4312-821e-54d1c4e79dce': return '🍚'; // Principios
+      case '342f0c43-7f98-48fb-b0ba-e4c5d3ee72b3': return '🍖'; // Proteínas
+      case 'a272bc20-464c-443f-9283-4b5e7bfb71cf': return '🥗'; // Acompañamientos
+      case '6feba136-57dc-4448-8357-6f5533177cfd': return '🥤'; // Bebidas
       default: return '🍽️';
     }
   };
@@ -57,30 +57,3 @@ export function ProductoMenuDia({ producto, onRemove, onCantidadChange }: Produc
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -23,6 +23,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   refreshAuth: () => Promise<void>;
+  updateRestaurantId: (restaurantId: string) => void; // ← NUEVO
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -116,9 +117,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return;
           }
 
-          // Obtener restaurant_id
-          const restaurantId = await getRestaurantId(payload.userId, token);
-
+          // No obtener restaurant_id automáticamente al restaurar sesión
+          // Esto se hará solo cuando sea necesario (en login o cuando se solicite)
+          
           // Configurar usuario desde token válido
           const userData: User = {
             uid: payload.userId,
@@ -129,7 +130,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             role: payload.role,
             permissions: payload.permissions || [],
             emailVerified: true,
-            restaurantId: restaurantId,
+            restaurantId: (() => {
+              const userInfoCookie = getCookie('user-info');
+              if (userInfoCookie) {
+                try {
+                  const userInfo = JSON.parse(userInfoCookie);
+                  console.log('🏪 Restaurante desde cookie:', userInfo.restaurantId);
+                  return userInfo.restaurantId;
+                } catch (e) {
+                  console.error('Error parsing user-info cookie:', e);
+                }
+              }
+              return undefined;
+            })(),
             isActive: true,
             lastLogin: new Date()
           };
@@ -232,10 +245,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('✅ Login exitoso con PostgreSQL');
       console.log('🏪 Restaurant ID:', restaurantId);
       
-      // ✅ AGREGADO: Redirección con pequeño delay
-      setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 100);
+      // Nota: La redirección se maneja en el componente de login
+      // No redirigir automáticamente desde el contexto
       
     } catch (err: any) {
       console.error('❌ Error en login:', err);
@@ -312,25 +323,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const token = localStorage.getItem('auth_token') || getCookie('auth-token');
       if (!token) return;
       
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const restaurantId = await getRestaurantId(payload.userId, token);
-      
-      if (user && restaurantId !== user.restaurantId) {
-        const updatedUser = { ...user, restaurantId };
-        setUser(updatedUser);
-        
-        // Actualizar cookie con nueva info
-        setCookie('user-info', JSON.stringify({
-          uid: updatedUser.uid,
-          email: updatedUser.email,
-          role: updatedUser.role,
-          permissions: updatedUser.permissions,
-          restaurantId: updatedUser.restaurantId
-        }));
-      }
+      // Solo refrescar si es necesario, no hacer verificaciones automáticas
+      console.log('✅ Auth refresh completado (sin verificaciones automáticas)');
       
     } catch (error) {
       console.error('Error refrescando auth:', error);
+    }
+  };
+
+  // ✅ NUEVA FUNCIÓN: Actualizar restaurantId sin recargar página
+  const updateRestaurantId = (restaurantId: string) => {
+    console.log('🏪 Actualizando restaurantId en contexto:', restaurantId);
+    
+    setUser(prevUser => prevUser ? {
+      ...prevUser,
+      restaurantId: restaurantId
+    } : null);
+    
+    // Actualizar cookie también para mantener sincronización
+    if (user) {
+      const currentUserInfo = getCookie('user-info');
+      if (currentUserInfo) {
+        try {
+          const userInfo = JSON.parse(currentUserInfo);
+          setCookie('user-info', JSON.stringify({
+            ...userInfo,
+            restaurantId: restaurantId
+          }));
+        } catch (error) {
+          console.error('Error actualizando cookie user-info:', error);
+        }
+      }
     }
   };
 
@@ -341,7 +364,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     logout,
     signInWithGoogle,
-    refreshAuth
+    refreshAuth,
+    updateRestaurantId // ← NUEVO
   };
 
   return (

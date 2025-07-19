@@ -45,6 +45,11 @@ export function MenuDiarioRediseno({
   // Validar y limpiar productos
   const productosLimpios = productos.map(validateProduct);
   
+  // ✅ DEBUG: Log de productos y categorías
+  console.log('🔍 MenuDiarioRediseno - Productos:', productosLimpios.length);
+  console.log('🔍 MenuDiarioRediseno - Categorías recibidas:', categorias.length);
+  console.log('🔍 MenuDiarioRediseno - Categorías:', categorias);
+  
   // Agrupar productos por categoría
   const productosPorCategoria = productosLimpios.reduce((acc: Record<string, VersionedProduct[]>, producto) => {
     const categoriaId = producto.categoriaId;
@@ -61,18 +66,52 @@ export function MenuDiarioRediseno({
     return acc;
   }, {});
  
+  console.log('🔍 MenuDiarioRediseno - Productos por categoría:', productosPorCategoria);
+ 
   // Validar y limpiar categorías
   const categoriasLimpias = categorias.map(cat => ({
     ...cat,
     nombre: cleanString(cat.nombre)
   }));
 
-  // Obtener categorías dinámicamente - Solo subcategorías que tengan productos
-  const categoriasConProductos = categoriasLimpias.filter(cat => 
-    cat.parentId && // Solo subcategorías
-    productosPorCategoria[cat.id] && 
-    productosPorCategoria[cat.id].length > 0
-  );
+  // ✅ CORREGIDO: IDs reales de la base de datos PostgreSQL
+  const ordenCategorias = [
+    '494fbac6-59ed-42af-af24-039298ba16b6', // Entradas
+    'de7f4731-3eb3-4d41-b830-d35e5125f4a3', // Principios
+    '299b1ba0-0678-4e0e-ba53-90e5d95e5543', // Proteínas
+    '8b0751ae-1332-409e-a710-f229be0b9758', // Acompañamientos
+    'c77ffc73-b65a-4f03-adb1-810443e61799', // Bebidas
+    'eac729e6-e216-4e45-9d6f-2698c757b096'  // ALMUERZOS
+  ];
+
+  // ✅ CORREGIDO: Buscar TODAS las categorías, no solo subcategorías
+  const todasLasSubcategorias = ordenCategorias
+    .map(id => {
+      // Buscar en categorías o crear categoría por defecto
+      const categoriaEncontrada = categoriasLimpias.find(cat => cat.id === id);
+      if (categoriaEncontrada) {
+        return categoriaEncontrada;
+      }
+      
+      // ✅ CREAR CATEGORÍAS POR DEFECTO si no se encuentran
+      const nombresPorDefecto: Record<string, string> = {
+        '494fbac6-59ed-42af-af24-039298ba16b6': 'Entradas',
+        'de7f4731-3eb3-4d41-b830-d35e5125f4a3': 'Principios', 
+        '299b1ba0-0678-4e0e-ba53-90e5d95e5543': 'Proteínas',
+        '8b0751ae-1332-409e-a710-f229be0b9758': 'Acompañamientos',
+        'c77ffc73-b65a-4f03-adb1-810443e61799': 'Bebidas',
+        'eac729e6-e216-4e45-9d6f-2698c757b096': 'ALMUERZOS'
+      };
+      
+      return {
+        id,
+        nombre: nombresPorDefecto[id] || 'Categoría',
+        tipo: 'principal',
+        parentId: undefined
+      };
+    });
+
+  console.log('🔍 MenuDiarioRediseno - Categorías finales:', todasLasSubcategorias);
 
   // Función para obtener el icono según el nombre de la categoría
   const getIconForCategory = (nombreCategoria: string) => {
@@ -146,37 +185,13 @@ export function MenuDiarioRediseno({
 
   // Verificar si una categoría es de proteínas para mostrar control de cantidad
   const esCategoriaPoteinas = (categoriaId: string): boolean => {
-    const categoria = categoriasLimpias.find(cat => cat.id === categoriaId);
+    const categoria = todasLasSubcategorias.find(cat => cat.id === categoriaId);
     const nombreCategoria = cleanString(categoria?.nombre || '');
     return nombreCategoria.toLowerCase().includes('proteina') || nombreCategoria.toLowerCase().includes('proteína');
   };
 
-  // ✅ ORDEN ESPECÍFICO: Entradas, Principios, Proteínas, Acompañamientos, Bebidas
-  const ordenCategorias = [
-    'b4e792ba-b00d-4348-b9e3-f34992315c23', // Entradas
-    '2d4c3ea8-843e-4312-821e-54d1c4e79dce', // Principios
-    '342f0c43-7f98-48fb-b0ba-e4c5d3ee72b3', // Proteínas
-    'a272bc20-464c-443f-9283-4b5e7bfb71cf', // Acompañamientos
-    '6feba136-57dc-4448-8357-6f5533177cfd'  // Bebidas
-  ];
-
-  // Obtener subcategorías en el orden especificado con type safety
-  const todasLasSubcategorias = ordenCategorias
-    .map(id => categoriasLimpias.find(cat => cat.id === id && cat.parentId))
-    .filter((categoria): categoria is NonNullable<typeof categoria> => categoria !== undefined);
-
-  // Si no hay categorías definidas, mostrar mensaje básico
-  if (todasLasSubcategorias.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <div className="flex items-center justify-center mb-4">
-          <Utensils className="h-12 w-12 text-gray-300" />
-        </div>
-        <p className="text-gray-500 text-lg">No hay categorías configuradas</p>
-        <p className="text-gray-400 text-sm mt-2">Configure las categorías desde el panel de administración</p>
-      </div>
-    );
-  }
+  // ✅ SIEMPRE mostrar las 5 categorías principales
+  const categoriasParaMostrar = todasLasSubcategorias.slice(0, 5); // Solo las primeras 5
 
   // Componente para renderizar producto
   const renderProducto = (producto: VersionedProduct, categoria: any) => {
@@ -239,16 +254,16 @@ export function MenuDiarioRediseno({
     );
   };
 
-  // Renderizar el menú del día SIEMPRE con las 5 categorías como en el diseño original
+  // ✅ RENDERIZAR SIEMPRE las 5 categorías principales
   return (
     <>
       <div className="grid grid-cols-5 gap-4">
-        {todasLasSubcategorias.map((categoria) => {
+        {categoriasParaMostrar.map((categoria) => {
           const nombreCategoriaLimpio = cleanString(categoria.nombre);
           
           return (
             <div key={categoria.id} className="flex flex-col">
-              {/* Encabezado de la categoría - EXACTO como en el diseño original */}
+              {/* Encabezado de la categoría */}
               <div className="flex items-center justify-center mb-2 space-x-1">
                 {getIconForCategory(nombreCategoriaLimpio)}
                 <h3 className="font-medium text-center text-sm">
@@ -264,7 +279,7 @@ export function MenuDiarioRediseno({
                     .map((producto) => renderProducto(producto, categoria))
                     .filter(Boolean) // Remover elementos null
                 ) : (
-                  // EXACTO como en el diseño original - mensaje para categorías sin productos
+                  // Mensaje para categorías sin productos
                   <div className="text-sm text-gray-400 italic text-center p-2">
                     No hay productos seleccionados
                   </div>
@@ -358,29 +373,3 @@ export function MenuDiarioRediseno({
     </>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -6,7 +6,8 @@ export function useMenuDiaUI(todosLosProductos: any[], updateSeleccion: any) {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchSuggestions, setSearchSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [selectedCategoryTab, setSelectedCategoryTab] = useState<string>('b4e792ba-b00d-4348-b9e3-f34992315c23');
+  // ✅ CORREGIDO: ID real de Entradas de la BD PostgreSQL
+  const [selectedCategoryTab, setSelectedCategoryTab] = useState<string>('494fbac6-59ed-42af-af24-039298ba16b6');
   const [showProductModal, setShowProductModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [showFavorites, setShowFavorites] = useState(false);
@@ -57,6 +58,17 @@ export function useMenuDiaUI(todosLosProductos: any[], updateSeleccion: any) {
     setSelectedProduct(producto);
     setShowProductModal(true);
   }, []);
+
+  // ✅ NUEVA FUNCIONALIDAD: Debug para verificar filtrado
+  useEffect(() => {
+    console.log('🔍 Debug - selectedCategoryTab:', selectedCategoryTab);
+    console.log('🔍 Debug - productos totales:', productosStables.length);
+    const productosFiltrados = productosStables.filter(p => p.categoriaId === selectedCategoryTab);
+    console.log('🔍 Debug - productos filtrados:', productosFiltrados.length);
+    if (productosFiltrados.length > 0) {
+      console.log('🔍 Debug - primer producto filtrado:', productosFiltrados[0].nombre);
+    }
+  }, [selectedCategoryTab, productosStables]);
 
   // ✅ OPTIMIZACIÓN 5: Memoizar objeto de retorno para evitar re-renders
   return useMemo(() => ({

@@ -4,6 +4,8 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { calcularProgresoConfiguracion } from './utils/progress-validator';
+import { useConfigStore } from './store/config-store';
+import { useAuth } from '@/context/postgres-authcontext';
 
 interface ConfigProgress {
   informacionGeneral: boolean;
@@ -17,6 +19,8 @@ interface ConfigProgress {
 
 export default function ConfigRestaurantePage() {
   const router = useRouter();
+  const { cargarConfiguracion, obtenerProgresoGeneral, obtenerProgresoSeccion } = useConfigStore();
+  const { user } = useAuth();
   const [progreso, setProgreso] = useState<ConfigProgress>({
     informacionGeneral: false,
     ubicacion: false,
@@ -30,38 +34,54 @@ export default function ConfigRestaurantePage() {
   const [restaurantId, setRestaurantId] = useState<string | null>(null);
 
   /**
-   * Obtener ID del restaurante y calcular progreso real
+   * Cargar progreso real desde el store si hay restaurantId
    */
   useEffect(() => {
     const cargarProgreso = async () => {
       try {
         setCargando(true);
         
-        // Obtener ID del restaurante (mismo método que en logo-portada)
-        let id: string | null = null;
-        
-        const token = localStorage.getItem('token');
-        if (token) {
-          try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            id = payload.restaurantId || payload.restaurant?.id;
-          } catch (e) {
-            console.log('⚠️ No se pudo decodificar el token JWT');
-          }
-        }
-        
-        // Fallback con ID conocido
-        if (!id) {
-          id = "4073a4ad-b275-4e17-b197-844881f0319e";
-          console.log('🔧 Usando ID hardcodeado:', id);
-        }
-        
-        setRestaurantId(id);
-        
-        if (id) {
-          console.log('📊 Calculando progreso real para restaurante:', id);
-          const progresoCalculado = await calcularProgresoConfiguracion(id);
-          setProgreso(progresoCalculado);
+        // Si hay restaurantId, cargar progreso real
+        if (user?.restaurantId) {
+          console.log('📊 Cargando progreso real del restaurante:', user.restaurantId);
+          await cargarConfiguracion(user.restaurantId);
+          
+          // Obtener progreso actualizado del store
+          const progresoReal = obtenerProgresoGeneral();
+          const progresoInformacion = obtenerProgresoSeccion('/config-restaurante/informacion-general');
+          const progresoUbicacion = obtenerProgresoSeccion('/config-restaurante/ubicacion');
+          const progresoHorarios = obtenerProgresoSeccion('/config-restaurante/horario-comercial');
+          const progresoImagenes = obtenerProgresoSeccion('/config-restaurante/logo-portada');
+          
+          console.log('📊 Progreso por secciones:');
+          console.log('  - Información General:', progresoInformacion.porcentaje + '%');
+          console.log('  - Ubicación:', progresoUbicacion.porcentaje + '%');
+          console.log('  - Horarios:', progresoHorarios.porcentaje + '%');
+          console.log('  - Logo/Portada:', progresoImagenes.porcentaje + '%');
+          
+          setProgreso({
+            informacionGeneral: progresoInformacion.porcentaje > 0,
+            ubicacion: progresoUbicacion.porcentaje > 0,
+            horarios: progresoHorarios.porcentaje > 0,
+            logoPortada: progresoImagenes.porcentaje > 0,
+            totalCompleto: progresoReal.completados,
+            totalPasos: progresoReal.total,
+            porcentaje: progresoReal.porcentaje
+          });
+          setRestaurantId(user.restaurantId);
+        } else {
+          // Sin restaurantId, mostrar progreso vacío
+          console.log('📝 Mostrando progreso inicial vacío');
+          setRestaurantId(null);
+          setProgreso({
+            informacionGeneral: false,
+            ubicacion: false,
+            horarios: false,
+            logoPortada: false,
+            totalCompleto: 0,
+            totalPasos: 4,
+            porcentaje: 0
+          });
         }
         
       } catch (error) {
@@ -72,7 +92,46 @@ export default function ConfigRestaurantePage() {
     };
 
     cargarProgreso();
-  }, []);
+  }, [user?.restaurantId, cargarConfiguracion, obtenerProgresoGeneral, obtenerProgresoSeccion]);
+
+  /**
+   * Actualizar progreso cuando la página se vuelve visible (usuario regresa de otras páginas)
+   */
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user?.restaurantId) {
+        console.log('🔄 Página visible, actualizando progreso...');
+        // Recalcular progreso sin hacer llamada a la API
+        const progresoReal = obtenerProgresoGeneral();
+        const progresoInformacion = obtenerProgresoSeccion('/config-restaurante/informacion-general');
+        const progresoUbicacion = obtenerProgresoSeccion('/config-restaurante/ubicacion');
+        const progresoHorarios = obtenerProgresoSeccion('/config-restaurante/horario-comercial');
+        const progresoImagenes = obtenerProgresoSeccion('/config-restaurante/logo-portada');
+        
+        console.log('🔄 Progreso actualizado:');
+        console.log('  - Información General:', progresoInformacion.porcentaje + '%');
+        console.log('  - Ubicación:', progresoUbicacion.porcentaje + '%');
+        console.log('  - Horarios:', progresoHorarios.porcentaje + '%');
+        console.log('  - Logo/Portada:', progresoImagenes.porcentaje + '%');
+        
+        setProgreso({
+          informacionGeneral: progresoInformacion.porcentaje > 0,
+          ubicacion: progresoUbicacion.porcentaje > 0,
+          horarios: progresoHorarios.porcentaje > 0,
+          logoPortada: progresoImagenes.porcentaje > 0,
+          totalCompleto: progresoReal.completados,
+          totalPasos: progresoReal.total,
+          porcentaje: progresoReal.porcentaje
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user?.restaurantId, obtenerProgresoGeneral, obtenerProgresoSeccion]);
 
   /**
    * Calcular progreso para cada paso individual
@@ -97,8 +156,21 @@ export default function ConfigRestaurantePage() {
 
   /**
    * Verificar si la configuración está completa (todos los pasos)
+   * Usar lógica basada en secciones completadas, no campos individuales
    */
-  const configuracionCompleta = progreso.totalCompleto === progreso.totalPasos; // 4 de 4 pasos
+  const seccionesCompletadas = [
+    progreso.informacionGeneral,
+    progreso.ubicacion,
+    progreso.horarios,
+    progreso.logoPortada
+  ].filter(Boolean).length;
+  
+  const configuracionCompleta = seccionesCompletadas === 4; // 4 de 4 secciones
+  
+  console.log('📊 Estado de configuración:');
+  console.log('  - Secciones completadas:', seccionesCompletadas + '/4');
+  console.log('  - Configuración completa:', configuracionCompleta);
+  console.log('  - Progreso del store:', progreso.totalCompleto + '/' + progreso.totalPasos);
 
   if (cargando) {
     return (
@@ -357,7 +429,7 @@ export default function ConfigRestaurantePage() {
               Completa las configuraciones pendientes para activar todas las funciones
             </p>
             <p className="text-sm text-orange-600">
-              Progreso actual: {progreso.totalCompleto} de {progreso.totalPasos} pasos completados ({progreso.porcentaje}%)
+              Progreso actual: {seccionesCompletadas} de 4 secciones completadas ({Math.round((seccionesCompletadas / 4) * 100)}%)
             </p>
           </div>
         ) : (

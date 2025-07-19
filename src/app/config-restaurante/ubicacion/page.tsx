@@ -6,6 +6,7 @@ import { useToast } from '@/shared/Hooks/use-toast';
 import { FaArrowLeft, FaCheck, FaMapMarkerAlt, FaTimes } from 'react-icons/fa';
 import { useConfigStore } from '../store/config-store';
 import { useAuth } from '@/context/postgres-authcontext';
+import { useConfigSync } from '@/hooks/use-config-sync';
 
 interface UbicacionData {
   direccion: string;
@@ -150,6 +151,7 @@ export default function UbicacionPage() {
   const { toast } = useToast();
   const { actualizarCampo, sincronizarConBD } = useConfigStore();
   const { user, loading: authLoading } = useAuth();
+  const { syncAfterSave } = useConfigSync(); // ← Hook de sincronización
   
   const [ubicacionData, setUbicacionData] = useState<UbicacionData>({
     direccion: '',

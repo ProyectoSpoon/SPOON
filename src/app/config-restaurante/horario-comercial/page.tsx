@@ -8,10 +8,12 @@ import { FaArrowLeft, FaCheck, FaClock, FaPlus, FaTrash } from 'react-icons/fa';
 import { useHorarios } from './hooks/useHorarios';
 import { DiaSemana, DIAS_SEMANA, NOMBRES_DIAS } from './types/horarios.types';
 import { formatTo12Hour, generarOpcionesHorario } from './utils/time';
+import { useConfigSync } from '@/hooks/use-config-sync';
 
 export default function HorarioComercialPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { syncAfterSave } = useConfigSync();
   const {
     horarios,
     diaSeleccionado,
@@ -29,24 +31,35 @@ export default function HorarioComercialPage() {
   const opcionesHorario = generarOpcionesHorario();
 
   const handleVolver = () => {
-    router.push('/config-restaurante');
+    router.push('/config-restaurante/ubicacion');
   };
 
-  const handleContinuar = () => {
-    router.push('/config-restaurante/logo-portada');
-  };
-
-  const handleGuardar = async () => {
-    const exito = await guardarHorarios();
-    if (exito) {
-      toast({
-        title: 'Éxito',
-        description: 'Horarios guardados correctamente',
-      });
-    } else {
+  const handleContinuar = async () => {
+    // ✅ NUEVA LÓGICA: Guardar primero, sincronizar progreso, luego navegar
+    try {
+      const exito = await guardarHorarios();
+      if (exito) {
+        // ✅ Sincronizar progreso después de guardar exitosamente
+        await syncAfterSave();
+        
+        toast({
+          title: 'Éxito',
+          description: 'Horarios guardados correctamente',
+        });
+        
+        // ✅ Navegar a logo-portada después de guardar
+        router.push('/config-restaurante/logo-portada');
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Horarios inválidos. Verifica que la hora de cierre sea posterior a la de apertura.',
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
       toast({
         title: 'Error',
-        description: 'Horarios inválidos. Verifica que la hora de cierre sea posterior a la de apertura.',
+        description: 'Error al guardar horarios',
         variant: 'destructive'
       });
     }
@@ -70,7 +83,7 @@ export default function HorarioComercialPage() {
             </button>
             
             <div className="text-center flex-1">
-              <span className="text-sm text-gray-500 font-medium">Paso 2 de 3</span>
+              <span className="text-sm text-gray-500 font-medium">Paso 3 de 4</span>
             </div>
             
             <div className="w-20"></div>
@@ -86,7 +99,7 @@ export default function HorarioComercialPage() {
           </div>
         </div>
 
-        {/* Tabs de días de la semana */}
+        {/* Tabs de días de la semana - SIN BOTÓN GUARDAR */}
         <div className="bg-white p-5 border border-gray-100 rounded-lg shadow-sm">
           <div className="flex gap-1">
             {DIAS_SEMANA.map((dia) => (
@@ -102,20 +115,6 @@ export default function HorarioComercialPage() {
                 {NOMBRES_DIAS[dia]}
               </button>
             ))}
-            
-            <div className="ml-auto">
-              <button
-                onClick={handleGuardar}
-                disabled={guardando}
-                className={`px-6 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  guardando
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-green-600 text-white hover:bg-green-700'
-                }`}
-              >
-                {guardando ? 'Guardando...' : 'Guardar Cambios'}
-              </button>
-            </div>
           </div>
         </div>
 
@@ -302,7 +301,7 @@ export default function HorarioComercialPage() {
           </div>
         </div>
 
-        {/* Botones de navegación inferior */}
+        {/* Botones de navegación inferior - SOLO BOTÓN CONTINUAR */}
         <div className="bg-white p-5 border border-gray-100 rounded-lg shadow-sm">
           <div className="flex justify-between items-center">
             <button
@@ -315,16 +314,38 @@ export default function HorarioComercialPage() {
             
             <button
               onClick={handleContinuar}
-              disabled={!tieneHorariosConfigurados()}
+              disabled={guardando || !tieneHorariosConfigurados()}
               className={`flex items-center gap-2 px-6 py-2 rounded-lg font-medium transition-colors ${
-                tieneHorariosConfigurados()
+                tieneHorariosConfigurados() && !guardando
                   ? 'bg-orange-500 hover:bg-orange-600 text-white' 
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              <FaCheck className="text-sm" />
-              {tieneHorariosConfigurados() ? 'Continuar' : 'Configura horarios'}
+              {guardando ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Guardando...
+                </>
+              ) : (
+                <>
+                  <FaCheck className="text-sm" />
+                  {tieneHorariosConfigurados() ? 'Guardar y Continuar' : 'Configura horarios'}
+                </>
+              )}
             </button>
+          </div>
+        </div>
+
+        {/* Progreso visual */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <FaClock className="text-blue-600 text-xl" />
+            <div>
+              <h3 className="font-bold text-blue-800">Horarios de Atención</h3>
+              <p className="text-sm text-blue-700">
+                Define cuando estará abierto tu restaurante. Puedes agregar múltiples turnos por día si manejas horarios divididos.
+              </p>
+            </div>
           </div>
         </div>
 

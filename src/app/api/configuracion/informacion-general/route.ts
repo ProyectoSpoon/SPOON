@@ -67,68 +67,95 @@ export async function GET(request: NextRequest) {
   try {
     console.log('🔍 GET /api/configuracion/informacion-general');
     
-    // Obtener restaurantId (desde token, query params, o fallback)
-    const restaurantId = await getRestaurantId(request);
-    if (!restaurantId) {
-      return NextResponse.json(
-        { error: 'No se pudo determinar el restaurante' },
-        { status: 400 }
-      );
+    // Para la página de configuración inicial, verificar si el usuario ya tiene restaurante
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      const JWT_SECRET = process.env.JWT_SECRET;
+      
+      if (JWT_SECRET) {
+        try {
+          const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+          const userId = decoded.userId;
+          
+          // Verificar si el usuario ya tiene un restaurante
+          const existingRestaurantQuery = `
+            SELECT 
+              id, name, description, phone, email, cuisine_type_id,
+              address, city, state, country, logo_url, cover_image_url,
+              status, created_at, updated_at
+            FROM restaurant.restaurants 
+            WHERE owner_id = $1 AND status = 'active'
+            ORDER BY created_at DESC
+            LIMIT 1
+          `;
+          
+          const result = await pool.query(existingRestaurantQuery, [userId]);
+          
+          if (result.rows.length > 0) {
+            // Usuario ya tiene restaurante - devolver datos existentes
+            const restaurant = result.rows[0];
+            
+            const responseData = {
+              nombreRestaurante: restaurant.name || '',
+              descripcion: restaurant.description || '',
+              telefono: restaurant.phone || '',
+              email: restaurant.email || '',
+              tipoComida: restaurant.cuisine_type_id || '',  // ✅ Usar cuisine_type_id consistentemente
+              direccion: restaurant.address || '',
+              ciudad: restaurant.city || '',
+              estado: restaurant.state || '',
+              pais: restaurant.country || '',
+              logoUrl: restaurant.logo_url || '',
+              portadaUrl: restaurant.cover_image_url || '',
+              statusRestaurante: restaurant.status || '',
+              fechaCreacion: restaurant.created_at,
+              fechaActualizacion: restaurant.updated_at,
+              restaurantId: restaurant.id
+            };
+            
+            console.log('✅ Restaurante existente encontrado:', restaurant.name);
+            console.log('📊 Datos enviados al dashboard:');
+            console.log('  - Nombre:', responseData.nombreRestaurante);
+            console.log('  - Email:', responseData.email);
+            console.log('  - Teléfono:', responseData.telefono);
+            console.log('  - Tipo Comida:', responseData.tipoComida);
+            console.log('  - Ciudad:', responseData.ciudad);
+            console.log('  - Restaurant ID:', responseData.restaurantId);
+            return NextResponse.json(responseData);
+          } else {
+            // Usuario no tiene restaurante - devolver datos vacíos para formulario nuevo
+            console.log('📝 Usuario sin restaurante, devolviendo formulario vacío');
+            return NextResponse.json({
+              nombreRestaurante: '',
+              descripcion: '',
+              telefono: '',
+              email: decoded.email || '', // Pre-llenar con email del usuario
+              tipoComida: '',
+              direccion: '',
+              ciudad: '',
+              estado: '',
+              pais: 'Colombia', // Valor por defecto
+              logoUrl: '',
+              portadaUrl: '',
+              statusRestaurante: 'draft',
+              fechaCreacion: null,
+              fechaActualizacion: null,
+              restaurantId: null,
+              isNewRestaurant: true
+            });
+          }
+        } catch (jwtError) {
+          console.error('❌ Error decodificando token:', jwtError);
+        }
+      }
     }
     
-    const query = `
-      SELECT 
-        name,
-        description,
-        phone,
-        email,
-        cuisine_type,
-        address,
-        city,
-        state,
-        country,
-        logo_url,
-        cover_image_url,
-        status,
-        created_at,
-        updated_at
-      FROM restaurant.restaurants 
-      WHERE id = $1
-    `;
-    
-    const result = await pool.query(query, [restaurantId]);
-    
-    if (result.rows.length === 0) {
-      console.log('❌ Restaurante no encontrado:', restaurantId);
-      return NextResponse.json(
-        { error: 'Restaurante no encontrado' },
-        { status: 404 }
-      );
-    }
-    
-    const restaurant = result.rows[0];
-    
-    // Mapear campos de BD a formato esperado por el frontend
-    const responseData = {
-      nombreRestaurante: restaurant.name || '',
-      descripcion: restaurant.description || '',
-      telefono: restaurant.phone || '',
-      email: restaurant.email || '',
-      tipoComida: restaurant.cuisine_type || '',
-      direccion: restaurant.address || '',
-      ciudad: restaurant.city || '',
-      estado: restaurant.state || '',
-      pais: restaurant.country || '',
-      logoUrl: restaurant.logo_url || '',
-      portadaUrl: restaurant.cover_image_url || '',
-      statusRestaurante: restaurant.status || '',
-      fechaCreacion: restaurant.created_at,
-      fechaActualizacion: restaurant.updated_at
-    };
-    
-    console.log('✅ Información general obtenida correctamente para:', restaurant.name);
-    
-    return NextResponse.json(responseData);
+    // Si no hay token válido, devolver error
+    return NextResponse.json(
+      { error: 'Token de autenticación requerido' },
+      { status: 401 }
+    );
     
   } catch (error) {
     console.error('❌ Error obteniendo información general:', error);
@@ -140,20 +167,11 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * POST - Actualizar información general del restaurante
+ * POST - Crear o actualizar información general del restaurante
  */
 export async function POST(request: NextRequest) {
   try {
     console.log('💾 POST /api/configuracion/informacion-general');
-    
-    // Obtener restaurantId (desde token, query params, o fallback)
-    const restaurantId = await getRestaurantId(request);
-    if (!restaurantId) {
-      return NextResponse.json(
-        { error: 'No se pudo determinar el restaurante' },
-        { status: 400 }
-      );
-    }
     
     const data = await request.json();
     console.log('📝 Datos recibidos:', Object.keys(data));
@@ -175,55 +193,144 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const updateQuery = `
-      UPDATE restaurant.restaurants 
-      SET 
-        name = $1,
-        description = $2,
-        phone = $3,
-        email = $4,
-        cuisine_type = $5,
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = $6
-      RETURNING id, name, email, phone, cuisine_type, updated_at
-    `;
-    
-    const values = [
-      data.nombreRestaurante.trim(),
-      data.descripcion?.trim() || null,
-      data.telefono.trim(),
-      data.email.toLowerCase().trim(),
-      data.tipoComida?.trim() || null,
-      restaurantId
-    ];
-    
-    const result = await pool.query(updateQuery, values);
-    
-    if (result.rows.length === 0) {
+    // Obtener userId del token
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
-        { error: 'Restaurante no encontrado' },
-        { status: 404 }
+        { error: 'Token de autenticación requerido' },
+        { status: 401 }
       );
     }
     
-    const updatedRestaurant = result.rows[0];
-    console.log('✅ Información general actualizada:', updatedRestaurant.name);
+    const token = authHeader.substring(7);
+    const JWT_SECRET = process.env.JWT_SECRET;
     
-    return NextResponse.json({
-      success: true,
-      message: 'Información general actualizada correctamente',
-      data: {
-        id: updatedRestaurant.id,
-        name: updatedRestaurant.name,
-        email: updatedRestaurant.email,
-        phone: updatedRestaurant.phone,
-        cuisineType: updatedRestaurant.cuisine_type,
-        updatedAt: updatedRestaurant.updated_at
-      }
-    });
+    if (!JWT_SECRET) {
+      return NextResponse.json(
+        { error: 'Error de configuración del servidor' },
+        { status: 500 }
+      );
+    }
+    
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+    } catch (jwtError) {
+      return NextResponse.json(
+        { error: 'Token inválido' },
+        { status: 401 }
+      );
+    }
+    
+    const userId = decoded.userId;
+    
+    // Verificar si el usuario ya tiene un restaurante
+    const existingRestaurantQuery = `
+      SELECT id FROM restaurant.restaurants 
+      WHERE owner_id = $1 AND status = 'active'
+      LIMIT 1
+    `;
+    
+    const existingResult = await pool.query(existingRestaurantQuery, [userId]);
+    
+    if (existingResult.rows.length > 0) {
+      // ACTUALIZAR restaurante existente
+      const restaurantId = existingResult.rows[0].id;
+      
+      const updateQuery = `
+        UPDATE restaurant.restaurants 
+        SET 
+          name = $1,
+          description = $2,
+          phone = $3,
+          email = $4,
+          cuisine_type_id = $5,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = $6
+        RETURNING id, name, email, phone, cuisine_type_id, updated_at
+      `;
+      
+      const values = [
+        data.nombreRestaurante.trim(),
+        data.descripcion?.trim() || null,
+        data.telefono.trim(),
+        data.email.toLowerCase().trim(),
+        data.tipoComida?.trim() || null,
+        restaurantId
+      ];
+      
+      const result = await pool.query(updateQuery, values);
+      const updatedRestaurant = result.rows[0];
+      
+      console.log('✅ Restaurante actualizado:', updatedRestaurant.name);
+      
+      return NextResponse.json({
+        success: true,
+        message: 'Información del restaurante actualizada correctamente',
+        data: {
+          id: updatedRestaurant.id,
+          name: updatedRestaurant.name,
+          email: updatedRestaurant.email,
+          phone: updatedRestaurant.phone,
+          cuisineType: updatedRestaurant.cuisine_type,
+          updatedAt: updatedRestaurant.updated_at,
+          isNew: false
+        }
+      });
+      
+    } else {
+      // CREAR nuevo restaurante
+      const createQuery = `
+        INSERT INTO restaurant.restaurants (
+          name, description, phone, email, cuisine_type_id,
+          address, city, state, country,
+          status, owner_id, created_by,
+          created_at, updated_at
+        ) VALUES (
+          $1, $2, $3, $4, $5,
+          $6, $7, $8, $9,
+          'active', $10, $10,
+          CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+        )
+        RETURNING id, name, email, phone, cuisine_type_id, created_at, updated_at
+      `;
+      
+      const values = [
+        data.nombreRestaurante.trim(),
+        data.descripcion?.trim() || null,
+        data.telefono.trim(),
+        data.email.toLowerCase().trim(),
+        data.tipoComida?.trim() || null,
+        data.direccion?.trim() || null,
+        data.ciudad?.trim() || null,
+        data.estado?.trim() || null,
+        data.pais?.trim() || 'Colombia',
+        userId
+      ];
+      
+      const result = await pool.query(createQuery, values);
+      const newRestaurant = result.rows[0];
+      
+      console.log('✅ Nuevo restaurante creado:', newRestaurant.name);
+      
+      return NextResponse.json({
+        success: true,
+        message: 'Restaurante creado correctamente',
+        data: {
+          id: newRestaurant.id,
+          name: newRestaurant.name,
+          email: newRestaurant.email,
+          phone: newRestaurant.phone,
+          cuisineType: newRestaurant.cuisine_type_id,  // ✅ Usar cuisine_type_id consistentemente
+          createdAt: newRestaurant.created_at,
+          updatedAt: newRestaurant.updated_at,
+          isNew: true
+        }
+      });
+    }
     
   } catch (error: any) {
-    console.error('❌ Error actualizando información general:', error);
+    console.error('❌ Error procesando información general:', error);
     
     // Manejar errores específicos de PostgreSQL
     if (error?.code === '23505') { // Unique constraint violation
@@ -288,7 +395,7 @@ export async function PUT(request: NextRequest) {
     }
     
     if (data.tipoComida !== undefined) {
-      updates.push(`cuisine_type = $${paramIndex}`);
+      updates.push(`cuisine_type_id = $${paramIndex}`);
       values.push(data.tipoComida?.trim() || null);
       paramIndex++;
     }
@@ -307,7 +414,7 @@ export async function PUT(request: NextRequest) {
       UPDATE restaurant.restaurants 
       SET ${updates.join(', ')}
       WHERE id = $${paramIndex}
-      RETURNING id, name, description, phone, email, cuisine_type, updated_at
+      RETURNING id, name, description, phone, email, cuisine_type_id, updated_at
     `;
     
     const result = await pool.query(query, values);

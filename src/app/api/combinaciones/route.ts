@@ -28,8 +28,7 @@ export async function GET() {
       SELECT 
         mc.id,
         mc.name,
-        mc.description,
-        mc.base_price,
+        mmc.base_price,
         mc.special_price,
         mc.is_available,
         mc.is_featured,
@@ -133,8 +132,8 @@ export async function GET() {
       id: row.id,
       nombre: row.name,
       name: row.name, // Para compatibilidad
-      descripcion: row.description || '',
-      description: row.description || '',
+      descripcion: '' || '',
+      description: '' || '',
       precio: parseFloat(row.base_price) || 0,
       precioBase: parseFloat(row.base_price) || 0,
       precioEspecial: row.special_price ? parseFloat(row.special_price) : null,

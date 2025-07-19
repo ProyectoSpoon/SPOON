@@ -29,21 +29,51 @@ export function useHorarios() {
   const { actualizarCampo } = useConfigStore();
   const { toast } = useToast();
 
-  // Cargar horarios desde la API
+  // Cargar horarios desde la API del dashboard
   const cargarHorarios = useCallback(async () => {
-    if (!RESTAURANT_ID) return;
-
     try {
       setCargando(true);
-      const response = await fetch(`/api/restaurants/${RESTAURANT_ID}/business-hours`);
+      console.log('🔍 Cargando horarios desde dashboard API...');
+      
+      // Obtener token de autenticación
+      const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch('/api/configuracion/horarios', {
+        headers
+      });
       
       if (response.ok) {
         const data = await response.json();
-        if (data.horarios && Object.keys(data.horarios).length > 0) {
-          setHorarios(data.horarios);
+        console.log('✅ Datos de horarios recibidos:', data);
+        
+        if (data.horarioRegular) {
+          // Convertir formato de la API del dashboard al formato del hook
+          const horariosConvertidos: HorariosRestaurante = { ...HORARIOS_INICIALES };
+          
+          Object.entries(data.horarioRegular).forEach(([dia, horario]: [string, any]) => {
+            if (dia in horariosConvertidos) {
+              horariosConvertidos[dia as DiaSemana] = {
+                abierto: horario.abierto || false,
+                turnos: horario.abierto ? [{
+                  horaApertura: horario.horaApertura || '08:00',
+                  horaCierre: horario.horaCierre || '18:00'
+                }] : []
+              };
+            }
+          });
+          
+          setHorarios(horariosConvertidos);
+          console.log('✅ Horarios convertidos y cargados:', horariosConvertidos);
           
           // Actualizar store si hay horarios configurados
-          const tieneHorarios = Object.values(data.horarios).some((dia: any) => 
+          const tieneHorarios = Object.values(horariosConvertidos).some(dia => 
             dia.abierto && dia.turnos.length > 0
           );
           
@@ -51,17 +81,15 @@ export function useHorarios() {
             actualizarCampo('/config-restaurante/horario-comercial', 'horarios', true);
           }
         } else {
-          // Si no hay datos de la API, mantener horarios iniciales
-          console.log('No se encontraron horarios guardados, usando por defecto');
+          console.log('⚠️ No se encontraron horarios guardados, usando por defecto');
           setHorarios(HORARIOS_INICIALES);
         }
       } else {
-        console.log('No se encontraron horarios guardados, usando por defecto');
+        console.log('⚠️ API respondió con error, usando horarios por defecto');
         setHorarios(HORARIOS_INICIALES);
       }
     } catch (error) {
-      console.error('Error cargando horarios:', error);
-      // En caso de error, usar horarios por defecto
+      console.error('❌ Error cargando horarios:', error);
       setHorarios(HORARIOS_INICIALES);
       toast({
         title: 'Aviso',
@@ -157,7 +185,7 @@ const toggleDiaAbierto = useCallback((dia: DiaSemana, abierto: boolean) => {
     return true;
   }, [horarios]);
 
-  // Guardar horarios en la API
+  // Guardar horarios en la API del dashboard
   const guardarHorarios = useCallback(async () => {
     if (!validarHorarios()) {
       toast({
@@ -168,23 +196,35 @@ const toggleDiaAbierto = useCallback((dia: DiaSemana, abierto: boolean) => {
       return false;
     }
 
-    if (!RESTAURANT_ID) {
-      toast({
-        title: 'Error',
-        description: 'No se encontró el ID del restaurante',
-        variant: 'destructive'
-      });
-      return false;
-    }
-
     setGuardando(true);
     try {
-      const response = await fetch(`/api/restaurants/${RESTAURANT_ID}/business-hours`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ horarios }),
+      console.log('💾 Guardando horarios en dashboard API...');
+      
+      // Convertir formato del hook al formato de la API del dashboard
+      const horarioRegular: any = {};
+      
+      Object.entries(horarios).forEach(([dia, horario]) => {
+        horarioRegular[dia] = {
+          abierto: horario.abierto,
+          horaApertura: horario.turnos.length > 0 ? horario.turnos[0].horaApertura : '08:00',
+          horaCierre: horario.turnos.length > 0 ? horario.turnos[0].horaCierre : '18:00'
+        };
+      });
+      
+      // Obtener token de autenticación
+      const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch('/api/configuracion/horarios', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ horarioRegular }),
       });
 
       if (!response.ok) {
@@ -203,11 +243,12 @@ const toggleDiaAbierto = useCallback((dia: DiaSemana, abierto: boolean) => {
           description: 'Horarios guardados correctamente'
         });
         
+        console.log('✅ Horarios guardados exitosamente');
         return true;
       }
       
     } catch (error) {
-      console.error('Error al guardar horarios:', error);
+      console.error('❌ Error al guardar horarios:', error);
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Error al guardar horarios',

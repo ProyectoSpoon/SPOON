@@ -25,17 +25,42 @@ export function useMenuDiaData(updateProductosMenu: any, updateProductosSeleccio
         if (data.restaurantId) {
           setRestaurantId(data.restaurantId);
           console.log('🏪 Restaurant ID establecido:', data.restaurantId);
+          
+          // ✅ NUEVA FUNCIONALIDAD: CARGAR PRODUCTOS DISPONIBLES DEL RESTAURANTE
+          console.log('📡 Cargando productos del restaurante...');
+          try {
+            const productosResponse = await fetch(`/api/productos?restauranteId=${data.restaurantId}`);
+            if (productosResponse.ok) {
+              const productosData = await productosResponse.json();
+              console.log('📦 Productos del restaurante cargados:', productosData.count || 0);
+              console.log('🏗️ Arquitectura detectada:', productosData.architecture || 'legacy');
+              
+              if (productosData.success && productosData.data?.length > 0) {
+                console.log('✅ Actualizando productos seleccionados con datos nuevos');
+                setProductosDB(productosData.data);
+                updateProductosSeleccionados(productosData.data);
+              } else {
+                console.log('⚠️ No se encontraron productos para el restaurante');
+                setProductosDB([]);
+                updateProductosSeleccionados([]);
+              }
+            } else {
+              console.error('❌ Error al cargar productos:', productosResponse.status);
+            }
+          } catch (productosError) {
+            console.error('❌ Error en llamada de productos:', productosError);
+          }
         }
 
         setMenuDiaDB(data.menuDia);
         
-        // ✅ PROCESAR TODOS LOS PRODUCTOS DE LA BD
+        // ✅ MANTENER PROCESAMIENTO DE PRODUCTOS LEGACY (por compatibilidad)
         const todosLosProductos = data.todosLosProductos || [];
-        console.log('📦 Productos recibidos de BD:', todosLosProductos.length);
-        setProductosDB(todosLosProductos);
-
-        // ✅ CONVERTIR Y ACTUALIZAR PRODUCTOS SELECCIONADOS
-        if (todosLosProductos.length > 0) {
+        console.log('📦 Productos legacy recibidos de BD:', todosLosProductos.length);
+        
+        // Solo usar productos legacy si no hay productos nuevos
+        if (todosLosProductos.length > 0 && productosDB.length === 0) {
+          // ✅ CONVERTIR Y ACTUALIZAR PRODUCTOS SELECCIONADOS (LEGACY)
           const productosConvertidos = todosLosProductos.map((prod: any) => {
             try {
               return {
@@ -66,12 +91,13 @@ export function useMenuDiaData(updateProductosMenu: any, updateProductosSeleccio
                 esEspecial: false,
               };
             } catch (error) {
-              console.warn('Error convirtiendo producto:', error);
+              console.warn('Error convirtiendo producto legacy:', error);
               return null;
             }
           }).filter(Boolean);
           
-          console.log('✅ Productos convertidos:', productosConvertidos.length);
+          console.log('✅ Productos legacy convertidos:', productosConvertidos.length);
+          setProductosDB(productosConvertidos);
           updateProductosSeleccionados(productosConvertidos);
         }
 

@@ -1,18 +1,18 @@
-// src/services/categorias.service.ts 
+// src/services/categorias.service.ts
 import { Categoria } from '@/utils/menuCache.utils';
 
 // Interfaz actualizada para coincidir con la respuesta de la API (nombres en español)
 export interface CategoriaAPI {
   id: string;
-  nombre: string;                  // API devuelve "nombre"
-  tipo: string;                    // API devuelve "tipo" 
-  orden: number;                   // API devuelve "orden"
-  descripcion?: string;            // API devuelve "descripcion"
-  parentId?: string;               // API devuelve "parentId" - NUEVO
-  activo: boolean;                 // API devuelve "activo"
-  restauranteId: string;           // API devuelve "restauranteId"
-  createdAt: string;               // API devuelve "createdAt"
-  updatedAt: string;               // API devuelve "updatedAt"
+  nombre: string; // API devuelve "nombre"
+  tipo: string; // API devuelve "tipo"
+  orden: number; // API devuelve "orden"
+  descripcion?: string; // API devuelve "descripcion"
+  parentId?: string; // API devuelve "parentId" - NUEVO
+  activo: boolean; // API devuelve "activo"
+  restauranteId: string; // API devuelve "restauranteId"
+  createdAt: string; // API devuelve "createdAt"
+  updatedAt: string; // API devuelve "updatedAt"
 }
 
 export interface CategoriasResponse {
@@ -38,7 +38,7 @@ export class CategoriasService {
   static async obtenerCategorias(restauranteId?: string): Promise<Categoria[]> {
     try {
       // Si no se proporciona restauranteId, no enviamos parámetro para que la API use el restaurante por defecto
-      const url = restauranteId 
+      const url = restauranteId
         ? `${this.BASE_URL}?restauranteId=${encodeURIComponent(restauranteId)}`
         : this.BASE_URL;
 
@@ -81,7 +81,7 @@ export class CategoriasService {
         // Primero las principales (sin parentId)
         if (!a.parentId && b.parentId) return -1;
         if (a.parentId && !b.parentId) return 1;
-        
+
         // Si ambas son del mismo tipo, ordenar alfabéticamente
         return a.nombre.localeCompare(b.nombre);
       });
@@ -123,14 +123,14 @@ export class CategoriasService {
   private static transformarCategoriaAPI(categoriaAPI: CategoriaAPI): Categoria {
     // Determinar el tipo basado en parentId
     const tipo: 'principal' | 'subcategoria' = categoriaAPI.parentId ? 'subcategoria' : 'principal';
-    
+
     console.log(`🔄 Transformando: "${categoriaAPI.nombre}" (${categoriaAPI.tipo}) -> tipo: ${tipo}, parentId: ${categoriaAPI.parentId || 'ninguno'}`);
 
     return {
       id: categoriaAPI.id,
-      nombre: categoriaAPI.nombre,      // Ya viene en español
-      tipo: tipo,                       // Basado en parentId
-      parentId: categoriaAPI.parentId   // Ya viene transformado
+      nombre: categoriaAPI.nombre, // Ya viene en español
+      tipo: tipo, // Basado en parentId
+      parentId: categoriaAPI.parentId // Ya viene transformado
     };
   }
 
@@ -188,27 +188,46 @@ export class CategoriasService {
         .replace(/ú/g, 'u');
     };
 
-    // Mapear basado en el nombre normalizado
+    // Mapeo directo para las categorías conocidas
+    const categoriaMapeada: Record<string, string> = {
+      'entradas': 'CAT_001',
+      'principios': 'CAT_002',
+      'proteinas': 'CAT_003',
+      'acompanamientos': 'CAT_004',
+      'bebidas': 'CAT_005',
+      'almuerzos': 'CAT_006', // ⭐ AÑADIDO
+    };
+
+    const uuidMapping: Record<string, string> = {
+      'CAT_001': '494fbac6-59ed-42af-af24-039298ba16b6', // Entradas
+      'CAT_002': 'de7f4731-3eb3-4d41-b830-d35e5125f4a3', // Principios
+      'CAT_003': '299b1ba0-0678-4e0e-ba53-90e5d95e5543', // Proteinas
+      'CAT_004': '8b0751ae-1332-409e-a710-f229be0b9758', // Acompañamientos
+      'CAT_005': 'c77ffc73-b65a-4f03-adb1-810443e61799', // Bebidas
+      'CAT_006': 'eac729e6-e216-4e45-9d6f-2698c757b096', // ALMUERZOS ⭐ AÑADIDO
+    };
+
     categorias.forEach((categoria) => {
       const nombreNormalizado = normalizeText(categoria.nombre);
 
       console.log(`🔍 Procesando categoría: "${categoria.nombre}" -> normalizado: "${nombreNormalizado}"`);
 
-      if (nombreNormalizado.includes('entrada')) {
-        mapeo['CAT_001'] = categoria.id;
-        console.log(`✅ Mapeado CAT_001 -> ${categoria.id} (${categoria.nombre})`);
-      } else if (nombreNormalizado.includes('principio')) {
-        mapeo['CAT_002'] = categoria.id;
-        console.log(`✅ Mapeado CAT_002 -> ${categoria.id} (${categoria.nombre})`);
-      } else if (nombreNormalizado.includes('proteina')) {
-        mapeo['CAT_003'] = categoria.id;
-        console.log(`✅ Mapeado CAT_003 -> ${categoria.id} (${categoria.nombre})`);
-      } else if (nombreNormalizado.includes('acompanamiento')) {
-        mapeo['CAT_004'] = categoria.id;
-        console.log(`✅ Mapeado CAT_004 -> ${categoria.id} (${categoria.nombre})`);
-      } else if (nombreNormalizado.includes('bebida')) {
-        mapeo['CAT_005'] = categoria.id;
-        console.log(`✅ Mapeado CAT_005 -> ${categoria.id} (${categoria.nombre})`);
+      // Buscar el ID antiguo basado en el nombre normalizado
+      const oldId = categoriaMapeada[nombreNormalizado];
+
+      if (oldId) {
+        // Verificar si el UUID del mapeo coincide con el de la categoría actual de la API
+        if (uuidMapping[oldId] === categoria.id) {
+          mapeo[oldId] = categoria.id;
+          console.log(`✅ Mapeado ${oldId} -> ${categoria.id} (${categoria.nombre})`);
+        } else {
+          // Si el UUID no coincide, podría ser un caso donde el nombre normalizado se repite o ha cambiado
+          // En este caso, el sistema de mapeo por nombre normalizado es la fuente de la verdad
+          // Por lo tanto, si el nombre normalizado coincide, asumimos que es el mapeo correcto.
+          // Se podría añadir una advertencia si los UUIDs no coinciden.
+          mapeo[oldId] = categoria.id;
+          console.warn(`⚠️ Mapeado ${oldId} -> ${categoria.id} (${categoria.nombre}). El UUID en el mapeo predefinido era ${uuidMapping[oldId]}.`);
+        }
       } else {
         console.log(`⚠️ No se pudo mapear: "${categoria.nombre}" (normalizado: "${nombreNormalizado}")`);
       }

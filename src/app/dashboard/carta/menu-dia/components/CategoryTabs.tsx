@@ -1,12 +1,13 @@
 import React from 'react';
-import { CategoriaMenu } from '@/app/dashboard/carta/types/menu.types';
 
+// ✅ CORREGIDO: IDs reales de la base de datos PostgreSQL
 const CATEGORIAS_MENU = [
-  { id: 'b4e792ba-b00d-4348-b9e3-f34992315c23', nombre: 'Entradas', enum: CategoriaMenu.ENTRADA },
-  { id: '2d4c3ea8-843e-4312-821e-54d1c4e79dce', nombre: 'Principios', enum: CategoriaMenu.PRINCIPIO },
-  { id: '342f0c43-7f98-48fb-b0ba-e4c5d3ee72b3', nombre: 'Proteínas', enum: CategoriaMenu.PROTEINA },
-  { id: 'a272bc20-464c-443f-9283-4b5e7bfb71cf', nombre: 'Acompañamientos', enum: CategoriaMenu.ACOMPANAMIENTO },
-  { id: '6feba136-57dc-4448-8357-6f5533177cfd', nombre: 'Bebidas', enum: CategoriaMenu.BEBIDA }
+  { id: '494fbac6-59ed-42af-af24-039298ba16b6', nombre: 'Entradas' },    // Real de BD
+  { id: 'de7f4731-3eb3-4d41-b830-d35e5125f4a3', nombre: 'Principios' }, // Real de BD  
+  { id: '299b1ba0-0678-4e0e-ba53-90e5d95e5543', nombre: 'Proteínas' },  // Real de BD
+  { id: '8b0751ae-1332-409e-a710-f229be0b9758', nombre: 'Acompañamientos' }, // Real de BD
+  { id: 'c77ffc73-b65a-4f03-adb1-810443e61799', nombre: 'Bebidas' },    // Real de BD
+  { id: 'eac729e6-e216-4e45-9d6f-2698c757b096', nombre: 'ALMUERZOS' }   // Real de BD
 ];
 
 interface CategoryTabsProps {
@@ -22,10 +23,11 @@ export function CategoryTabs({ selectedCategoryTab, setSelectedCategoryTab, hand
         {CATEGORIAS_MENU.map((categoria: any) => (
           <button
             key={categoria.id}
-            className={`px-3 py-1 text-sm ${selectedCategoryTab === categoria.id
+            className={`px-3 py-1 text-sm whitespace-nowrap ${selectedCategoryTab === categoria.id
               ? 'text-spoon-primary border-b-2 border-spoon-primary'
               : 'text-gray-700 hover:text-spoon-primary'}`}
             onClick={() => {
+              console.log('📂 Categoría seleccionada:', categoria.nombre, 'ID:', categoria.id); // Debug
               setSelectedCategoryTab(categoria.id);
               handleCategoriaSeleccionada(categoria.id);
             }}
