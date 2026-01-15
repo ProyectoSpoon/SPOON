@@ -1,14 +1,6 @@
-// src/app/api/restaurants/[id]/general-info/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/database';
-import jwt from 'jsonwebtoken';
-
-interface JWTPayload {
-  userId: string;
-  email: string;
-  role?: string;
-  permissions?: string[];
-}
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 
 // GET - Obtener información general del restaurante
 export async function GET(
@@ -17,64 +9,79 @@ export async function GET(
 ) {
   try {
     const { id } = params;
-    
-    console.log('🔍 Obteniendo información general del restaurante:', id);
-    
-    const query = `
-      SELECT 
-        name,
-        description,
-        phone,
-        email,
-        cuisine_type_id,
-        address,
-        city,
-        state,
-        country,
-        logo_url,
-        cover_image_url,
-        status,
-        created_at,
-        updated_at
-      FROM restaurant.restaurants 
-      WHERE id = $1
-    `;
-    
-    const result = await pool.query(query, [id]);
-    
-    if (result.rows.length === 0) {
+    const supabase = createRouteHandlerClient({ cookies });
+
+    // Verificar sesión
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
+    console.log('🔍 GET /api/restaurants/[id]/general-info:', id);
+
+    // Si id es 'current', buscar el restaurante del usuario
+    let restaurantId = id;
+    if (id === 'current') {
+      const { data: userRestaurant } = await supabase
+        .schema('public')
+        .from('restaurants')
+        .select('id')
+        .eq('owner_id', session.user.id)
+        .single();
+
+      if (!userRestaurant) {
+        return NextResponse.json(
+          { error: 'Usuario no tiene restaurante' },
+          { status: 404 }
+        );
+      }
+
+      restaurantId = userRestaurant.id;
+    }
+
+    // SCHEMA CORRECTO: public.restaurants
+    const { data: restaurant, error } = await supabase
+      .schema('public')
+      .from('restaurants')
+      .select('*')
+      .eq('id', restaurantId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching:', error);
+      return NextResponse.json(
+        { error: 'Error al obtener información del restaurante', details: error.message },
+        { status: 500 }
+      );
+    }
+
+    if (!restaurant) {
       return NextResponse.json(
         { error: 'Restaurante no encontrado' },
         { status: 404 }
       );
     }
-    
-    const restaurant = result.rows[0];
-    
-    // Mapear campos de BD a formato esperado por el frontend
+
+    // Mapear a formato frontend - Campos reales en public.restaurants
     const responseData = {
+      restaurantId: restaurant.id,
       nombreRestaurante: restaurant.name || '',
       descripcion: restaurant.description || '',
-      telefono: restaurant.phone || '',
-      email: restaurant.email || '',
-      tipoComida: restaurant.cuisine_type_id || '',
+      telefono: restaurant.contact_phone || '',
+      email: restaurant.contact_email || '',
+      tipoComida: restaurant.cuisine_type || '',
       direccion: restaurant.address || '',
-      ciudad: restaurant.city || '',
-      estado: restaurant.state || '',
-      pais: restaurant.country || '',
-      logoUrl: restaurant.logo_url || '',
-      portadaUrl: restaurant.cover_image_url || '',
-      statusRestaurante: restaurant.status || '', // ← CAMBIADO NOMBRE
+      statusRestaurante: restaurant.status || 'active',
       fechaCreacion: restaurant.created_at,
       fechaActualizacion: restaurant.updated_at
     };
-    
-    console.log('✅ Información general obtenida correctamente');
-    
+
+    console.log('✅ Información general obtenida');
+
     return NextResponse.json(responseData);
-    
-  } catch (error) {
-    console.error('❌ Error obteniendo información general:', error);
+
+  } catch (error: any) {
+    console.error('❌ Error:', error.message);
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }
@@ -82,7 +89,7 @@ export async function GET(
   }
 }
 
-// POST - Crear o actualizar información general del restaurante
+// POST/PUT - Crear o Actualizar
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -90,272 +97,125 @@ export async function POST(
   try {
     const { id } = params;
     const data = await request.json();
-    
-    console.log('💾 Procesando información general del restaurante:', id);
-    console.log('📝 Datos recibidos:', Object.keys(data));
-    
-    // Validar datos obligatorios
-    if (!data.nombreRestaurante || !data.telefono || !data.email) {
-      return NextResponse.json(
-        { error: 'Campos obligatorios: nombreRestaurante, telefono, email' },
-        { status: 400 }
-      );
+    const supabase = createRouteHandlerClient({ cookies });
+
+    // Verificar sesión
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
-    
-    // Validar email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(data.email)) {
-      return NextResponse.json(
-        { error: 'Email inválido' },
-        { status: 400 }
-      );
-    }
-    
-    // Si el ID es 'new', crear nuevo restaurante
-    if (id === 'new') {
-      // Obtener userId del token
-      const authHeader = request.headers.get('Authorization');
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return NextResponse.json(
-          { error: 'Token de autenticación requerido' },
-          { status: 401 }
-        );
+
+    console.log('💾 POST /api/restaurants/[id]/general-info:', id);
+
+    // Preparar payload - Campos reales en public.restaurants
+    const payload: any = {
+      name: data.nombreRestaurante?.trim(),
+      contact_phone: data.telefono?.trim(),
+      description: data.descripcion?.trim() || null,
+      contact_email: session.user.email,
+      cuisine_type: data.tipoComida?.trim() || null,
+      status: 'active',
+      updated_at: new Date().toISOString()
+    };
+    // NOTA: address se actualiza en el paso de ubicación
+
+    // CREAR NUEVO
+    if (id === 'new' || !id) {
+      // Primero verificar si el usuario ya tiene un restaurante
+      const { data: existingRestaurant } = await supabase
+        .schema('public')
+        .from('restaurants')
+        .select('id')
+        .eq('owner_id', session.user.id)
+        .single();
+
+      // Si ya tiene restaurante, actualizar ese en lugar de crear uno nuevo
+      if (existingRestaurant) {
+        console.log('✅ Usuario ya tiene restaurante, actualizando:', existingRestaurant.id);
+
+        const { data: updated, error: updateError } = await supabase
+          .schema('public')
+          .from('restaurants')
+          .update(payload)
+          .eq('id', existingRestaurant.id)
+          .select()
+          .single();
+
+        if (updateError) {
+          console.error('Error updating:', updateError);
+          throw updateError;
+        }
+
+        return NextResponse.json({
+          success: true,
+          message: 'Restaurante actualizado',
+          isNew: false,
+          restaurantId: existingRestaurant.id,
+          data: updated
+        });
       }
-      
-      const token = authHeader.substring(7);
-      const JWT_SECRET = process.env.JWT_SECRET;
-      
-      if (!JWT_SECRET) {
-        return NextResponse.json(
-          { error: 'Error de configuración del servidor' },
-          { status: 500 }
-        );
+
+      // Si no tiene restaurante, crear uno nuevo
+      payload.owner_id = session.user.id;
+      payload.created_at = new Date().toISOString();
+
+      const { data: newRest, error: createError } = await supabase
+        .schema('public')
+        .from('restaurants')
+        .insert(payload)
+        .select()
+        .single();
+
+      if (createError) {
+        console.error('Error creating:', createError);
+        throw createError;
       }
-      
-      let decoded: JWTPayload;
-      try {
-        decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
-      } catch (jwtError) {
-        console.error('❌ Error verificando token:', jwtError);
-        return NextResponse.json(
-          { error: 'Token inválido' },
-          { status: 401 }
-        );
-      }
-      
-      const userId = decoded.userId;
-      console.log('👤 UserId extraído del token:', userId);
-      
-      // Crear slug único basado en el nombre
-      const slug = data.nombreRestaurante.trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim('-') + '-' + Date.now();
-      
-      // Crear nuevo restaurante (sin cuisine_type por ahora, solo campos básicos)
-      const createQuery = `
-        INSERT INTO restaurant.restaurants (
-          name, slug, description, phone, email,
-          status, owner_id, created_by,
-          created_at, updated_at
-        ) VALUES (
-          $1, $2, $3, $4, $5,
-          'active', $6, $6,
-          CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-        )
-        RETURNING id, name, slug, email, phone, created_at, updated_at
-      `;
-      
-      const values = [
-        data.nombreRestaurante.trim(),
-        slug,
-        data.descripcion?.trim() || null,
-        data.telefono.trim(),
-        data.email.toLowerCase().trim(),
-        userId
-      ];
-      
-      console.log('📝 Query SQL:', createQuery);
-      console.log('📝 Valores:', values);
-      
-      const result = await pool.query(createQuery, values);
-      console.log('✅ Query ejecutada exitosamente');
-      
-      const newRestaurant = result.rows[0];
-      console.log('🏪 Restaurante creado:', newRestaurant);
-      
-      console.log('✅ Nuevo restaurante creado:', newRestaurant.name);
-      
+
+      console.log('✅ Restaurante creado:', newRest.id);
+
       return NextResponse.json({
         success: true,
-        message: 'Restaurante creado correctamente',
+        message: 'Restaurante creado',
         isNew: true,
-        data: {
-          id: newRestaurant.id,
-          name: newRestaurant.name,
-          email: newRestaurant.email,
-          phone: newRestaurant.phone,
-          cuisineType: newRestaurant.cuisine_type,
-          createdAt: newRestaurant.created_at,
-          updatedAt: newRestaurant.updated_at
-        }
+        restaurantId: newRest.id,
+        data: newRest
       });
-      
     } else {
-      // Actualizar restaurante existente
-      const updateQuery = `
-        UPDATE restaurant.restaurants 
-        SET 
-          name = $1,
-          description = $2,
-          phone = $3,
-          email = $4,
-          cuisine_type = $5,
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = $6
-        RETURNING id, name, email, phone, cuisine_type, updated_at
-      `;
-      
-      const values = [
-        data.nombreRestaurante.trim(),
-        data.descripcion?.trim() || null,
-        data.telefono.trim(),
-        data.email.toLowerCase().trim(),
-        data.tipoComida?.trim() || null,
-        id
-      ];
-      
-      const result = await pool.query(updateQuery, values);
-      
-      if (result.rows.length === 0) {
-        return NextResponse.json(
-          { error: 'Restaurante no encontrado' },
-          { status: 404 }
-        );
+      // ACTUALIZAR EXISTENTE
+      delete payload.created_at;
+      delete payload.owner_id;
+
+      const { data: updated, error: updateError } = await supabase
+        .schema('public')
+        .from('restaurants')
+        .update(payload)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('Error updating:', updateError);
+        throw updateError;
       }
-      
-      const updatedRestaurant = result.rows[0];
-      console.log('✅ Información general actualizada:', updatedRestaurant.name);
-      
+
+      console.log('✅ Restaurante actualizado:', updated.id);
+
       return NextResponse.json({
         success: true,
-        message: 'Información general actualizada correctamente',
+        message: 'Restaurante actualizado',
         isNew: false,
-        data: {
-          id: updatedRestaurant.id,
-          name: updatedRestaurant.name,
-          email: updatedRestaurant.email,
-          phone: updatedRestaurant.phone,
-          cuisineType: updatedRestaurant.cuisine_type,
-          updatedAt: updatedRestaurant.updated_at
-        }
+        restaurantId: updated.id,
+        data: updated
       });
     }
-    
-  } catch (error: any) { // ← TIPADO CORREGIDO
-    console.error('❌ Error actualizando información general:', error);
-    
-    // Manejar errores específicos de PostgreSQL
-    if (error?.code === '23505') { // Unique constraint violation
-      return NextResponse.json(
-        { error: 'El email ya está en uso por otro restaurante' },
-        { status: 409 }
-      );
-    }
-    
+
+  } catch (error: any) {
+    console.error('❌ Error:', error.message);
     return NextResponse.json(
-      { error: 'Error interno del servidor' },
+      { error: error.message || 'Error interno' },
       { status: 500 }
     );
   }
 }
 
-// PUT - Actualizar información completa (alternativa a POST)
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const { id } = params;
-    const data = await request.json();
-    
-    console.log('🔄 Actualizando información completa del restaurante:', id);
-    
-    // Preparar campos para actualizar
-    const updates = [];
-    const values = [];
-    let paramIndex = 1;
-    
-    if (data.nombreRestaurante !== undefined) {
-      updates.push(`name = $${paramIndex}`);
-      values.push(data.nombreRestaurante.trim());
-      paramIndex++;
-    }
-    
-    if (data.descripcion !== undefined) {
-      updates.push(`description = $${paramIndex}`);
-      values.push(data.descripcion?.trim() || null);
-      paramIndex++;
-    }
-    
-    if (data.telefono !== undefined) {
-      updates.push(`phone = $${paramIndex}`);
-      values.push(data.telefono.trim());
-      paramIndex++;
-    }
-    
-    if (data.email !== undefined) {
-      updates.push(`email = $${paramIndex}`);
-      values.push(data.email.toLowerCase().trim());
-      paramIndex++;
-    }
-    
-    if (data.tipoComida !== undefined) {
-      updates.push(`cuisine_type = $${paramIndex}`);
-      values.push(data.tipoComida?.trim() || null);
-      paramIndex++;
-    }
-    
-    if (updates.length === 0) {
-      return NextResponse.json(
-        { error: 'No hay datos para actualizar' },
-        { status: 400 }
-      );
-    }
-    
-    updates.push(`updated_at = CURRENT_TIMESTAMP`);
-    values.push(id);
-    
-    const query = `
-      UPDATE restaurant.restaurants 
-      SET ${updates.join(', ')}
-      WHERE id = $${paramIndex}
-      RETURNING id, name, description, phone, email, cuisine_type, updated_at
-    `;
-    
-    const result = await pool.query(query, values);
-    
-    if (result.rows.length === 0) {
-      return NextResponse.json(
-        { error: 'Restaurante no encontrado' },
-        { status: 404 }
-      );
-    }
-    
-    console.log('✅ Información completa actualizada correctamente');
-    
-    return NextResponse.json({
-      success: true,
-      data: result.rows[0]
-    });
-    
-  } catch (error: any) { // ← TIPADO CORREGIDO
-    console.error('❌ Error actualizando información completa:', error);
-    return NextResponse.json(
-      { error: 'Error interno del servidor' },
-      { status: 500 }
-    );
-  }
-}
+export { POST as PUT };

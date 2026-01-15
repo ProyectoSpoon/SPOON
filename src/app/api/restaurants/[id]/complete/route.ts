@@ -1,6 +1,7 @@
 // src/app/api/restaurants/[id]/complete/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/database';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 
 /**
  * GET - Obtener todos los datos del restaurante para validar progreso
@@ -11,52 +12,48 @@ export async function GET(
 ) {
   try {
     const { id } = params;
-    
+
     console.log(`🔍 GET /api/restaurants/${id}/complete - Obteniendo datos completos`);
-    
-    // Query con TODAS las columnas reales de la tabla
-    const query = `
-      SELECT 
+
+    const supabase = createRouteHandlerClient({ cookies });
+
+    const { data: restaurant, error } = await supabase
+      .schema('public')
+      .from('restaurants')
+      .select(`
         id,
         name,
         slug,
         description,
         address,
-        city,
-        state,
-        country,
         latitude,
         longitude,
         phone,
         email,
         logo_url,
         cover_image_url,
-        cuisine_type,
-        price_range,
-        capacity,
-        owner_id,
+        cuisine_type_id,
+        city_id,
+        department_id,
+        country_id,
         status,
+        owner_id,
         created_at,
         updated_at,
         created_by,
         updated_by
-      FROM restaurant.restaurants 
-      WHERE id = $1
-    `;
-    
-    console.log(`🗄️ Ejecutando query para restaurant_id: ${id}`);
-    const result = await pool.query(query, [id]);
-    
-    if (result.rows.length === 0) {
-      console.log(`❌ Restaurante no encontrado: ${id}`);
+      `)
+      .eq('id', id)
+      .single();
+
+    if (error || !restaurant) {
+      console.log(`❌ Restaurante no encontrado: ${id}`, error);
       return NextResponse.json(
         { error: 'Restaurante no encontrado' },
         { status: 404 }
       );
     }
-    
-    const restaurant = result.rows[0];
-    
+
     console.log(`✅ Datos completos obtenidos para: ${restaurant.name}`);
     console.log(`📊 Verificación de campos:`, {
       'Información General': {
@@ -64,22 +61,23 @@ export async function GET(
         description: !!restaurant.description,
         phone: !!restaurant.phone,
         email: !!restaurant.email,
-        cuisine_type: !!restaurant.cuisine_type
+        cuisine_type_id: !!restaurant.cuisine_type_id
       },
       'Ubicación': {
         address: !!restaurant.address,
-        city: !!restaurant.city,
-        state: !!restaurant.state,
-        country: !!restaurant.country
+        latitude: !!restaurant.latitude,
+        longitude: !!restaurant.longitude,
+        city_id: !!restaurant.city_id,
+        department_id: !!restaurant.department_id
       },
       'Imágenes': {
         logo_url: !!restaurant.logo_url,
         cover_image_url: !!restaurant.cover_image_url
       }
     });
-    
+
     return NextResponse.json(restaurant);
-    
+
   } catch (error) {
     console.error('❌ Error al obtener datos completos:', error);
     return NextResponse.json(

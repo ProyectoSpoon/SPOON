@@ -1,5 +1,5 @@
 // /shared/utils/horarios/utilidades-horarios.ts
-import { RangoHorario, DiaSemana, FechaExcepcion } from '@/shared/types/horarios';
+import { RangoHorario, DiaSemana, FechaExcepcion } from '@/shared/types/horarios/indice';
 import { DateTime } from 'luxon';
 
 export const utilidadesHorarios = {
@@ -23,21 +23,21 @@ export const utilidadesHorarios = {
 
   esDiaHabil(fecha: Date, excepciones: FechaExcepcion[] = []): boolean {
     const dt = DateTime.fromJSDate(fecha);
-    
+
     // Verificar excepciones
-    const esExcepcion = excepciones.some(exc => 
+    const esExcepcion = excepciones.some(exc =>
       DateTime.fromJSDate(exc.fecha).hasSame(dt, 'day')
     );
-    
+
     if (esExcepcion) return false;
-    
+
     // Verificar fin de semana
     const diaSemana = dt.weekday;
     return diaSemana !== 6 && diaSemana !== 7;
   },
 
   obtenerProximoDiaHabil(
-    fecha: Date, 
+    fecha: Date,
     excepciones: FechaExcepcion[] = []
   ): Date {
     let dt = DateTime.fromJSDate(fecha);

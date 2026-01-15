@@ -3,7 +3,7 @@
 import { useSetPageTitle } from '@/shared/Context/page-title-context';
 
 // Importar desde el index
-import { KPIsCards, FiltroPeriodo, GraficoVentasPeriodo, ComparativaMensual } from '../../components/AnalisisVentas';
+import { KPIsCards, FiltroPeriodo, GraficoVentasPeriodo, ComparativaMensual } from '@/app/dashboard/estadisticas/components/AnalisisVentas';
 
 export default function AnalisisVentasPage() {
 
@@ -72,14 +72,14 @@ export default function AnalisisVentasPage() {
       <KPIsCards kpis={kpisData as any} />
 
       {/* Filtro de período */}
-      <FiltroPeriodo 
+      <FiltroPeriodo
         periodoSeleccionado="mes"
-        onPeriodoChange={() => {}}
+        onPeriodoChange={() => { }}
       />
 
       {/* Gráficos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <GraficoVentasPeriodo 
+        <GraficoVentasPeriodo
           datos={[]}
           titulo="Ventas del Período"
           periodoActual="Noviembre 2024"

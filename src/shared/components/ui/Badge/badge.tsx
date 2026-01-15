@@ -2,17 +2,18 @@
 import React from 'react';
 import { BadgeProps } from './types';
 
-export const Badge = ({ 
-  children, 
+export const Badge = ({
+  children,
   variant = 'default',
   size = 'md',
-  className = '' 
+  className = ''
 }: BadgeProps) => {
   const variantStyles = {
     default: 'bg-neutral-100 text-neutral-800',
     success: 'bg-green-100 text-green-800',
     warning: 'bg-yellow-100 text-yellow-800',
-    error: 'bg-red-100 text-red-800'
+    error: 'bg-red-100 text-red-800',
+    outline: 'border border-neutral-200 text-neutral-800'
   };
 
   const sizeStyles = {

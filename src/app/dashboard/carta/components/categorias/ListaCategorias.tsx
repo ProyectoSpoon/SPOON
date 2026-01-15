@@ -12,13 +12,13 @@ import {
   DialogFooter,
 } from "@/shared/components/ui/Dialog";
 import { toast } from 'sonner';
-import { useCategorias } from '../../hooks/useCategorias';
+import { useCategorias } from '@/app/dashboard/carta/hooks/useCategorias';
 import { Categoria } from '@/utils/menuCache.utils';
 
 // Iconos para las subcategorías
 const ICONOS_SUBCATEGORIAS: Record<string, string> = {
   'entrada': '/iconos/sopa.png',
-  'principio': '/iconos/principio.png', 
+  'principio': '/iconos/principio.png',
   'proteina': '/iconos/carne.png',
   'acompanamiento': '/iconos/sopa.png',
   'bebida': '/iconos/bebida.png'
@@ -49,12 +49,12 @@ export function ListaCategorias({
   const [modalSubcategoria, setModalSubcategoria] = useState(false);
   const [categoriaParaSubcategoria, setCategoriaParaSubcategoria] = useState<string | null>(null);
   const [modalConfirmDelete, setModalConfirmDelete] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<{id: string, tipo: 'categoria' | 'subcategoria', parentId?: string} | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<{ id: string, tipo: 'categoria' | 'subcategoria', parentId?: string } | null>(null);
 
   // Hook para cargar categorías desde PostgreSQL
-  const { 
-    categorias: categoriasPostgreSQL, 
-    loading: cargandoCategorias, 
+  const {
+    categorias: categoriasPostgreSQL,
+    loading: cargandoCategorias,
     error: errorCategorias,
     obtenerCategorias,
     obtenerCategoriasPrincipales,
@@ -87,19 +87,19 @@ export function ListaCategorias({
   // Obtener el icono para una subcategoría basado en su nombre/tipo
   const getIconoSubcategoria = (categoria: Categoria): string => {
     const nombreLower = categoria.nombre.toLowerCase();
-    
+
     if (nombreLower.includes('entrada')) return ICONOS_SUBCATEGORIAS.entrada;
     if (nombreLower.includes('principio')) return ICONOS_SUBCATEGORIAS.principio;
     if (nombreLower.includes('proteina')) return ICONOS_SUBCATEGORIAS.proteina;
     if (nombreLower.includes('acompanamiento')) return ICONOS_SUBCATEGORIAS.acompanamiento;
     if (nombreLower.includes('bebida')) return ICONOS_SUBCATEGORIAS.bebida;
-    
+
     return '/iconos/sopa.png'; // Icono por defecto
   };
 
   // Filtrar categorías principales y subcategorías
   const categoriasPrincipales = categorias.filter(cat => cat.tipo === 'principal');
-  
+
   // Obtener subcategorías para una categoría principal
   const getSubcategoriasPorCategoria = (parentId: string): Categoria[] => {
     return categorias.filter(cat => cat.tipo === 'subcategoria' && cat.parentId === parentId);
@@ -138,10 +138,10 @@ export function ListaCategorias({
   // Confirmar eliminación (pendiente de implementar)
   const confirmDelete = () => {
     if (!itemToDelete) return;
-    
+
     console.log('🚧 Eliminar elemento pendiente de implementar:', itemToDelete);
     toast.info('Función de eliminar pendiente de implementar');
-    
+
     setModalConfirmDelete(false);
     setItemToDelete(null);
   };
@@ -159,7 +159,7 @@ export function ListaCategorias({
         <div className="text-red-500 text-sm p-3 bg-red-50 rounded-md">
           Error al cargar categorías: {errorCategorias}
         </div>
-        <Button 
+        <Button
           onClick={() => obtenerCategorias()}
           className="w-full bg-spoon-primary hover:bg-spoon-primary-dark text-white text-sm"
         >
@@ -172,7 +172,7 @@ export function ListaCategorias({
   return (
     <div className="space-y-3">
       {/* Botón para agregar categoría principal */}
-      <Button 
+      <Button
         onClick={() => setModalCategoria(true)}
         className="w-full bg-spoon-primary hover:bg-spoon-primary-dark text-white text-sm"
         disabled={cargandoCategorias}
@@ -193,18 +193,17 @@ export function ListaCategorias({
       <div className="space-y-3">
         {categoriasPrincipales.map((categoria) => {
           const subcategorias = getSubcategoriasPorCategoria(categoria.id);
-          
+
           return (
             <div key={categoria.id} className="space-y-1 border border-gray-100 rounded-md overflow-hidden">
               {/* Categoría principal */}
               <div className="flex items-center justify-between bg-gray-50">
                 <button
                   onClick={() => handleSelectCategoria(categoria.id)}
-                  className={`flex-1 text-left flex items-center gap-2 px-3 py-1.5 transition-colors ${
-                    categoriaSeleccionada === categoria.id
+                  className={`flex-1 text-left flex items-center gap-2 px-3 py-1.5 transition-colors ${categoriaSeleccionada === categoria.id
                       ? 'bg-spoon-primary/10 text-spoon-primary font-medium'
                       : 'text-neutral-600 hover:bg-neutral-100'
-                  }`}
+                    }`}
                 >
                   <span className="text-sm whitespace-nowrap overflow-hidden text-ellipsis">
                     {categoria.nombre}
@@ -213,7 +212,7 @@ export function ListaCategorias({
                     <span className="text-xs text-gray-500">({subcategorias.length})</span>
                   )}
                 </button>
-                
+
                 <Button
                   variant="ghost"
                   size="sm"
@@ -226,7 +225,7 @@ export function ListaCategorias({
                   <Trash2 className="h-3 w-3" />
                 </Button>
               </div>
-              
+
               {/* Botón de agregar subcategoría */}
               <div className="px-3 py-1 bg-gray-50 border-t border-gray-100">
                 <Button
@@ -239,7 +238,7 @@ export function ListaCategorias({
                   Agregar subcategoría
                 </Button>
               </div>
-              
+
               {/* Subcategorías (solo mostrar si la categoría principal está seleccionada) */}
               {categoriaSeleccionada === categoria.id && (
                 <div className="pl-3 space-y-1 py-1 bg-white">
@@ -247,11 +246,10 @@ export function ListaCategorias({
                     <div key={subcategoria.id} className="flex items-center justify-between">
                       <button
                         onClick={() => handleSelectSubcategoria(subcategoria.id, categoria.id)}
-                        className={`flex-1 flex items-center gap-2 px-2 py-1 rounded-md transition-colors ${
-                          subcategoriaSeleccionada === subcategoria.id
+                        className={`flex-1 flex items-center gap-2 px-2 py-1 rounded-md transition-colors ${subcategoriaSeleccionada === subcategoria.id
                             ? 'bg-spoon-primary/10 text-spoon-primary'
                             : 'text-neutral-600 hover:bg-neutral-100'
-                        }`}
+                          }`}
                       >
                         <div className="w-4 h-4 flex-shrink-0">
                           <Image
@@ -264,7 +262,7 @@ export function ListaCategorias({
                         </div>
                         <span className="text-xs">{subcategoria.nombre}</span>
                       </button>
-                      
+
                       <Button
                         variant="ghost"
                         size="sm"
@@ -278,7 +276,7 @@ export function ListaCategorias({
                       </Button>
                     </div>
                   ))}
-                  
+
                   {/* Mensaje si no hay subcategorías */}
                   {subcategorias.length === 0 && (
                     <div className="text-xs text-gray-500 text-center py-2">
@@ -290,7 +288,7 @@ export function ListaCategorias({
             </div>
           );
         })}
-        
+
         {/* Mensaje si no hay categorías principales */}
         {!cargandoCategorias && categoriasPrincipales.length === 0 && (
           <div className="text-center py-4 text-gray-500">
@@ -309,11 +307,11 @@ export function ListaCategorias({
               Función pendiente de implementar
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="py-4 text-center text-gray-500">
             <p>La funcionalidad de agregar categorías será implementada próximamente.</p>
           </div>
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalCategoria(false)}>
               Cerrar
@@ -331,11 +329,11 @@ export function ListaCategorias({
               Función pendiente de implementar
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="py-4 text-center text-gray-500">
             <p>La funcionalidad de agregar subcategorías será implementada próximamente.</p>
           </div>
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalSubcategoria(false)}>
               Cerrar
@@ -353,11 +351,11 @@ export function ListaCategorias({
               Función pendiente de implementar
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="py-4 text-center text-gray-500">
             <p>La funcionalidad de eliminar será implementada próximamente.</p>
           </div>
-          
+
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setModalConfirmDelete(false)}>
               Cancelar

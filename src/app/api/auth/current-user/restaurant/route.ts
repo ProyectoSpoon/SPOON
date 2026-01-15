@@ -1,128 +1,196 @@
-// src/app/api/auth/current-user/restaurant/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/database';
-import jwt from 'jsonwebtoken';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('🔍 === DEBUG RESTAURANT API ===');
-    
-    // Obtener token del header Authorization
-    const authHeader = request.headers.get('authorization');
-    console.log('📋 Auth header recibido:', authHeader ? `${authHeader.substring(0, 20)}...` : 'NULL');
-    
-    let token = authHeader?.replace('Bearer ', '');
-    console.log('🔑 Token extraído:', token ? `${token.substring(0, 20)}...` : 'NULL');
-    
-    if (!token) {
-      console.log('❌ No hay token en el request');
+    const supabase = createRouteHandlerClient({ cookies });
+
+    // 1. Obtener sesión del usuario
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError || !session) {
+      console.log('❌ No hay sesión activa');
       return NextResponse.json(
-        { error: 'Token de autenticación requerido' },
+        { error: 'No autorizado' },
         { status: 401 }
       );
     }
 
-    // Verificar JWT_SECRET
-    const jwtSecret = process.env.JWT_SECRET;
-    console.log('🔐 JWT_SECRET configurado:', jwtSecret ? 'SÍ' : 'NO');
-    
-    if (!jwtSecret) {
-      console.error('❌ JWT_SECRET no configurado');
-      return NextResponse.json(
-        { error: 'Error de configuración del servidor' },
-        { status: 500 }
-      );
-    }
+    const userId = session.user.id;
+    console.log('🔍 Buscando restaurante para usuario (SDK):', userId);
 
-    // Verificar y decodificar JWT
-    let decoded;
-    try {
-      decoded = jwt.verify(token, jwtSecret) as any;
-      console.log('✅ Token decodificado exitosamente');
-      console.log('👤 Datos del token:', {
-        userId: decoded.userId,
-        email: decoded.email,
-        exp: new Date(decoded.exp * 1000).toISOString()
-      });
-    } catch (jwtError: any) {
-      console.error('❌ Error verificando JWT:', jwtError.message);
-      console.log('🔍 Token que falló:', token.substring(0, 50) + '...');
-      return NextResponse.json(
-        { error: 'Token inválido' },
-        { status: 401 }
-      );
-    }
+    // 2. Buscar como OWNER
+    const { data: restaurantData, error: ownerError } = await supabase
+      .schema('restaurant')
+      .from('restaurants')
+      .select(`
+        id, name, description, address, city, state, country, 
+        latitude, longitude, phone, email, logo_url, cover_image_url, 
+        cuisine_type_id, status, created_at,
+        cuisine_type:system.cuisine_types(name)
+      `)
+      .eq('owner_id', userId)
+      .eq('status', 'active')
+      .maybeSingle();
 
-    const userId = decoded.userId;
-    
-    if (!userId) {
-      console.log('❌ No hay userId en el token decodificado');
-      return NextResponse.json(
-        { error: 'Usuario no identificado en el token' },
-        { status: 401 }
-      );
-    }
+    let restaurant: any = restaurantData;
+    let userRole = 'owner';
 
-    console.log('🔍 Buscando restaurante para usuario:', userId);
-
-    // Obtener restaurant_id del usuario (como owner)
-    const restaurantResult = await pool.query(
-      `SELECT id as restaurant_id, name, status 
-       FROM restaurant.restaurants 
-       WHERE owner_id = $1 AND status = 'active'`,
-      [userId]
-    );
-
-    console.log('🏪 Resultados owner:', restaurantResult.rows.length);
-
-    // Si no es owner, verificar si es empleado/usuario del restaurante
-    if (restaurantResult.rows.length === 0) {
+    // 3. Si no es OWNER, buscar como EMPLEADO
+    if (!restaurant) {
       console.log('👤 Usuario no es owner, verificando si es empleado...');
-      
-      const employeeResult = await pool.query(
-        `SELECT ru.restaurant_id, r.name, r.status 
-         FROM restaurant.restaurant_users ru
-         JOIN restaurant.restaurants r ON ru.restaurant_id = r.id
-         WHERE ru.user_id = $1 AND r.status = 'active'
-         ORDER BY ru.created_at DESC
-         LIMIT 1`,
-        [userId]
-      );
-      
-      console.log('👥 Resultados employee:', employeeResult.rows.length);
-      
-      if (employeeResult.rows.length === 0) {
-        console.log('❌ Usuario no tiene restaurante asignado');
-        return NextResponse.json(
-          { error: 'Usuario no tiene restaurante asignado' },
-          { status: 404 }
-        );
+
+      const { data: staffData, error: staffError } = await supabase
+        .schema('restaurant')
+        .from('restaurant_users')
+        .select(`
+          restaurant:restaurants(
+            id, name, description, address, city, state, country, 
+            latitude, longitude, phone, email, logo_url, cover_image_url, 
+            cuisine_type_id, status, created_at,
+            cuisine_type:system.cuisine_types(name)
+          )
+        `)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const staffDataAny = staffData as any; // Cast para evitar error de parser TS
+
+      if (staffDataAny && staffDataAny.restaurant) {
+        restaurant = staffDataAny.restaurant;
+        userRole = 'employee';
+        // Verificar status del restaurante
+        if (restaurant.status !== 'active') {
+          restaurant = null; // Ignorar si no está activo
+        }
       }
-      
-      const restaurant = employeeResult.rows[0];
-      console.log('✅ Usuario es empleado del restaurante:', restaurant.name);
-      
-      return NextResponse.json({
-        restaurantId: restaurant.restaurant_id,
-        restaurantName: restaurant.name,
-        userRole: 'employee'
-      });
     }
 
-    const restaurant = restaurantResult.rows[0];
-    console.log('✅ Usuario es owner del restaurante:', restaurant.name);
+    if (!restaurant) {
+      console.log('⚠️ Usuario no tiene restaurante asignado');
+      return NextResponse.json(
+        { error: 'Usuario no tiene restaurante asignado' },
+        { status: 404 }
+      );
+    }
+
+    // Normalizar cuisine_type (array/object issue)
+    const cuisineTypeName = Array.isArray(restaurant.cuisine_type)
+      ? restaurant.cuisine_type[0]?.name
+      : restaurant.cuisine_type?.name;
+
+    restaurant.cuisine_type_name = cuisineTypeName;
+
+    // 4. Obtener HORARIOS
+    const { data: businessHours, error: hoursError } = await supabase
+      .schema('restaurant')
+      .from('business_hours')
+      .select('day_of_week, open_time, close_time, is_closed, is_24_hours')
+      .eq('restaurant_id', restaurant.id)
+      .order('day_of_week');
+
+    const hours = businessHours || [];
+
+    // 5. Analizar completitud
+    const completeness = analyzeCompleteness(restaurant, hours);
+
+    console.log(`✅ Restaurante encontrado: ${restaurant.name} (${userRole})`);
 
     return NextResponse.json({
-      restaurantId: restaurant.restaurant_id,
+      restaurantId: restaurant.id, // Mapeo para frontend
       restaurantName: restaurant.name,
-      userRole: 'owner'
+      userRole,
+      restaurantData: {
+        ...restaurant,
+        restaurant_id: restaurant.id, // Compatibilidad legacy
+        business_hours: hours
+      },
+      completeness
     });
 
-  } catch (error) {
-    console.error('❌ Error obteniendo restaurante del usuario:', error);
+  } catch (error: any) {
+    console.error('❌ Error no controlado:', error.message);
     return NextResponse.json(
-      { error: 'Error interno del servidor' },
+      { error: 'Error interno del servidor', details: error.message },
       { status: 500 }
     );
   }
+}
+
+// ✅ Función Helper de Completitud (Mantener lógica original)
+function analyzeCompleteness(restaurant: any, businessHours: any[]) {
+  const steps = {
+    informacionGeneral: {
+      completed: !!(
+        restaurant.name?.trim() &&
+        restaurant.phone?.trim() &&
+        restaurant.email?.trim() &&
+        restaurant.description?.trim() &&
+        restaurant.cuisine_type_id
+      ),
+      fields: {
+        name: !!restaurant.name?.trim(),
+        phone: !!restaurant.phone?.trim(),
+        email: !!restaurant.email?.trim(),
+        description: !!restaurant.description?.trim(),
+        cuisine_type: !!restaurant.cuisine_type_id
+      }
+    },
+    ubicacion: {
+      completed: !!(
+        restaurant.address?.trim() &&
+        restaurant.latitude &&
+        restaurant.longitude &&
+        restaurant.city?.trim() &&
+        restaurant.state?.trim()
+      ),
+      fields: {
+        address: !!restaurant.address?.trim(),
+        coordinates: !!(restaurant.latitude && restaurant.longitude),
+        city: !!restaurant.city?.trim(),
+        state: !!restaurant.state?.trim()
+      }
+    },
+    logoPortada: {
+      completed: !!(
+        restaurant.logo_url?.trim() &&
+        restaurant.cover_image_url?.trim()
+      ),
+      fields: {
+        logo: !!restaurant.logo_url?.trim(),
+        cover_image: !!restaurant.cover_image_url?.trim()
+      }
+    },
+    horarios: {
+      completed: businessHours.length >= 7,
+      fields: {
+        total_days: businessHours.length,
+        has_all_days: businessHours.length >= 7
+      }
+    }
+  };
+
+  const completedSteps = Object.values(steps).filter(step => step.completed).length;
+  const totalSteps = Object.keys(steps).length;
+  const isComplete = completedSteps === totalSteps;
+
+  return {
+    isComplete,
+    completedSteps,
+    totalSteps,
+    percentage: Math.round((completedSteps / totalSteps) * 100),
+    steps
+    // nextStep removed to enforce Layout Guard authority
+  };
+}
+
+function getNextStep(steps: any) {
+  if (!steps.informacionGeneral.completed) return '/config-restaurante/informacion-general';
+  if (!steps.ubicacion.completed) return '/config-restaurante/ubicacion';
+  if (!steps.horarios.completed) return '/config-restaurante/horario-comercial';
+  if (!steps.logoPortada.completed) return '/config-restaurante/logo-portada';
+  return '/dashboard';
 }

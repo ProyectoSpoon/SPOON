@@ -13,15 +13,15 @@ interface GoogleMapsRealProps {
 declare global {
   interface Window {
     google: any;
-    initMap: () => void;
+    initMap?: () => void;
   }
 }
 
-const GoogleMapsReal: React.FC<GoogleMapsRealProps> = ({ 
-  lat, 
-  lng, 
-  address, 
-  onLocationChange 
+const GoogleMapsReal: React.FC<GoogleMapsRealProps> = ({
+  lat,
+  lng,
+  address,
+  onLocationChange
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -139,7 +139,7 @@ const GoogleMapsReal: React.FC<GoogleMapsRealProps> = ({
         const newPosition = markerRef.current.getPosition();
         const newLat = newPosition.lat();
         const newLng = newPosition.lng();
-        
+
         if (onLocationChange) {
           onLocationChange(newLat, newLng);
         }
@@ -164,10 +164,10 @@ const GoogleMapsReal: React.FC<GoogleMapsRealProps> = ({
       mapInstanceRef.current.addListener('click', (event: any) => {
         const newLat = event.latLng.lat();
         const newLng = event.latLng.lng();
-        
+
         // Mover marcador
         markerRef.current.setPosition({ lat: newLat, lng: newLng });
-        
+
         if (onLocationChange) {
           onLocationChange(newLat, newLng);
         }
@@ -186,7 +186,7 @@ const GoogleMapsReal: React.FC<GoogleMapsRealProps> = ({
             </p>
           </div>
         `);
-        
+
         infoWindow.open(mapInstanceRef.current, markerRef.current);
       });
 
@@ -199,10 +199,10 @@ const GoogleMapsReal: React.FC<GoogleMapsRealProps> = ({
   useEffect(() => {
     if (mapInstanceRef.current && markerRef.current && isLoaded) {
       const newPosition = { lat, lng };
-      
+
       // Centrar mapa
       mapInstanceRef.current.setCenter(newPosition);
-      
+
       // Mover marcador
       markerRef.current.setPosition(newPosition);
     }
@@ -245,7 +245,7 @@ const GoogleMapsReal: React.FC<GoogleMapsRealProps> = ({
         className="h-full w-full rounded-xl shadow-lg"
         style={{ minHeight: '400px' }}
       />
-      
+
       {/* Overlay con controles personalizados */}
       <div className="absolute top-4 left-4 bg-white rounded-lg shadow-md p-2 max-w-xs">
         <div className="text-xs text-gray-600">
@@ -253,7 +253,7 @@ const GoogleMapsReal: React.FC<GoogleMapsRealProps> = ({
           <p>Haz clic en el mapa o arrastra el marcador para cambiar la ubicación</p>
         </div>
       </div>
-      
+
       {/* Info de coordenadas */}
       <div className="absolute bottom-4 right-4 bg-black bg-opacity-75 text-white px-3 py-2 rounded-lg text-xs">
         📍 {lat.toFixed(4)}, {lng.toFixed(4)}

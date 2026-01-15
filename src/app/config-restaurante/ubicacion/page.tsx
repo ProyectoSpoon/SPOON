@@ -1,22 +1,45 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/shared/Hooks/use-toast';
-import { FaArrowLeft, FaCheck, FaMapMarkerAlt, FaTimes } from 'react-icons/fa';
+import { FaArrowLeft, FaCheck, FaTimes } from 'react-icons/fa';
 import { useConfigStore } from '../store/config-store';
 import { useAuth } from '@/context/postgres-authcontext';
 import { useConfigSync } from '@/hooks/use-config-sync';
+import { GoogleMapsLoader } from './components/GoogleMapsLoader';
+import MapaInteractivo from './components/MapaInteractivo';
+import { Autocomplete } from '@react-google-maps/api';
+
+// UI Components
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/Select";
 
 interface UbicacionData {
-  direccion: string;
-  coordenadas: {
-    lat: number;
-    lng: number;
-  };
-  ciudad: string;
-  estado: string;
-  pais: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  city_id?: string | null;
+  department_id?: string | null;
+  country_id?: string | null;
+}
+
+interface Department {
+  id: string;
+  name: string;
+  code: string;
+  country_id: string;
+}
+
+interface City {
+  id: string;
+  name: string;
+  department_id: string;
 }
 
 // Datos de departamentos y ciudades de Colombia
@@ -55,134 +78,80 @@ const DEPARTAMENTOS_COLOMBIA: Record<string, string[]> = {
   'Vichada': ['Puerto Carreño']
 };
 
-// Función simple de geocodificación (estimativa por ciudad)
-const obtenerCoordenadasEstimadas = (ciudad: string, departamento: string): { lat: number; lng: number } => {
-  const coordenadasCiudades: Record<string, { lat: number; lng: number }> = {
-    'Bogotá': { lat: 4.6097102, lng: -74.081749 },
-    'Medellín': { lat: 6.2486, lng: -75.5742 },
-    'Cali': { lat: 3.4516, lng: -76.5320 },
-    'Barranquilla': { lat: 10.9685, lng: -74.7813 },
-    'Cartagena': { lat: 10.3910, lng: -75.4794 },
-    'Cúcuta': { lat: 7.8939, lng: -72.5078 },
-    'Bucaramanga': { lat: 7.1253, lng: -73.1198 },
-    'Pereira': { lat: 4.8133, lng: -75.6961 },
-    'Santa Marta': { lat: 11.2408, lng: -74.2099 },
-    'Ibagué': { lat: 4.4389, lng: -75.2322 },
-    'Pasto': { lat: 1.2136, lng: -77.2811 },
-    'Manizales': { lat: 5.0670, lng: -75.5174 },
-    'Neiva': { lat: 2.9273, lng: -75.2819 },
-    'Villavicencio': { lat: 4.1420, lng: -73.6266 },
-    'Armenia': { lat: 4.5339, lng: -75.6811 },
-    'Valledupar': { lat: 10.4631, lng: -73.2532 },
-    'Montería': { lat: 8.7479, lng: -75.8814 },
-    'Sincelejo': { lat: 9.3047, lng: -75.3978 },
-    'Popayán': { lat: 2.4448, lng: -76.6147 },
-    'Tunja': { lat: 5.5353, lng: -73.3678 }
-  };
-
-  return coordenadasCiudades[ciudad] || { lat: 4.6097102, lng: -74.081749 };
+// Coordenadas fijas de respaldo para ciudades principales
+const CIUDADES_COORDS: Record<string, { lat: number; lng: number }> = {
+  'Bogotá': { lat: 4.6097, lng: -74.0817 },
+  'Medellín': { lat: 6.2486, lng: -75.5742 },
+  'Cali': { lat: 3.4516, lng: -76.5320 },
+  'Barranquilla': { lat: 10.9685, lng: -74.7813 },
+  'Cartagena': { lat: 10.3910, lng: -75.4794 },
+  'Bucaramanga': { lat: 7.1253, lng: -73.1198 },
+  'Manizales': { lat: 5.0670, lng: -75.5174 },
+  'Pereira': { lat: 4.8133, lng: -75.6961 },
+  'Cúcuta': { lat: 7.8939, lng: -72.5078 },
+  'Santa Marta': { lat: 11.2408, lng: -74.2099 },
+  'Ibagué': { lat: 4.4389, lng: -75.2322 },
 };
 
-// Componente de mapa simple
-const MapaSimple = ({ lat, lng, address }: { lat: number; lng: number; address: string }) => (
-  <div className="h-full w-full bg-gradient-to-br from-blue-100 to-green-100 rounded-xl shadow-inner relative overflow-hidden">
-    {/* Efectos de fondo tipo mapa */}
-    <div className="absolute inset-0 opacity-10">
-      <div className="absolute top-10 left-10 w-20 h-20 bg-blue-500 rounded-full"></div>
-      <div className="absolute top-32 right-20 w-16 h-16 bg-green-500 rounded-full"></div>
-      <div className="absolute bottom-20 left-24 w-12 h-12 bg-orange-500 rounded-full"></div>
-      <div className="absolute bottom-32 right-32 w-14 h-14 bg-purple-500 rounded-full"></div>
-    </div>
-    
-    {/* Grid tipo mapa */}
-    <div className="absolute inset-0 opacity-5">
-      <div className="grid grid-cols-8 grid-rows-6 h-full">
-        {Array.from({ length: 48 }, (_, i) => (
-          <div key={i} className="border border-gray-400"></div>
-        ))}
-      </div>
-    </div>
-    
-    {/* Marcador principal */}
-    <div className="absolute inset-0 flex items-center justify-center">
-      <div className="relative">
-        {/* Pin animado */}
-        <div className="relative">
-          <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center shadow-2xl animate-bounce">
-            <FaMapMarkerAlt className="text-white text-2xl" />
-          </div>
-          {/* Sombra del pin */}
-          <div className="absolute top-16 left-1/2 transform -translate-x-1/2 w-8 h-4 bg-black opacity-20 rounded-full blur-sm"></div>
-        </div>
-        
-        {/* Info bubble */}
-        <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 bg-white px-4 py-2 rounded-lg shadow-lg border-2 border-red-500 whitespace-nowrap">
-          <div className="text-sm font-semibold text-gray-800">
-            {address || 'Tu restaurante aquí'}
-          </div>
-          <div className="text-xs text-gray-500">
-            {lat.toFixed(4)}, {lng.toFixed(4)}
-          </div>
-          {/* Flecha del bubble */}
-          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-red-500"></div>
-        </div>
-      </div>
-    </div>
-    
-    {/* Controles tipo Maps */}
-    <div className="absolute top-4 right-4 flex flex-col gap-2">
-      <button className="w-10 h-10 bg-white rounded-lg shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors">
-        <span className="text-lg font-bold text-gray-600">+</span>
-      </button>
-      <button className="w-10 h-10 bg-white rounded-lg shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors">
-        <span className="text-lg font-bold text-gray-600">-</span>
-      </button>
-    </div>
-    
-    {/* Logo de ubicación */}
-    <div className="absolute bottom-4 left-4 text-xs text-gray-500 bg-white px-2 py-1 rounded">
-      📍 Spoon Maps
-    </div>
-  </div>
-);
-
-export default function UbicacionPage() {
+const UbicacionContent = () => {
   const router = useRouter();
   const { toast } = useToast();
   const { actualizarCampo, sincronizarConBD } = useConfigStore();
   const { user, loading: authLoading } = useAuth();
-  const { syncAfterSave } = useConfigSync(); // ← Hook de sincronización
-  
+
   const [ubicacionData, setUbicacionData] = useState<UbicacionData>({
-    direccion: '',
-    coordenadas: { lat: 4.6097102, lng: -74.081749 },
-    ciudad: '',
-    estado: '',
-    pais: 'Colombia'
+    address: '',
+    latitude: 4.6097102,
+    longitude: -74.081749,
+    city_id: null,
+    department_id: null,
+    country_id: null
   });
-  
+
   const [guardando, setGuardando] = useState(false);
   const [cargando, setCargando] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
 
-  // Actualizar coordenadas cuando cambia la ciudad
+  // Estados para cargar departamentos y ciudades desde la BD
+  const [departamentos, setDepartamentos] = useState<Department[]>([]);
+  const [ciudades, setCiudades] = useState<City[]>([]);
+  const [loadingDepartments, setLoadingDepartments] = useState(false);
+  const [loadingCities, setLoadingCities] = useState(false);
+
+  // Cargar departamentos al montar el componente
   useEffect(() => {
-    if (ubicacionData.ciudad && ubicacionData.estado) {
-      const nuevasCoordenadas = obtenerCoordenadasEstimadas(ubicacionData.ciudad, ubicacionData.estado);
-      setUbicacionData(prev => ({
-        ...prev,
-        coordenadas: nuevasCoordenadas
-      }));
-    }
-  }, [ubicacionData.ciudad, ubicacionData.estado]);
+    const cargarDepartamentos = async () => {
+      try {
+        setLoadingDepartments(true);
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch('/api/departments', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
 
+        if (response.ok) {
+          const data = await response.json();
+          setDepartamentos(data);
+        }
+      } catch (error) {
+        console.error('Error cargando departamentos:', error);
+      } finally {
+        setLoadingDepartments(false);
+      }
+    };
+
+    cargarDepartamentos();
+  }, []);
+
+  // Cargar datos iniciales
   useEffect(() => {
     const cargarDatos = async () => {
       if (!user?.restaurantId) return;
-      
+
       try {
         setCargando(true);
-        
         const token = localStorage.getItem('auth_token');
         const response = await fetch(`/api/restaurants/${user.restaurantId}/location`, {
           headers: {
@@ -190,19 +159,22 @@ export default function UbicacionPage() {
             'Content-Type': 'application/json'
           }
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           setUbicacionData({
-            direccion: data.direccion || '',
-            coordenadas: {
-              lat: data.coordenadas?.lat || 4.6097102,
-              lng: data.coordenadas?.lng || -74.081749
-            },
-            ciudad: data.ciudad || '',
-            estado: data.estado || '',
-            pais: data.pais || 'Colombia'
+            address: data.address || '',
+            latitude: data.latitude || 4.6097102,
+            longitude: data.longitude || -74.081749,
+            city_id: data.city_id || null,
+            department_id: data.department_id || null,
+            country_id: data.country_id || null
           });
+
+          // Si tiene department_id, cargar las ciudades de ese departamento
+          if (data.department_id) {
+            await cargarCiudadesPorDepartamento(data.department_id);
+          }
         }
       } catch (error) {
         console.error('Error cargando ubicación:', error);
@@ -214,12 +186,79 @@ export default function UbicacionPage() {
     cargarDatos();
   }, [user?.restaurantId]);
 
-  const handleVolver = () => {
-    router.push('/config-restaurante/informacion-general');
+  // Cargar ciudades cuando se selecciona un departamento
+  const cargarCiudadesPorDepartamento = async (departmentId: string) => {
+    try {
+      setLoadingCities(true);
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`/api/departments/${departmentId}/cities`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCiudades(data);
+      }
+    } catch (error) {
+      console.error('Error cargando ciudades:', error);
+    } finally {
+      setLoadingCities(false);
+    }
+  };
+
+  const handleLocationChange = useCallback((lat: number, lng: number, address?: string) => {
+    setUbicacionData(prev => ({
+      ...prev,
+      latitude: lat,
+      longitude: lng,
+      ...(address ? { address } : {})
+    }));
+  }, []);
+
+  const handlePlaceSelect = () => {
+    if (autocomplete) {
+      const place = autocomplete.getPlace();
+      if (place.geometry && place.geometry.location) {
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
+
+        setUbicacionData(prev => ({
+          ...prev,
+          address: place.formatted_address || prev.address,
+          latitude: lat,
+          longitude: lng
+        }));
+      }
+    }
+  };
+
+  const onLoadAutocomplete = (autoC: google.maps.places.Autocomplete) => {
+    setAutocomplete(autoC);
+  };
+
+  const handleDepartamentoChange = async (departmentId: string) => {
+    setUbicacionData(prev => ({
+      ...prev,
+      department_id: departmentId,
+      city_id: null // Resetear ciudad al cambiar departamento
+    }));
+
+    // Cargar ciudades del departamento seleccionado
+    await cargarCiudadesPorDepartamento(departmentId);
+  };
+
+  const handleCiudadChange = (cityId: string) => {
+    setUbicacionData(prev => ({
+      ...prev,
+      city_id: cityId
+    }));
   };
 
   const handleContinuar = async () => {
-    if (!ubicacionData.direccion.trim()) {
+    if (!ubicacionData.address.trim()) {
       toast({
         title: 'Dirección Requerida',
         description: 'Por favor ingresa la dirección del restaurante',
@@ -228,81 +267,57 @@ export default function UbicacionPage() {
       return;
     }
 
-    if (!ubicacionData.estado || !ubicacionData.ciudad) {
-      toast({
-        title: 'Ubicación Incompleta',
-        description: 'Por favor selecciona departamento y ciudad',
-        variant: 'destructive'
-      });
-      return;
-    }
 
     try {
       setGuardando(true);
-      
-      if (!user?.restaurantId) {
-        throw new Error('ID de restaurante no disponible');
-      }
-      
+
+      // Usar 'current' si no tenemos restaurantId (auto-detección en backend)
+      const restaurantId = user?.restaurantId || 'current';
+
       const token = localStorage.getItem('auth_token');
-      
-      const response = await fetch(`/api/restaurants/${user.restaurantId}/location`, {
+      const response = await fetch(`/api/restaurants/${restaurantId}/location`, {
         method: 'PUT',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          direccion: ubicacionData.direccion,
-          coordenadas: ubicacionData.coordenadas,
-          ciudad: ubicacionData.ciudad,
-          estado: ubicacionData.estado
+          address: ubicacionData.address,
+          latitude: ubicacionData.latitude,
+          longitude: ubicacionData.longitude,
+          city_id: ubicacionData.city_id,
+          department_id: ubicacionData.department_id,
+          country_id: ubicacionData.country_id
         })
       });
 
       if (response.ok) {
-        actualizarCampo('/config-restaurante/ubicacion', 'direccion', Boolean(ubicacionData.direccion.trim()));
-        actualizarCampo('/config-restaurante/ubicacion', 'coordenadas', true);
-        actualizarCampo('/config-restaurante/ubicacion', 'zona', Boolean(ubicacionData.ciudad.trim()));
-        
-        if (user.restaurantId) {
-          await sincronizarConBD(user.restaurantId);
+        actualizarCampo('/config-restaurante/ubicacion', 'address', Boolean(ubicacionData.address.trim()));
+        actualizarCampo('/config-restaurante/ubicacion', 'latitude', ubicacionData.latitude !== 0);
+        actualizarCampo('/config-restaurante/ubicacion', 'longitude', ubicacionData.longitude !== 0);
+
+
+        // Sincronizar usando el restaurantId que usamos para guardar
+        if (restaurantId !== 'current') {
+          await sincronizarConBD(restaurantId);
         }
-        
-        toast({
-          title: 'Éxito',
-          description: 'Ubicación guardada correctamente'
-        });
-        
-        router.push('/config-restaurante/horario-comercial');
+
+        toast({ title: 'Éxito', description: 'Ubicación guardada correctamente' });
+        router.push('/config-restaurante');
       } else {
-        throw new Error('Error al guardar ubicación');
+        const errorData = await response.json();
+        throw new Error(errorData.details || errorData.error || 'Error al guardar en el servidor');
       }
     } catch (error) {
+      console.error(error);
       toast({
-        title: 'Error',
-        description: 'No se pudo guardar la ubicación',
+        title: 'Error de Guardado',
+        description: (error as Error).message,
         variant: 'destructive'
       });
     } finally {
       setGuardando(false);
     }
-  };
-
-  const handleDepartamentoChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const nuevoDepartamento = e.target.value;
-    setUbicacionData(prev => ({
-      ...prev,
-      estado: nuevoDepartamento,
-      ciudad: ''
-    }));
-  };
-
-  const handleCiudadChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setUbicacionData(prev => ({
-      ...prev,
-      ciudad: e.target.value
-    }));
   };
 
   if (authLoading || cargando) {
@@ -316,161 +331,144 @@ export default function UbicacionPage() {
     );
   }
 
-  if (!user) {
-    router.push('/login');
-    return null;
-  }
-
-  const ciudadesDisponibles = ubicacionData.estado ? (DEPARTAMENTOS_COLOMBIA[ubicacionData.estado] || []) : [];
-  const formularioCompleto = ubicacionData.direccion.trim() && ubicacionData.estado && ubicacionData.ciudad;
+  const searchQuery = ubicacionData.address || '';
 
   return (
-    <div className="h-screen bg-gray-900 flex overflow-hidden">
-      
-      {/* SIDEBAR - 30% del ancho */}
-      <div className={`bg-white shadow-2xl flex flex-col transition-all duration-300 ${
-        sidebarCollapsed ? 'w-16' : 'w-96'
-      }`}>
-        
-        {/* Header del sidebar */}
-        <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-orange-500 to-red-500">
-          <div className="flex items-center justify-between">
-            {!sidebarCollapsed && (
-              <div className="text-white">
-                <h1 className="text-xl font-bold">Ubicación</h1>
-                <p className="text-orange-100 text-sm">Paso 2 de 4</p>
-              </div>
-            )}
-            <button
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
-            >
-              {sidebarCollapsed ? '📍' : <FaTimes />}
-            </button>
-          </div>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-5xl mx-auto">
+        {/* Header con botón volver */}
+        <div className="mb-6 flex items-center justify-between">
+          <button
+            onClick={handleContinuar}
+            disabled={guardando || !ubicacionData.address.trim()}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors disabled:opacity-50 disabled:text-gray-400"
+          >
+            <FaArrowLeft />
+            <span className="font-medium">{guardando ? 'Guardando...' : 'Guardar y Salir'}</span>
+          </button>
+          <span className="text-sm text-gray-500">Paso 2 de 4</span>
         </div>
 
-        {!sidebarCollapsed && (
-          <>
-            {/* Formulario */}
-            <div className="flex-1 p-6 overflow-y-auto">
-              <div className="space-y-6">
-                
-                {/* Dirección */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-3">
-                    🏠 Dirección Completa
-                  </label>
-                  <input
-                    type="text"
-                    value={ubicacionData.direccion}
-                    onChange={(e) => setUbicacionData(prev => ({ ...prev, direccion: e.target.value }))}
-                    placeholder="Carrera 15 #85-32, Chapinero"
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
-                  />
-                </div>
+        {/* Contenedor del mapa */}
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          {/* Título y campos */}
+          <div className="p-6 bg-white border-b border-gray-100">
+            <h1 className="text-3xl font-bold text-gray-900 mb-6">
+              ¿Dónde está tu restaurante?
+            </h1>
 
-                {/* Departamento */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-3">
-                    🗺️ Departamento
-                  </label>
-                  <select
-                    value={ubicacionData.estado}
-                    onChange={handleDepartamentoChange}
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all bg-white"
-                  >
-                    <option value="">Selecciona departamento</option>
-                    {Object.keys(DEPARTAMENTOS_COLOMBIA).map(departamento => (
-                      <option key={departamento} value={departamento}>
-                        {departamento}
-                      </option>
+            {/* Selectores de Departamento y Ciudad */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              {/* Selector de Departamento */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Departamento
+                </label>
+                <Select
+                  value={ubicacionData.department_id || ''}
+                  onValueChange={handleDepartamentoChange}
+                  disabled={loadingDepartments}
+                >
+                  <SelectTrigger className="w-full bg-white border-gray-300">
+                    <SelectValue placeholder={loadingDepartments ? "Cargando departamentos..." : "Selecciona un departamento"} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white">
+                    {departamentos.map(dept => (
+                      <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
                     ))}
-                  </select>
-                </div>
+                  </SelectContent>
+                </Select>
+              </div>
 
-                {/* Ciudad */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-3">
-                    🏙️ Ciudad
-                  </label>
-                  <select
-                    value={ubicacionData.ciudad}
-                    onChange={handleCiudadChange}
-                    disabled={!ubicacionData.estado}
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  >
-                    <option value="">
-                      {ubicacionData.estado ? 'Selecciona ciudad' : 'Primero selecciona departamento'}
-                    </option>
-                    {ciudadesDisponibles.map(ciudad => (
-                      <option key={ciudad} value={ciudad}>
-                        {ciudad}
-                      </option>
+              {/* Selector de Ciudad */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Ciudad
+                </label>
+                <Select
+                  value={ubicacionData.city_id || ''}
+                  onValueChange={handleCiudadChange}
+                  disabled={!ubicacionData.department_id || loadingCities}
+                >
+                  <SelectTrigger className="w-full bg-white border-gray-300 disabled:bg-gray-100">
+                    <SelectValue placeholder={
+                      !ubicacionData.department_id
+                        ? "Primero selecciona un departamento"
+                        : loadingCities
+                          ? "Cargando ciudades..."
+                          : "Selecciona una ciudad"
+                    } />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white">
+                    {ciudades.map(city => (
+                      <SelectItem key={city.id} value={city.id}>{city.name}</SelectItem>
                     ))}
-                  </select>
-                </div>
-
-                {/* Info del resultado */}
-                {formularioCompleto && (
-                  <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4">
-                    <div className="text-green-800 font-semibold text-sm mb-2">✅ Ubicación lista</div>
-                    <div className="text-green-700 text-sm">
-                      {ubicacionData.direccion}<br />
-                      {ubicacionData.ciudad}, {ubicacionData.estado}
-                    </div>
-                  </div>
-                )}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
-            {/* Botones de navegación */}
-            <div className="p-6 border-t border-gray-200 bg-gray-50">
-              <div className="flex gap-3">
-                <button
-                  onClick={handleVolver}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl transition-colors font-medium"
+            {/* Input de dirección */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Dirección
+              </label>
+              <div className="bg-white rounded-lg shadow-md border border-gray-200">
+                <Autocomplete
+                  onLoad={onLoadAutocomplete}
+                  onPlaceChanged={handlePlaceSelect}
                 >
-                  <FaArrowLeft className="text-sm" />
-                  Volver
-                </button>
-                
+                  <div className="flex items-center gap-3 p-4">
+                    <div className="text-gray-400 text-xl">
+                      📍
+                    </div>
+                    <input
+                      type="text"
+                      value={ubicacionData.address}
+                      onChange={(e) => setUbicacionData(prev => ({ ...prev, address: e.target.value }))}
+                      placeholder="Ingresa la dirección"
+                      className="flex-1 outline-none text-gray-700 placeholder-gray-400"
+                    />
+                  </div>
+                </Autocomplete>
+              </div>
+            </div>
+          </div>
+
+          {/* Mapa */}
+          <div className="relative h-[500px] w-full">
+            <MapaInteractivo
+              lat={ubicacionData.latitude}
+              lng={ubicacionData.longitude}
+              onLocationChange={handleLocationChange}
+              searchQuery={searchQuery}
+            />
+          </div>
+
+          {/* Footer con botón de continuar */}
+          {ubicacionData.address.trim() && (
+            <div className="p-6 bg-gray-50 border-t border-gray-100">
+              <div className="flex justify-end">
                 <button
                   onClick={handleContinuar}
-                  disabled={guardando || !formularioCompleto}
-                  className={`flex-2 flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-medium transition-all ${
-                    formularioCompleto && !guardando
-                      ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl' 
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
+                  disabled={guardando}
+                  className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-8 py-3 rounded-lg shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <FaCheck className="text-sm" />
-                  {guardando ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Guardando...
-                    </>
-                  ) : (
-                    'Continuar'
-                  )}
+                  {guardando ? 'Guardando...' : 'Guardar y Continuar'}
                 </button>
               </div>
             </div>
-          </>
-        )}
-      </div>
-
-      {/* MAPA - 70% del ancho */}
-      <div className="flex-1 p-4">
-        <div className="h-full">
-          <MapaSimple
-            lat={ubicacionData.coordenadas.lat}
-            lng={ubicacionData.coordenadas.lng}
-            address={`${ubicacionData.direccion}${ubicacionData.ciudad ? `, ${ubicacionData.ciudad}` : ''}`}
-          />
+          )}
         </div>
       </div>
-      
     </div>
+  );
+};
+
+export default function UbicacionPage() {
+  return (
+    <GoogleMapsLoader>
+      <UbicacionContent />
+    </GoogleMapsLoader>
   );
 }

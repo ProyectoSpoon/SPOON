@@ -1,185 +1,195 @@
--- Inicialización de la base de datos SPOON
--- Este script crea las tablas necesarias para el sistema
+-- Database Initialization Script for SPOON System
+-- Converted to ENGLISH to match Source Code and Schema Reference
+-- Schema: 'restaurant'
 
--- Crear extensiones necesarias
+-- 1. Create Extensions (Public)
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "postgis";
 
--- Tabla de restaurantes
-CREATE TABLE IF NOT EXISTS restaurantes (
+-- 2. Create Schema (Clean Slate)
+DROP SCHEMA IF EXISTS restaurant CASCADE;
+CREATE SCHEMA IF NOT EXISTS restaurant;
+
+-- 3. Define Tables (restaurant schema)
+
+-- Table: restaurants
+CREATE TABLE IF NOT EXISTS restaurant.restaurants (
     id VARCHAR(50) PRIMARY KEY DEFAULT 'default',
-    nombre VARCHAR(255) NOT NULL,
-    descripcion TEXT,
-    direccion TEXT,
-    telefono VARCHAR(20),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    address TEXT,
+    phone VARCHAR(20),
     email VARCHAR(255),
-    activo BOOLEAN DEFAULT true,
+    is_active BOOLEAN DEFAULT true,
+    latitude DECIMAL(10,8),
+    longitude DECIMAL(11,8),
+    geom GEOGRAPHY(Point, 4326),
+    city VARCHAR(100),
+    state VARCHAR(100),
+    country VARCHAR(100) DEFAULT 'Colombia',
+    slug VARCHAR(200) UNIQUE, -- Added from docs
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Tabla de categorías (incluye categorías y subcategorías)
-CREATE TABLE IF NOT EXISTS categorias (
+-- Spatial Index
+CREATE INDEX IF NOT EXISTS idx_restaurants_geom ON restaurant.restaurants USING GIST (geom);
+
+-- Table: categories
+CREATE TABLE IF NOT EXISTS restaurant.categories (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    nombre VARCHAR(255) NOT NULL,
-    tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('categoria', 'subcategoria')),
-    orden INTEGER DEFAULT 0,
-    descripcion TEXT,
-    restaurante_id VARCHAR(50) NOT NULL REFERENCES restaurantes(id),
-    activo BOOLEAN DEFAULT true,
+    name VARCHAR(255) NOT NULL,
+    type VARCHAR(50) NOT NULL CHECK (type IN ('category', 'subcategory')), -- 'tipo' -> 'type'
+    sort_order INTEGER DEFAULT 0, -- 'orden' -> 'sort_order'
+    description TEXT,
+    restaurant_id VARCHAR(50) NOT NULL REFERENCES restaurant.restaurants(id),
+    is_active BOOLEAN DEFAULT true, -- 'activo' -> 'is_active'
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Tabla de productos
-CREATE TABLE IF NOT EXISTS productos (
+-- Table: products
+CREATE TABLE IF NOT EXISTS restaurant.products (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    nombre VARCHAR(255) NOT NULL,
-    descripcion TEXT,
-    precio_actual DECIMAL(10,2) DEFAULT 0,
-    categoria_id UUID REFERENCES categorias(id),
-    subcategoria_id UUID REFERENCES categorias(id),
-    imagen TEXT,
-    version_actual INTEGER DEFAULT 1,
-    estado VARCHAR(20) DEFAULT 'active' CHECK (estado IN ('active', 'inactive', 'draft')),
-    stock_actual INTEGER DEFAULT 0,
-    stock_minimo INTEGER DEFAULT 0,
-    stock_maximo INTEGER DEFAULT 100,
-    restaurante_id VARCHAR(50) NOT NULL REFERENCES restaurantes(id),
+    name VARCHAR(255) NOT NULL, -- 'nombre' -> 'name'
+    description TEXT,
+    current_price DECIMAL(10,2) DEFAULT 0, -- 'precio_actual' -> 'current_price'
+    category_id UUID REFERENCES restaurant.categories(id),
+    subcategory_id UUID REFERENCES restaurant.categories(id),
+    image_url TEXT, -- 'imagen' -> 'image_url'
+    current_version INTEGER DEFAULT 1, -- 'version_actual' -> 'current_version'
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'draft')), -- 'estado' -> 'status'
+    current_stock INTEGER DEFAULT 0, -- 'stock_actual' -> 'current_stock'
+    min_stock INTEGER DEFAULT 0, -- 'stock_minimo' -> 'min_stock'
+    max_stock INTEGER DEFAULT 100, -- 'stock_maximo' -> 'max_stock'
+    restaurant_id VARCHAR(50) NOT NULL REFERENCES restaurant.restaurants(id),
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
     created_by VARCHAR(255) DEFAULT 'system',
     updated_by VARCHAR(255) DEFAULT 'system'
 );
 
--- Tabla de historial de precios
-CREATE TABLE IF NOT EXISTS precio_historial (
+-- Table: price_history ('precio_historial')
+CREATE TABLE IF NOT EXISTS restaurant.price_history (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    producto_id UUID NOT NULL REFERENCES productos(id) ON DELETE CASCADE,
-    precio_anterior DECIMAL(10,2),
-    precio_nuevo DECIMAL(10,2) NOT NULL,
-    razon TEXT,
-    fecha_efectiva TIMESTAMP DEFAULT NOW(),
+    product_id UUID NOT NULL REFERENCES restaurant.products(id) ON DELETE CASCADE,
+    old_price DECIMAL(10,2), -- 'precio_anterior'
+    new_price DECIMAL(10,2) NOT NULL, -- 'precio_nuevo'
+    reason TEXT, -- 'razon'
+    effective_date TIMESTAMP DEFAULT NOW(), -- 'fecha_efectiva'
     created_by VARCHAR(255) DEFAULT 'system',
-    restaurante_id VARCHAR(50) NOT NULL REFERENCES restaurantes(id)
+    restaurant_id VARCHAR(50) NOT NULL REFERENCES restaurant.restaurants(id)
 );
 
--- Tabla de versiones de productos
-CREATE TABLE IF NOT EXISTS producto_versiones (
+-- Table: product_versions ('producto_versiones')
+CREATE TABLE IF NOT EXISTS restaurant.product_versions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    producto_id UUID NOT NULL REFERENCES productos(id) ON DELETE CASCADE,
+    product_id UUID NOT NULL REFERENCES restaurant.products(id) ON DELETE CASCADE,
     version INTEGER NOT NULL,
-    cambios JSONB,
+    changes JSONB, -- 'cambios'
     metadata JSONB,
     created_at TIMESTAMP DEFAULT NOW(),
     created_by VARCHAR(255) DEFAULT 'system',
-    restaurante_id VARCHAR(50) NOT NULL REFERENCES restaurantes(id)
+    restaurant_id VARCHAR(50) NOT NULL REFERENCES restaurant.restaurants(id)
 );
 
--- Tabla de actualizaciones de stock
-CREATE TABLE IF NOT EXISTS stock_actualizaciones (
+-- Table: stock_updates ('stock_actualizaciones')
+CREATE TABLE IF NOT EXISTS restaurant.stock_updates (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    producto_id UUID NOT NULL REFERENCES productos(id) ON DELETE CASCADE,
-    cantidad INTEGER NOT NULL,
-    tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('increment', 'decrement', 'set')),
-    razon TEXT,
+    product_id UUID NOT NULL REFERENCES restaurant.products(id) ON DELETE CASCADE,
+    quantity INTEGER NOT NULL, -- 'cantidad'
+    type VARCHAR(20) NOT NULL CHECK (type IN ('increment', 'decrement', 'set')),
+    reason TEXT,
     timestamp TIMESTAMP DEFAULT NOW(),
     updated_by VARCHAR(255) DEFAULT 'system',
-    restaurante_id VARCHAR(50) NOT NULL REFERENCES restaurantes(id)
+    restaurant_id VARCHAR(50) NOT NULL REFERENCES restaurant.restaurants(id)
 );
 
--- Tabla de menús
-CREATE TABLE IF NOT EXISTS menus (
+-- Table: menus
+CREATE TABLE IF NOT EXISTS restaurant.menus (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    nombre VARCHAR(255) NOT NULL,
-    descripcion TEXT,
-    fecha_inicio DATE,
-    fecha_fin DATE,
-    activo BOOLEAN DEFAULT true,
-    restaurante_id VARCHAR(50) NOT NULL REFERENCES restaurantes(id),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    start_date DATE, -- 'fecha_inicio'
+    end_date DATE, -- 'fecha_fin'
+    is_active BOOLEAN DEFAULT true, -- 'activo'
+    restaurant_id VARCHAR(50) NOT NULL REFERENCES restaurant.restaurants(id),
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Tabla de productos en menús
-CREATE TABLE IF NOT EXISTS menu_productos (
+-- Table: menu_products
+CREATE TABLE IF NOT EXISTS restaurant.menu_products (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    menu_id UUID NOT NULL REFERENCES menus(id) ON DELETE CASCADE,
-    producto_id UUID NOT NULL REFERENCES productos(id) ON DELETE CASCADE,
-    precio_menu DECIMAL(10,2),
-    disponible BOOLEAN DEFAULT true,
-    orden INTEGER DEFAULT 0,
+    menu_id UUID NOT NULL REFERENCES restaurant.menus(id) ON DELETE CASCADE,
+    product_id UUID NOT NULL REFERENCES restaurant.products(id) ON DELETE CASCADE,
+    menu_price DECIMAL(10,2), -- 'precio_menu'
+    is_available BOOLEAN DEFAULT true, -- 'disponible'
+    sort_order INTEGER DEFAULT 0, -- 'orden'
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Tabla de combinaciones de productos
-CREATE TABLE IF NOT EXISTS combinaciones (
+-- Table: combinations ('combinaciones')
+CREATE TABLE IF NOT EXISTS restaurant.combinations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    nombre VARCHAR(255) NOT NULL,
-    descripcion TEXT,
-    precio_total DECIMAL(10,2) DEFAULT 0,
-    es_favorito BOOLEAN DEFAULT false,
-    es_especial BOOLEAN DEFAULT false,
-    cantidad INTEGER DEFAULT 1,
-    restaurante_id VARCHAR(50) NOT NULL REFERENCES restaurantes(id),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    total_price DECIMAL(10,2) DEFAULT 0, -- 'precio_total'
+    is_favorite BOOLEAN DEFAULT false, -- 'es_favorito'
+    is_special BOOLEAN DEFAULT false, -- 'es_especial'
+    quantity INTEGER DEFAULT 1, -- 'cantidad'
+    restaurant_id VARCHAR(50) NOT NULL REFERENCES restaurant.restaurants(id),
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Tabla de productos en combinaciones
-CREATE TABLE IF NOT EXISTS combinacion_productos (
+-- Table: combination_products
+CREATE TABLE IF NOT EXISTS restaurant.combination_products (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    combinacion_id UUID NOT NULL REFERENCES combinaciones(id) ON DELETE CASCADE,
-    producto_id UUID NOT NULL REFERENCES productos(id) ON DELETE CASCADE,
-    cantidad INTEGER DEFAULT 1,
-    precio_unitario DECIMAL(10,2),
+    combination_id UUID NOT NULL REFERENCES restaurant.combinations(id) ON DELETE CASCADE,
+    product_id UUID NOT NULL REFERENCES restaurant.products(id) ON DELETE CASCADE,
+    quantity INTEGER DEFAULT 1,
+    unit_price DECIMAL(10,2), -- 'precio_unitario'
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Insertar datos iniciales
+-- 4. Initial Data Insertion
 
--- Insertar restaurante por defecto
-INSERT INTO restaurantes (id, nombre, descripcion, direccion, telefono, email) 
-VALUES ('default', 'SPOON Restaurant', 'Restaurante de comida tradicional', 'Calle Principal 123', '+57 300 123 4567', 'info@spoon.com')
+-- Insert Default Restaurant
+INSERT INTO restaurant.restaurants (id, name, description, address, phone, email, slug) 
+VALUES ('default', 'SPOON Restaurant', 'Traditional Food Restaurant', 'Main Street 123', '+57 300 123 4567', 'info@spoon.com', 'spoon-demo')
 ON CONFLICT (id) DO NOTHING;
 
--- Insertar categorías iniciales (UUIDs corregidos)
-INSERT INTO categorias (id, nombre, tipo, orden, descripcion, restaurante_id) VALUES
-    ('c1111111-1111-1111-1111-111111111111', 'Entradas', 'categoria', 1, 'Sopas y entradas', 'default'),
-    ('c2222222-2222-2222-2222-222222222222', 'Principios', 'categoria', 2, 'Platos principales', 'default'),
-    ('c3333333-3333-3333-3333-333333333333', 'Proteínas', 'categoria', 3, 'Carnes y proteínas', 'default'),
-    ('c4444444-4444-4444-4444-444444444444', 'Acompañamientos', 'categoria', 4, 'Guarniciones y acompañamientos', 'default'),
-    ('c5555555-5555-5555-5555-555555555555', 'Bebidas', 'categoria', 5, 'Bebidas y jugos', 'default')
+-- Insert Categories
+INSERT INTO restaurant.categories (id, name, type, sort_order, description, restaurant_id) VALUES
+    ('c1111111-1111-1111-1111-111111111111', 'Starters', 'category', 1, 'Soups and starters', 'default'),
+    ('c2222222-2222-2222-2222-222222222222', 'Mains', 'category', 2, 'Main courses', 'default'),
+    ('c3333333-3333-3333-3333-333333333333', 'Proteins', 'category', 3, 'Meats and proteins', 'default'),
+    ('c4444444-4444-4444-4444-444444444444', 'Sides', 'category', 4, 'Side dishes', 'default'),
+    ('c5555555-5555-5555-5555-555555555555', 'Drinks', 'category', 5, 'Beverages', 'default')
 ON CONFLICT (id) DO NOTHING;
 
--- Insertar subcategorías (UUIDs corregidos)
-INSERT INTO categorias (id, nombre, tipo, orden, descripcion, restaurante_id) VALUES
-    ('d1111111-1111-1111-1111-111111111111', 'entrada', 'subcategoria', 1, 'Sopas y entradas', 'default'),
-    ('d2222222-2222-2222-2222-222222222222', 'principio', 'subcategoria', 2, 'Platos principales', 'default'),
-    ('d3333333-3333-3333-3333-333333333333', 'proteina', 'subcategoria', 3, 'Carnes y proteínas', 'default'),
-    ('d4444444-4444-4444-4444-444444444444', 'acompanamiento', 'subcategoria', 4, 'Guarniciones y acompañamientos', 'default'),
-    ('d5555555-5555-5555-5555-555555555555', 'bebida', 'subcategoria', 5, 'Bebidas y jugos', 'default')
+-- Insert Subcategories
+INSERT INTO restaurant.categories (id, name, type, sort_order, description, restaurant_id) VALUES
+    ('d1111111-1111-1111-1111-111111111111', 'entrada', 'subcategory', 1, 'Soups and starters', 'default'),
+    ('d2222222-2222-2222-2222-222222222222', 'principio', 'subcategory', 2, 'Main courses', 'default'),
+    ('d3333333-3333-3333-3333-333333333333', 'proteina', 'subcategory', 3, 'Meats and proteins', 'default'),
+    ('d4444444-4444-4444-4444-444444444444', 'acompanamiento', 'subcategory', 4, 'Side dishes', 'default'),
+    ('d5555555-5555-5555-5555-555555555555', 'bebida', 'subcategory', 5, 'Beverages', 'default')
 ON CONFLICT (id) DO NOTHING;
 
--- Insertar productos de ejemplo (UUIDs corregidos)
-INSERT INTO productos (id, nombre, descripcion, precio_actual, categoria_id, subcategoria_id, stock_actual, stock_minimo, stock_maximo, restaurante_id) VALUES
-    ('f1111111-1111-1111-1111-111111111111', 'Sopa de Guineo', 'Sopa tradicional con plátano verde', 8500, 'c1111111-1111-1111-1111-111111111111', 'd1111111-1111-1111-1111-111111111111', 10, 5, 50, 'default'),
-    ('f2222222-2222-2222-2222-222222222222', 'Ajiaco', 'Sopa típica con tres tipos de papa, pollo y guascas', 12000, 'c1111111-1111-1111-1111-111111111111', 'd1111111-1111-1111-1111-111111111111', 15, 5, 50, 'default'),
-    ('f3333333-3333-3333-3333-333333333333', 'Frijoles', 'Frijoles rojos cocinados con plátano y costilla', 15000, 'c2222222-2222-2222-2222-222222222222', 'd2222222-2222-2222-2222-222222222222', 20, 5, 100, 'default'),
-    ('f4444444-4444-4444-4444-444444444444', 'Pechuga a la Plancha', 'Pechuga de pollo a la plancha con especias', 18000, 'c3333333-3333-3333-3333-333333333333', 'd3333333-3333-3333-3333-333333333333', 25, 8, 100, 'default'),
-    ('f5555555-5555-5555-5555-555555555555', 'Arroz Blanco', 'Arroz blanco cocido al vapor', 5000, 'c4444444-4444-4444-4444-444444444444', 'd4444444-4444-4444-4444-444444444444', 50, 20, 200, 'default'),
-    ('f6666666-6666-6666-6666-666666666666', 'Jugo de Mora', 'Jugo en agua de mora', 4000, 'c5555555-5555-5555-5555-555555555555', 'd5555555-5555-5555-5555-555555555555', 45, 15, 150, 'default')
+-- Insert Products
+INSERT INTO restaurant.products (id, name, description, current_price, category_id, subcategory_id, current_stock, min_stock, max_stock, restaurant_id) VALUES
+    ('f1111111-1111-1111-1111-111111111111', 'Banana Soup', 'Traditional soup with green plantain', 8500, 'c1111111-1111-1111-1111-111111111111', 'd1111111-1111-1111-1111-111111111111', 10, 5, 50, 'default'),
+    ('f2222222-2222-2222-2222-222222222222', 'Ajiaco', 'Typical soup with chicken and potato', 12000, 'c1111111-1111-1111-1111-111111111111', 'd1111111-1111-1111-1111-111111111111', 15, 5, 50, 'default'),
+    ('f3333333-3333-3333-3333-333333333333', 'Beans', 'Red beans with pork', 15000, 'c2222222-2222-2222-2222-222222222222', 'd2222222-2222-2222-2222-222222222222', 20, 5, 100, 'default'),
+    ('f4444444-4444-4444-4444-444444444444', 'Grilled Chicken', 'Grilled chicken breast with spices', 18000, 'c3333333-3333-3333-3333-333333333333', 'd3333333-3333-3333-3333-333333333333', 25, 8, 100, 'default'),
+    ('f5555555-5555-5555-5555-555555555555', 'White Rice', 'Steamed white rice', 5000, 'c4444444-4444-4444-4444-444444444444', 'd4444444-4444-4444-4444-444444444444', 50, 20, 200, 'default'),
+    ('f6666666-6666-6666-6666-666666666666', 'Blackberry Juice', 'Fresh blackberry juice', 4000, 'c5555555-5555-5555-5555-555555555555', 'd5555555-5555-5555-5555-555555555555', 45, 15, 150, 'default')
 ON CONFLICT (id) DO NOTHING;
 
--- Crear índices para mejorar el rendimiento
-CREATE INDEX IF NOT EXISTS idx_productos_restaurante ON productos(restaurante_id);
-CREATE INDEX IF NOT EXISTS idx_productos_categoria ON productos(categoria_id);
-CREATE INDEX IF NOT EXISTS idx_productos_subcategoria ON productos(subcategoria_id);
-CREATE INDEX IF NOT EXISTS idx_categorias_restaurante ON categorias(restaurante_id);
-CREATE INDEX IF NOT EXISTS idx_categorias_tipo ON categorias(tipo);
-CREATE INDEX IF NOT EXISTS idx_precio_historial_producto ON precio_historial(producto_id);
-CREATE INDEX IF NOT EXISTS idx_stock_actualizaciones_producto ON stock_actualizaciones(producto_id);
+-- 5. Triggers for updated_at
 
--- Crear triggers para actualizar updated_at automáticamente
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -188,10 +198,10 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
-CREATE TRIGGER update_restaurantes_updated_at BEFORE UPDATE ON restaurantes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_categorias_updated_at BEFORE UPDATE ON categorias FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_productos_updated_at BEFORE UPDATE ON productos FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_menus_updated_at BEFORE UPDATE ON menus FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_combinaciones_updated_at BEFORE UPDATE ON combinaciones FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_restaurants_updated_at BEFORE UPDATE ON restaurant.restaurants FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_categories_updated_at BEFORE UPDATE ON restaurant.categories FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON restaurant.products FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_menus_updated_at BEFORE UPDATE ON restaurant.menus FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_combinations_updated_at BEFORE UPDATE ON restaurant.combinations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 COMMIT;

@@ -1,13 +1,13 @@
 // src/shared/components/ui/Table/table.tsx
 import React from 'react';
-import { 
-  TableProps, 
-  TableHeaderProps, 
-  TableCellProps, 
-  TableRowProps 
+import {
+  TableProps,
+  TableHeaderProps,
+  TableCellProps,
+  TableRowProps
 } from './table.types';
 
-const Table = ({ children, className = '', ...props }: TableProps) => (
+export const Table = ({ children, className = '', ...props }: TableProps) => (
   <div className={`w-full overflow-x-auto border border-neutral-200 rounded-lg ${className}`}>
     <table className="min-w-full divide-y divide-neutral-200" {...props}>
       {children}
@@ -15,8 +15,8 @@ const Table = ({ children, className = '', ...props }: TableProps) => (
   </div>
 );
 
-const Header = ({ children, sticky = false, className = '', ...props }: TableHeaderProps) => (
-  <thead 
+export const Header = ({ children, sticky = false, className = '', ...props }: TableHeaderProps) => (
+  <thead
     className={`bg-spoon-light text-neutral-700 ${sticky ? 'sticky top-0' : ''} ${className}`}
     {...props}
   >
@@ -24,8 +24,8 @@ const Header = ({ children, sticky = false, className = '', ...props }: TableHea
   </thead>
 );
 
-const Body = ({ children, className = '', ...props }: TableProps) => (
-  <tbody 
+export const Body = ({ children, className = '', ...props }: TableProps) => (
+  <tbody
     className={`bg-white divide-y divide-neutral-200 ${className}`}
     {...props}
   >
@@ -33,14 +33,14 @@ const Body = ({ children, className = '', ...props }: TableProps) => (
   </tbody>
 );
 
-const Row = ({ 
-  children, 
+export const Row = ({
+  children,
   selected = false,
   clickable = false,
-  className = '', 
-  ...props 
+  className = '',
+  ...props
 }: TableRowProps) => (
-  <tr 
+  <tr
     className={`
       ${selected ? 'bg-spoon-light' : 'bg-white hover:bg-spoon-light'}
       ${clickable ? 'cursor-pointer' : ''}
@@ -53,12 +53,12 @@ const Row = ({
   </tr>
 );
 
-const Cell = ({ 
-  children, 
+export const Cell = ({
+  children,
   align = 'left',
   variant = 'default',
-  className = '', 
-  ...props 
+  className = '',
+  ...props
 }: TableCellProps) => {
   const alignStyles = {
     left: 'text-left',
@@ -73,7 +73,7 @@ const Cell = ({
   };
 
   return (
-    <td 
+    <td
       className={`
         px-6 py-4 text-sm whitespace-nowrap
         ${alignStyles[align]}
@@ -87,13 +87,13 @@ const Cell = ({
   );
 };
 
-const HeaderCell = ({ 
-  children, 
+export const HeaderCell = ({
+  children,
   align = 'left',
-  className = '', 
-  ...props 
+  className = '',
+  ...props
 }: TableCellProps) => (
-  <th 
+  <th
     className={`
       px-6 py-3 text-sm font-semibold
       text-neutral-700 uppercase tracking-wider

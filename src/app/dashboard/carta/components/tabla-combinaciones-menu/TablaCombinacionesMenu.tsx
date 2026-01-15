@@ -4,7 +4,7 @@ import { Star, Badge } from "lucide-react";
 import { Button } from "@/shared/components/ui/Button";
 import { Input } from "@/shared/components/ui/Input";
 import { Tooltip } from "@/shared/components/ui/Tooltip";
-import { MenuCombinacion } from '../../types/menu.types';
+import { MenuCombinacion } from '@/app/dashboard/carta/types/menu.types';
 import { Loader2 } from 'lucide-react';
 
 interface TablaCombinacionesMenuProps {
@@ -16,8 +16,8 @@ interface TablaCombinacionesMenuProps {
   onRemove?: (id: string) => void;
 }
 
-export function TablaCombinacionesMenu({ 
-  combinaciones, 
+export function TablaCombinacionesMenu({
+  combinaciones,
   isLoading,
   onToggleFavorito,
   onToggleEspecial,
@@ -59,18 +59,20 @@ export function TablaCombinacionesMenu({
           </DataTable.Header>
           <DataTable.Body className="text-xs">
             {combinaciones.map((combinacion, index) => (
-              <DataTable.Row 
+              <DataTable.Row
                 key={combinacion.id}
                 className={combinacion.especial ? 'bg-[var(--spoon-primary-light)]' : ''}
               >
                 <DataTable.Cell className="w-16 text-center py-2">{index + 1}</DataTable.Cell>
-                <DataTable.Cell className="py-2">{combinacion.entrada.nombre}</DataTable.Cell>
-                <DataTable.Cell className="py-2">{combinacion.principio.nombre}</DataTable.Cell>
-                <DataTable.Cell className="py-2">{combinacion.proteina.nombre}</DataTable.Cell>
+                <DataTable.Cell className="py-2">{combinacion.entrada?.nombre || '-'}</DataTable.Cell>
+                <DataTable.Cell className="py-2">{combinacion.principio?.nombre || '-'}</DataTable.Cell>
+                <DataTable.Cell className="py-2">{combinacion.proteina?.nombre || '-'}</DataTable.Cell>
                 <DataTable.Cell className="py-2">
-                  {combinacion.acompanamiento.map(item => item.nombre).join(', ')}
+                  {combinacion.acompanamiento && combinacion.acompanamiento.length > 0
+                    ? combinacion.acompanamiento.map(item => item?.nombre || '-').join(', ')
+                    : '-'}
                 </DataTable.Cell>
-                <DataTable.Cell className="py-2">{combinacion.bebida.nombre}</DataTable.Cell>
+                <DataTable.Cell className="py-2">{combinacion.bebida?.nombre || '-'}</DataTable.Cell>
                 <DataTable.Cell className="py-2">
                   <Input
                     type="number"
@@ -88,9 +90,8 @@ export function TablaCombinacionesMenu({
                           variant="ghost"
                           size="sm"
                           onClick={() => onToggleFavorito(combinacion.id)}
-                          className={`p-1 hover:bg-[var(--spoon-primary-light)] ${
-                            combinacion.favorito ? 'text-[var(--spoon-primary)]' : 'text-gray-400'
-                          }`}
+                          className={`p-1 hover:bg-[var(--spoon-primary-light)] ${combinacion.favorito ? 'text-[var(--spoon-primary)]' : 'text-gray-400'
+                            }`}
                         >
                           <Star className={`h-5 w-5 ${combinacion.favorito ? 'fill-current' : ''}`} />
                         </Button>
@@ -102,9 +103,8 @@ export function TablaCombinacionesMenu({
                           variant="ghost"
                           size="sm"
                           onClick={() => onToggleEspecial(combinacion.id)}
-                          className={`p-1 hover:bg-[var(--spoon-primary-light)] ${
-                            combinacion.especial ? 'text-[var(--spoon-primary)]' : 'text-gray-400'
-                          }`}
+                          className={`p-1 hover:bg-[var(--spoon-primary-light)] ${combinacion.especial ? 'text-[var(--spoon-primary)]' : 'text-gray-400'
+                            }`}
                         >
                           <Badge className="h-5 w-5" />
                         </Button>

@@ -1,18 +1,18 @@
 // src/app/dashboard/carta/components/categorias/DialogoHorarios.tsx
 import { useState } from 'react'; // Añadir esta importación
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogFooter 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
 } from '@/shared/components/ui/Dialog';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/ui/Input';
 import { Label } from '@/shared/components/ui/Label';
 import { Switch } from '@/shared/components/ui/Switch';
-import { useCategoriasStore } from '../../store/categoriasStore';
-import { Categoria, Dia } from '../../types/menu.types';
+import { useCategoriasStore } from '@/app/dashboard/carta/store/categoriasStore';
+import { Categoria, Dia } from '@/app/dashboard/carta/types/menu.types';
 
 /**
  * Props para el componente DialogoHorarios.
@@ -111,7 +111,7 @@ export function DialogoHorarios({ open, onOpenChange, categoriaId }: DialogoHora
             <Switch
               id="horarios-activos"
               checked={config.activo}
-              onCheckedChange={(checked) => 
+              onCheckedChange={(checked) =>
                 setConfig(prev => ({ ...prev, activo: checked }))
               }
             />

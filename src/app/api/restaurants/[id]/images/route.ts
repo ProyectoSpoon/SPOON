@@ -1,6 +1,7 @@
 // src/app/api/restaurants/[id]/images/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/database';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
@@ -12,37 +13,62 @@ export async function GET(
 ) {
   try {
     const { id } = params;
-    
+
     console.log(`🔍 GET /api/restaurants/${id}/images`);
-    
-    const query = `
-      SELECT logo_url, cover_image_url
-      FROM restaurant.restaurants 
-      WHERE id = $1
-    `;
-    
-    const result = await pool.query(query, [id]);
-    
-    if (result.rows.length === 0) {
+
+    const supabase = createRouteHandlerClient({ cookies });
+
+    // Verificar sesión
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
+    // Si id es 'current', buscar el restaurante del usuario
+    let restaurantId = id;
+    if (id === 'current') {
+      const { data: userRestaurant } = await supabase
+        .schema('public')
+        .from('restaurants')
+        .select('id')
+        .eq('owner_id', session.user.id)
+        .single();
+
+      if (!userRestaurant) {
+        return NextResponse.json(
+          { error: 'Usuario no tiene restaurante' },
+          { status: 404 }
+        );
+      }
+
+      restaurantId = userRestaurant.id;
+    }
+
+    const { data: restaurant, error } = await supabase
+      .schema('public')
+      .from('restaurants')
+      .select('logo_url, cover_image_url')
+      .eq('id', restaurantId)
+      .single();
+
+    if (error || !restaurant) {
       console.log(`❌ Restaurante no encontrado: ${id}`);
       return NextResponse.json(
         { error: 'Restaurante no encontrado' },
         { status: 404 }
       );
     }
-    
-    const restaurant = result.rows[0];
-    
+
     console.log(`✅ Imágenes obtenidas:`, {
       logoUrl: restaurant.logo_url,
       coverImageUrl: restaurant.cover_image_url
     });
-    
+
     return NextResponse.json({
       logoUrl: restaurant.logo_url,
       coverImageUrl: restaurant.cover_image_url
     });
-    
+
   } catch (error) {
     console.error('❌ Error al obtener imágenes:', error);
     return NextResponse.json(
@@ -60,19 +86,19 @@ export async function POST(
   try {
     const { id } = params;
     console.log(`📤 POST /api/restaurants/${id}/images - Iniciando subida`);
-    
+
     const formData = await request.formData();
-    
+
     const file = formData.get('file') as File;
     const type = formData.get('type') as string; // 'logo' o 'cover'
-    
+
     console.log(`📄 Archivo recibido:`, {
       name: file?.name,
       size: file?.size,
       type: file?.type,
       imageType: type
     });
-    
+
     if (!file) {
       console.log('❌ No se encontró archivo en FormData');
       return NextResponse.json(
@@ -80,7 +106,7 @@ export async function POST(
         { status: 400 }
       );
     }
-    
+
     if (!['logo', 'cover'].includes(type)) {
       console.log(`❌ Tipo de imagen inválido: ${type}`);
       return NextResponse.json(
@@ -88,7 +114,7 @@ export async function POST(
         { status: 400 }
       );
     }
-    
+
     // Validar tipo de archivo
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
@@ -98,7 +124,7 @@ export async function POST(
         { status: 400 }
       );
     }
-    
+
     // Validar tamaño (5MB máximo)
     if (file.size > 5 * 1024 * 1024) {
       console.log(`❌ Archivo demasiado grande: ${file.size} bytes`);
@@ -107,21 +133,20 @@ export async function POST(
         { status: 400 }
       );
     }
-    
+
     // Generar nombre único
     const timestamp = Date.now();
     const extension = file.name.split('.').pop();
     const fileName = `${type}_${id}_${timestamp}.${extension}`;
-    
+
     console.log(`📝 Nombre de archivo generado: ${fileName}`);
-    
+
     // Crear directorio si no existe
     const uploadsDir = join(process.cwd(), 'public', 'uploads', 'restaurants');
-    
+
     console.log(`📁 Directorio de uploads: ${uploadsDir}`);
-    
+
     try {
-      // Verificar si el directorio existe
       if (!existsSync(uploadsDir)) {
         console.log(`🔨 Creando directorio: ${uploadsDir}`);
         await mkdir(uploadsDir, { recursive: true });
@@ -137,19 +162,19 @@ export async function POST(
         { status: 500 }
       );
     }
-    
+
     // Guardar archivo
     const filePath = join(uploadsDir, fileName);
     console.log(`💾 Ruta completa del archivo: ${filePath}`);
-    
+
     try {
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      
+
       console.log(`💾 Escribiendo archivo... ${buffer.length} bytes`);
       await writeFile(filePath, buffer);
       console.log(`✅ Archivo guardado exitosamente en: ${filePath}`);
-      
+
     } catch (writeError) {
       console.error('❌ Error escribiendo archivo:', writeError);
       const errorMessage = writeError instanceof Error ? writeError.message : 'Error desconocido al escribir archivo';
@@ -158,40 +183,46 @@ export async function POST(
         { status: 500 }
       );
     }
-    
+
     // URL pública del archivo
     const fileUrl = `/uploads/restaurants/${fileName}`;
     console.log(`🔗 URL pública generada: ${fileUrl}`);
-    
-    // Actualizar base de datos
+
+    // Actualizar base de datos con Supabase
+    const supabase = createRouteHandlerClient({ cookies });
     const column = type === 'logo' ? 'logo_url' : 'cover_image_url';
-    const updateQuery = `
-      UPDATE restaurant.restaurants 
-      SET ${column} = $1, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $2
-      RETURNING ${column}
-    `;
-    
-    console.log(`🗄️ Actualizando base de datos - columna: ${column}, URL: ${fileUrl}`);
-    
-    const result = await pool.query(updateQuery, [fileUrl, id]);
-    
-    if (result.rows.length === 0) {
+
+    console.log(`🗄️ Actualiz ando base de datos - columna: ${column}, URL: ${fileUrl}`);
+
+    const updateData: any = {
+      [column]: fileUrl,
+      updated_at: new Date().toISOString()
+    };
+
+    const { data: result, error } = await supabase
+      .schema('public')
+      .from('restaurants')
+      .update(updateData)
+      .eq('id', id)
+      .select(column)
+      .single();
+
+    if (error || !result) {
       console.log(`❌ Restaurante no encontrado para actualizar: ${id}`);
       return NextResponse.json(
         { error: 'Restaurante no encontrado' },
         { status: 404 }
       );
     }
-    
-    console.log(`✅ Base de datos actualizada:`, result.rows[0]);
-    
+
+    console.log(`✅ Base de datos actualizada:`, result);
+
     return NextResponse.json({
       success: true,
       url: fileUrl,
       message: `${type === 'logo' ? 'Logo' : 'Portada'} actualizada correctamente`
     });
-    
+
   } catch (error) {
     console.error('❌ Error general en POST /images:', error);
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
@@ -211,58 +242,52 @@ export async function PUT(
     const { id } = params;
     const body = await request.json();
     const { logoUrl, coverImageUrl } = body;
-    
+
     console.log(`🔄 PUT /api/restaurants/${id}/images`, { logoUrl, coverImageUrl });
-    
-    const updates = [];
-    const values = [];
-    let paramIndex = 1;
-    
+
+    const updateData: any = {
+      updated_at: new Date().toISOString()
+    };
+
     if (logoUrl !== undefined) {
-      updates.push(`logo_url = $${paramIndex}`);
-      values.push(logoUrl);
-      paramIndex++;
+      updateData.logo_url = logoUrl;
     }
-    
+
     if (coverImageUrl !== undefined) {
-      updates.push(`cover_image_url = $${paramIndex}`);
-      values.push(coverImageUrl);
-      paramIndex++;
+      updateData.cover_image_url = coverImageUrl;
     }
-    
-    if (updates.length === 0) {
+
+    if (Object.keys(updateData).length === 1) { // Solo updated_at
       return NextResponse.json(
         { error: 'No hay datos para actualizar' },
         { status: 400 }
       );
     }
-    
-    updates.push(`updated_at = CURRENT_TIMESTAMP`);
-    values.push(id);
-    
-    const query = `
-      UPDATE restaurant.restaurants 
-      SET ${updates.join(', ')}
-      WHERE id = $${paramIndex}
-      RETURNING logo_url, cover_image_url
-    `;
-    
-    const result = await pool.query(query, values);
-    
-    if (result.rows.length === 0) {
+
+    const supabase = createRouteHandlerClient({ cookies });
+
+    const { data: result, error } = await supabase
+      .schema('public')
+      .from('restaurants')
+      .update(updateData)
+      .eq('id', id)
+      .select('logo_url, cover_image_url')
+      .single();
+
+    if (error || !result) {
       return NextResponse.json(
         { error: 'Restaurante no encontrado' },
         { status: 404 }
       );
     }
-    
-    console.log(`✅ URLs actualizadas:`, result.rows[0]);
-    
+
+    console.log(`✅ URLs actualizadas:`, result);
+
     return NextResponse.json({
       success: true,
-      data: result.rows[0]
+      data: result
     });
-    
+
   } catch (error) {
     console.error('❌ Error al actualizar URLs:', error);
     return NextResponse.json(

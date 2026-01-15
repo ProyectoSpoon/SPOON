@@ -1,6 +1,6 @@
 // /shared/hooks/horarios/indice.ts
-export * from './usar-gestor-horarios';
-export * from './usar-festivos';
+export * from '@/shared/Hooks/horarios/use-gestor-horarios';
+export * from '@/shared/Hooks/horarios/use-festivos';
 
 
 // Re-exportaciones con alias para mantener compatibilidad

@@ -11,7 +11,7 @@ import { Input } from "@/shared/components/ui/Input";
 import { Trash } from 'lucide-react';
 import { spoonTheme } from '@/shared/Styles/spoon-theme';
 import { cn } from "@/lib/utils";
-import { usarFestivos } from '@/shared/Hooks/horarios/usar-festivos';
+import { usarFestivos } from '@/shared/Hooks/horarios/use-festivos';
 import { Festivo } from '@/shared/types/horarios/tipos-festivos';
 import { toast } from 'sonner';
 import 'react-day-picker/dist/style.css';
@@ -24,7 +24,7 @@ export default function CalendarioFestivos({ restauranteId }: CalendarioFestivos
   const [dialogoAbierto, setDialogoAbierto] = React.useState(false);
   const [fechaSeleccionada, setFechaSeleccionada] = React.useState<Date | undefined>();
   const [nuevoEvento, setNuevoEvento] = React.useState('');
-  
+
   const {
     configuracion,
     cargando,
@@ -57,7 +57,7 @@ export default function CalendarioFestivos({ restauranteId }: CalendarioFestivos
         recurrenciaAnual: false,
         afectaHorario: true
       });
-      
+
       setDialogoAbierto(false);
       setNuevoEvento('');
       setFechaSeleccionada(undefined);
@@ -120,9 +120,9 @@ export default function CalendarioFestivos({ restauranteId }: CalendarioFestivos
   return (
     <div className="bg-white rounded-xl p-4">
       <style>{estilosCalendario}</style>
-      
+
       <h2 className="text-lg font-semibold mb-4">Días Festivos</h2>
- 
+
       <DayPicker
         mode="single"
         locale={es}
@@ -134,14 +134,14 @@ export default function CalendarioFestivos({ restauranteId }: CalendarioFestivos
           }
         }}
         modifiers={{
-          festivo: (date) => eventos.some(ev => 
-            (ev.tipo === 'nacional' || ev.tipo === 'regional' || ev.tipo === 'local') && 
-            date.getDate() === ev.fecha.getDate() && 
+          festivo: (date) => eventos.some(ev =>
+            (ev.tipo === 'nacional' || ev.tipo === 'regional' || ev.tipo === 'local') &&
+            date.getDate() === ev.fecha.getDate() &&
             date.getMonth() === ev.fecha.getMonth()
           ),
-          personalizado: (date) => eventos.some(ev => 
-            ev.tipo === 'personalizado' && 
-            date.getDate() === ev.fecha.getDate() && 
+          personalizado: (date) => eventos.some(ev =>
+            ev.tipo === 'personalizado' &&
+            date.getDate() === ev.fecha.getDate() &&
             date.getMonth() === ev.fecha.getMonth()
           )
         }}
@@ -159,14 +159,14 @@ export default function CalendarioFestivos({ restauranteId }: CalendarioFestivos
         }}
         className="mx-auto"
       />
- 
-      <Button 
+
+      <Button
         className="w-full mt-4"
         onClick={() => setDialogoAbierto(true)}
       >
         Agregar evento
       </Button>
- 
+
       {/* Próximos eventos */}
       <div className="mt-6">
         <h3 className="font-medium text-sm mb-3">Próximos eventos:</h3>
@@ -207,7 +207,7 @@ export default function CalendarioFestivos({ restauranteId }: CalendarioFestivos
             ))}
         </div>
       </div>
- 
+
       <Dialog open={dialogoAbierto} onOpenChange={setDialogoAbierto}>
         <DialogContent>
           <DialogHeader>
@@ -216,10 +216,10 @@ export default function CalendarioFestivos({ restauranteId }: CalendarioFestivos
               Selecciona una fecha y agrega una descripción para el evento.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="py-4">
             <p className="text-sm text-neutral-600 mb-4">
-              Fecha seleccionada: {fechaSeleccionada && 
+              Fecha seleccionada: {fechaSeleccionada &&
                 format(fechaSeleccionada, "EEEE d 'de' MMMM 'de' yyyy", { locale: es })}
             </p>
             <Input
@@ -231,7 +231,7 @@ export default function CalendarioFestivos({ restauranteId }: CalendarioFestivos
           </div>
 
           <DialogFooter className="flex gap-2">
-            <Button 
+            <Button
               variant="outline"
               onClick={() => {
                 setDialogoAbierto(false);
@@ -250,7 +250,7 @@ export default function CalendarioFestivos({ restauranteId }: CalendarioFestivos
           </DialogFooter>
         </DialogContent>
       </Dialog>
- 
+
       {/* Instrucciones */}
       <div className="mt-4 pt-4 border-t border-neutral-200">
         <p className="text-xs text-neutral-600">

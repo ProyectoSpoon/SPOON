@@ -3,7 +3,7 @@ import { Calendar } from "@/shared/components/ui/Calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/components/ui/Dialog";
 import { Input } from "@/shared/components/ui/Input";
 import { Button } from "@/shared/components/ui/Button";
-import { ProgramacionCombinacion } from '../../types/menu.types';
+import { ProgramacionCombinacion } from '@/app/dashboard/carta/types/menu.types';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/shared/components/ui/Alert-Dialog/Alert-dialog';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
@@ -20,9 +20,9 @@ interface ModalProgramacionProps {
   programacionExistente?: ProgramacionCombinacion[];
 }
 
-export function ModalProgramacion({ 
-  isOpen, 
-  onClose, 
+export function ModalProgramacion({
+  isOpen,
+  onClose,
   onConfirm,
   onDelete,
   fechaInicial,
@@ -49,8 +49,8 @@ export function ModalProgramacion({
       try {
         setIsLoading(true);
         onConfirm(fecha, cantidad);
-        toast.success(modo === 'crear' 
-          ? 'Combinación programada correctamente' 
+        toast.success(modo === 'crear'
+          ? 'Combinación programada correctamente'
           : 'Programación actualizada correctamente');
         resetForm();
         onClose();
@@ -99,7 +99,7 @@ export function ModalProgramacion({
               {modo === 'crear' ? 'Programar Combinación' : 'Editar Programación'}
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <div className="flex justify-center">
               <Calendar
@@ -109,7 +109,7 @@ export function ModalProgramacion({
                 className="rounded-md border"
               />
             </div>
-            
+
             <div className="space-y-2">
               <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                 Cantidad
@@ -146,8 +146,8 @@ export function ModalProgramacion({
           </div>
 
           <div className="flex justify-end gap-4">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
                 resetForm();
                 onClose();
@@ -155,8 +155,8 @@ export function ModalProgramacion({
             >
               Cancelar
             </Button>
-            <Button 
-              onClick={handleConfirm} 
+            <Button
+              onClick={handleConfirm}
               disabled={!fecha || cantidad < 1 || isLoading}
               className="min-w-[100px]"
             >

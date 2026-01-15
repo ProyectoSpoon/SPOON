@@ -1,6 +1,6 @@
 // src/types/group-config.types.ts
 
-// Mock interface for IEmpresa (to be replaced with actual Firebase types later)
+// Mock interface for IEmpresa
 interface IEmpresa {
   id: string;
   nombre: string;

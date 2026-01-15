@@ -5,28 +5,17 @@ interface ErrorApp {
   mensaje: string;
 }
 
-class FirebaseError extends Error {
-  code: string;
-  constructor(message: string, code: string) {
-    super(message);
-    this.code = code;
+export const manejadorErrores = (error: unknown): ErrorApp => {
+  // Aquí se podrían manejar errores de Postgres o Axios si se definen clases específicas
+  if (error instanceof Error) {
+    return {
+      tipo: 'GENERAL',
+      mensaje: error.message
+    };
   }
-}
 
-const manejarErrorFirebase = (error: FirebaseError): ErrorApp => {
   return {
-    tipo: 'FIREBASE',
-    mensaje: error.message
+    tipo: 'DESCONOCIDO',
+    mensaje: 'Ha ocurrido un error inesperado'
   };
 };
-
-export const manejadorErrores = (error: unknown): ErrorApp => {
-    if (error instanceof FirebaseError) {
-      return manejarErrorFirebase(error);
-    }
-    // ... otros tipos de errores
-    return {
-      tipo: 'DESCONOCIDO',
-      mensaje: 'Ha ocurrido un error inesperado'
-    };
-  };

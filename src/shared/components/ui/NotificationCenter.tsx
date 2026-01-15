@@ -5,15 +5,15 @@ import { useNotifications } from '@/shared/Context/notification-context';
 import { Button } from '@/shared/components/ui/Button';
 import { Badge } from '@/shared/components/ui/Badge';
 import { Card } from '@/shared/components/ui/Card';
-import { 
-  Bell, 
-  X, 
-  CheckCircle, 
-  Info, 
-  AlertTriangle, 
+import {
+  Bell,
+  X,
+  CheckCircle,
+  Info,
+  AlertTriangle,
   AlertCircle,
   Trash2,
-  MarkAsRead
+  Check,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -32,20 +32,20 @@ const colorMap = {
 };
 
 export const NotificationCenter: React.FC = () => {
-  const { 
-    notifications, 
-    unreadCount, 
-    markAsRead, 
-    clearNotification, 
-    clearAllNotifications 
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    clearNotification,
+    clearAllNotifications
   } = useNotifications();
-  
+
   const [isOpen, setIsOpen] = useState(false);
 
   const formatTime = (date: Date) => {
     const now = new Date();
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-    
+
     if (diffInMinutes < 1) return 'Ahora';
     if (diffInMinutes < 60) return `${diffInMinutes}m`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h`;
@@ -117,7 +117,7 @@ export const NotificationCenter: React.FC = () => {
                   {notifications.map((notification) => {
                     const IconComponent = iconMap[notification.type];
                     const colorClass = colorMap[notification.type];
-                    
+
                     return (
                       <motion.div
                         key={notification.id}
@@ -125,16 +125,15 @@ export const NotificationCenter: React.FC = () => {
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 20 }}
-                        className={`p-3 hover:bg-gray-50 cursor-pointer ${
-                          !notification.read ? 'bg-blue-50 border-l-4 border-blue-500' : ''
-                        }`}
+                        className={`p-3 hover:bg-gray-50 cursor-pointer ${!notification.read ? 'bg-blue-50 border-l-4 border-blue-500' : ''
+                          }`}
                         onClick={() => !notification.read && markAsRead(notification.id)}
                       >
                         <div className="flex items-start gap-3">
                           <div className={`p-1 rounded-full ${colorClass}`}>
                             <IconComponent className="h-4 w-4" />
                           </div>
-                          
+
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between">
                               <h4 className="font-medium text-gray-800 text-sm truncate">
@@ -157,11 +156,11 @@ export const NotificationCenter: React.FC = () => {
                                 </Button>
                               </div>
                             </div>
-                            
+
                             <p className="text-sm text-gray-600 mt-1">
                               {notification.message}
                             </p>
-                            
+
                             {notification.orderNumber && (
                               <div className="mt-1">
                                 <Badge variant="outline" className="text-xs">

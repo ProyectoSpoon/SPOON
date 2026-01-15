@@ -1,0 +1,5 @@
+-- scripts/fix_auth_columns.sql
+ALTER TABLE auth.users ADD COLUMN IF NOT EXISTS first_name VARCHAR(100);
+ALTER TABLE auth.users ADD COLUMN IF NOT EXISTS last_name VARCHAR(100);
+ALTER TABLE auth.users ADD COLUMN IF NOT EXISTS phone VARCHAR(20);
+ALTER TABLE auth.users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE;

@@ -1,221 +1,260 @@
 // src/app/config-restaurante/horario-comercial/hooks/useHorarios.ts
-
-import { useState, useCallback, useEffect } from 'react';
-import { useConfigStore } from '../../store/config-store';
-import { DiaSemana, HorariosRestaurante, HorarioDia, Turno, DIAS_SEMANA } from '../types/horarios.types';
-import { validarRangoHorario } from '../utils/time';
+import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/shared/Hooks/use-toast';
-import { useAuth } from '@/context/postgres-authcontext'; // ← AGREGAR IMPORT
+import { useAuth } from '@/context/postgres-authcontext';
+import { DiaSemana, HorariosDia, Turno, DIAS_SEMANA, NOMBRES_DIAS } from '../types/horarios.types';
+import {
+  validarSuperposicion,
+  puedeAgregarTurno,
+  sugerirHorariosNuevoTurno,
+  filtrarOpcionesApertura,
+  filtrarOpcionesCierre,
+  generarOpcionesHorarioCompletas
+} from '../utils/validations';
 
-// Horarios por defecto
-const HORARIOS_INICIALES: HorariosRestaurante = {
-  lunes: { abierto: true, turnos: [{ horaApertura: '08:00', horaCierre: '14:00' }, { horaApertura: '18:00', horaCierre: '22:00' }] },
-  martes: { abierto: true, turnos: [{ horaApertura: '08:00', horaCierre: '22:00' }] },
-  miercoles: { abierto: true, turnos: [{ horaApertura: '08:00', horaCierre: '22:00' }] },
-  jueves: { abierto: true, turnos: [{ horaApertura: '08:00', horaCierre: '22:00' }] },
-  viernes: { abierto: true, turnos: [{ horaApertura: '08:00', horaCierre: '23:00' }] },
-  sabado: { abierto: true, turnos: [{ horaApertura: '09:00', horaCierre: '23:00' }] },
-  domingo: { abierto: false, turnos: [] }
+// Estado inicial de horarios (6 AM - 6 PM por defecto)
+const crearHorariosIniciales = (): Record<DiaSemana, HorariosDia> => {
+  const horarios: Record<DiaSemana, HorariosDia> = {} as Record<DiaSemana, HorariosDia>;
+
+  DIAS_SEMANA.forEach(dia => {
+    horarios[dia] = {
+      abierto: dia !== 'domingo', // Domingo cerrado por defecto
+      turnos: dia !== 'domingo' ? [{ horaApertura: '06:00', horaCierre: '18:00' }] : [] // ✅ Desde 6 AM
+    };
+  });
+
+  return horarios;
 };
 
 export function useHorarios() {
-  const { user } = useAuth(); // ← USAR AUTH CONTEXT
-  const restaurantId = user?.restaurantId; // ← ID DINÁMICO
-
-  const [horarios, setHorarios] = useState<HorariosRestaurante>(HORARIOS_INICIALES);
-  const [guardando, setGuardando] = useState(false);
-  const [cargando, setCargando] = useState(false);
-  const [diaSeleccionado, setDiaSeleccionado] = useState<DiaSemana>('lunes');
-  
-  const { actualizarCampo } = useConfigStore();
+  const { user } = useAuth();
   const { toast } = useToast();
 
-  // Cargar horarios al inicializar o cuando cambie el restaurantId
+  const [horarios, setHorarios] = useState<Record<DiaSemana, HorariosDia>>(crearHorariosIniciales);
+  const [diaSeleccionado, setDiaSeleccionado] = useState<DiaSemana>('lunes');
+  const [guardando, setGuardando] = useState(false);
+  const [cargando, setCargando] = useState(false);
+  const [erroresValidacion, setErroresValidacion] = useState<Record<DiaSemana, string>>({} as Record<DiaSemana, string>);
+
+  // Opciones de horario completas
+  const todasLasOpciones = generarOpcionesHorarioCompletas();
+
+  // ✅ SIMPLIFICADO: Validar horarios en tiempo real (menos estricto)
+  const validarHorariosDia = useCallback((dia: DiaSemana, nuevosTurnos: Turno[]) => {
+    // Con opciones deshabilitadas, las validaciones son principalmente para casos edge
+    const validacion = validarSuperposicion(nuevosTurnos);
+
+    setErroresValidacion(prev => ({
+      ...prev,
+      [dia]: validacion.valido ? '' : (validacion.mensaje || 'Error de validación')
+    }));
+
+    return validacion.valido;
+  }, []);
+
+  // ✅ NUEVA: Obtener opciones filtradas para apertura
+  const getOpcionesApertura = useCallback((dia: DiaSemana, indiceTurno: number) => {
+    const turnosDelDia = horarios[dia].turnos;
+    return filtrarOpcionesApertura(turnosDelDia, indiceTurno, todasLasOpciones);
+  }, [horarios, todasLasOpciones]);
+
+  // ✅ NUEVA: Obtener opciones filtradas para cierre
+  const getOpcionesCierre = useCallback((dia: DiaSemana, indiceTurno: number, aperturaSeleccionada: string) => {
+    const turnosDelDia = horarios[dia].turnos;
+    return filtrarOpcionesCierre(turnosDelDia, indiceTurno, aperturaSeleccionada, todasLasOpciones);
+  }, [horarios, todasLasOpciones]);
+
+  // Cargar horarios existentes
   useEffect(() => {
-    if (!restaurantId) {
-      console.log('⚠️ No hay restaurantId, esperando...');
-      return;
-    }
-
-    console.log('🚀 Hook useHorarios iniciado');
-    console.log('👤 Usuario actual:', user?.email);
-    console.log('🏪 Restaurant ID:', restaurantId);
-
     const cargarHorarios = async () => {
+      if (!user?.restaurantId) return;
+
       try {
         setCargando(true);
-        console.log('📅 Cargando horarios para restaurante:', restaurantId);
-        
-        const response = await fetch(`/api/restaurants/${restaurantId}/business-hours`);
-        
+        const token = localStorage.getItem('auth_token');
+
+        const response = await fetch(`/api/restaurants/${user.restaurantId}/business-hours`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
         if (response.ok) {
           const data = await response.json();
-          if (data.horarios && Object.keys(data.horarios).length > 0) {
+          if (data.horarios) {
             setHorarios(data.horarios);
-            
-            // Actualizar store si hay horarios configurados
-            const tieneHorarios = Object.values(data.horarios).some((dia: any) => 
-              dia.abierto && dia.turnos.length > 0
-            );
-            
-            if (tieneHorarios) {
-              actualizarCampo('/config-restaurante/horario-comercial', 'horarios', true);
-            }
-            
-            console.log('✅ Horarios cargados desde BD');
-          } else {
-            // Si no hay datos de la API, mantener horarios iniciales
-            console.log('No se encontraron horarios guardados, usando por defecto');
-            setHorarios(HORARIOS_INICIALES);
+            console.log('✅ Horarios cargados desde BD:', data.horarios);
           }
-        } else {
-          console.log('No se encontraron horarios guardados, usando por defecto');
-          setHorarios(HORARIOS_INICIALES);
         }
       } catch (error) {
-        console.error('Error cargando horarios:', error);
-        // En caso de error, usar horarios por defecto
-        setHorarios(HORARIOS_INICIALES);
-        toast({
-          title: 'Aviso',
-          description: 'Usando horarios por defecto. Los horarios guardados no se pudieron cargar.',
-          variant: 'default'
-        });
+        console.error('❌ Error cargando horarios:', error);
       } finally {
         setCargando(false);
       }
     };
 
     cargarHorarios();
-  }, [restaurantId]); // ← SOLO restaurantId como dependencia
+  }, [user?.restaurantId]);
 
-  // Función para cargar horarios manualmente (si se necesita)
-  const cargarHorarios = useCallback(async () => {
-    if (!restaurantId) return;
-    
-    try {
-      setCargando(true);
-      const response = await fetch(`/api/restaurants/${restaurantId}/business-hours`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.horarios) {
-          setHorarios(data.horarios);
-        }
-      }
-    } catch (error) {
-      console.error('Error recargando horarios:', error);
-    } finally {
-      setCargando(false);
-    }
-  }, [restaurantId]);
-
-  // Cambiar estado de un día (abierto/cerrado)
+  // Toggle día abierto/cerrado
   const toggleDiaAbierto = useCallback((dia: DiaSemana, abierto: boolean) => {
-    console.log('🔥 toggleDiaAbierto llamado:', { dia, abierto });
-    
+    setHorarios(prev => ({
+      ...prev,
+      [dia]: {
+        abierto,
+        turnos: abierto
+          ? (prev[dia].turnos.length > 0 ? prev[dia].turnos : [{ horaApertura: '06:00', horaCierre: '18:00' }]) // ✅ Mínimo desde 6 AM
+          : []
+      }
+    }));
+
+    // Limpiar error de validación si se cierra el día
+    if (!abierto) {
+      setErroresValidacion(prev => ({ ...prev, [dia]: '' }));
+    }
+  }, []);
+
+  // ✅ ACTUALIZADA: Actualizar turno con validación
+  const actualizarTurno = useCallback((dia: DiaSemana, indice: number, cambios: Partial<Turno>) => {
     setHorarios(prev => {
-      const nuevosHorarios = {
+      const nuevosTurnos = [...prev[dia].turnos];
+      nuevosTurnos[indice] = { ...nuevosTurnos[indice], ...cambios };
+
+      // Validar inmediatamente
+      validarHorariosDia(dia, nuevosTurnos);
+
+      return {
         ...prev,
         [dia]: {
-          abierto,
-          turnos: abierto ? 
-            (prev[dia].turnos.length === 0 ? [{ horaApertura: '08:00', horaCierre: '18:00' }] : prev[dia].turnos) 
-            : []
+          ...prev[dia],
+          turnos: nuevosTurnos
         }
       };
-      console.log('🔥 Nuevos horarios:', nuevosHorarios);
-      return nuevosHorarios;
     });
-  }, []);
+  }, [validarHorariosDia]);
 
-  // Actualizar un turno específico
-  const actualizarTurno = useCallback((dia: DiaSemana, indice: number, turno: Partial<Turno>) => {
-    setHorarios(prev => ({
-      ...prev,
-      [dia]: {
-        ...prev[dia],
-        turnos: prev[dia].turnos.map((t, i) => 
-          i === indice ? { ...t, ...turno } : t
-        )
-      }
-    }));
-  }, []);
-
-  // Agregar nuevo turno
+  // ✅ ACTUALIZADA: Agregar turno con validación y sugerencias
   const agregarTurno = useCallback((dia: DiaSemana) => {
-    setHorarios(prev => ({
-      ...prev,
-      [dia]: {
-        ...prev[dia],
-        turnos: [...prev[dia].turnos, { horaApertura: '08:00', horaCierre: '18:00' }]
-      }
-    }));
-  }, []);
+    const horarioDia = horarios[dia];
+    const validacionAgregar = puedeAgregarTurno(horarioDia.turnos);
+
+    if (!validacionAgregar.puede) {
+      toast({
+        title: 'No se puede agregar turno',
+        description: validacionAgregar.mensaje || 'Error desconocido',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Obtener sugerencias para el nuevo turno
+    const sugerencias = sugerirHorariosNuevoTurno(horarioDia.turnos);
+
+    const nuevoTurno: Turno = {
+      horaApertura: sugerencias.sugerenciaApertura || '14:00',
+      horaCierre: sugerencias.sugerenciaCierre || '18:00'
+    };
+
+    setHorarios(prev => {
+      const nuevosTurnos = [...prev[dia].turnos, nuevoTurno];
+
+      // Validar inmediatamente
+      validarHorariosDia(dia, nuevosTurnos);
+
+      return {
+        ...prev,
+        [dia]: {
+          ...prev[dia],
+          turnos: nuevosTurnos
+        }
+      };
+    });
+
+    toast({
+      title: 'Turno agregado',
+      description: `Nuevo turno sugerido: ${sugerencias.sugerenciaApertura || '14:00'} - ${sugerencias.sugerenciaCierre || '18:00'}`,
+    });
+  }, [horarios, validarHorariosDia, toast]);
 
   // Eliminar turno
   const eliminarTurno = useCallback((dia: DiaSemana, indice: number) => {
-    setHorarios(prev => ({
-      ...prev,
-      [dia]: {
-        ...prev[dia],
-        turnos: prev[dia].turnos.filter((_, i) => i !== indice)
-      }
-    }));
-  }, []);
+    setHorarios(prev => {
+      const nuevosTurnos = prev[dia].turnos.filter((_, i) => i !== indice);
+
+      // Validar después de eliminar
+      validarHorariosDia(dia, nuevosTurnos);
+
+      return {
+        ...prev,
+        [dia]: {
+          ...prev[dia],
+          turnos: nuevosTurnos
+        }
+      };
+    });
+  }, [validarHorariosDia]);
 
   // Copiar horarios de un día a otro
   const copiarHorarios = useCallback((diaOrigen: DiaSemana, diaDestino: DiaSemana) => {
-    setHorarios(prev => ({
-      ...prev,
-      [diaDestino]: { ...prev[diaOrigen] }
-    }));
-  }, []);
+    const horarioOrigen = horarios[diaOrigen];
 
-  // Validar todos los horarios
-  const validarHorarios = useCallback((): boolean => {
-    for (const dia of DIAS_SEMANA) {
+    setHorarios(prev => {
+      // Validar horarios copiados
+      validarHorariosDia(diaDestino, horarioOrigen.turnos);
+
+      return {
+        ...prev,
+        [diaDestino]: { ...horarioOrigen }
+      };
+    });
+
+    toast({
+      title: 'Horarios copiados',
+      description: `Horarios de ${NOMBRES_DIAS[diaOrigen]} copiados a ${NOMBRES_DIAS[diaDestino]}`,
+    });
+  }, [horarios, validarHorariosDia, toast]);
+
+  // ✅ ACTUALIZADO: Guardar con validación completa y auto-detección
+  const guardarHorarios = useCallback(async (): Promise<boolean> => {
+    // Validar todos los días antes de guardar
+    let tieneErrores = false;
+    const errores: string[] = [];
+
+    DIAS_SEMANA.forEach(dia => {
       const horarioDia = horarios[dia];
-      if (!horarioDia.abierto) continue;
-
-      for (const turno of horarioDia.turnos) {
-        if (!validarRangoHorario(turno.horaApertura, turno.horaCierre)) {
-          return false;
+      if (horarioDia.abierto && horarioDia.turnos.length > 0) {
+        const validacion = validarSuperposicion(horarioDia.turnos);
+        if (!validacion.valido) {
+          tieneErrores = true;
+          errores.push(`${dia}: ${validacion.mensaje || 'Error de validación'}`); // ✅ Fallback extra
         }
       }
-    }
-    return true;
-  }, [horarios]);
+    });
 
-  // Guardar horarios en la API
-  const guardarHorarios = useCallback(async () => {
-    if (!validarHorarios()) {
+    if (tieneErrores) {
       toast({
-        title: 'Error de Validación',
-        description: 'Algunos horarios son inválidos. Verifica que las horas de cierre sean posteriores a las de apertura.',
+        title: 'Errores de validación',
+        description: errores.join('\n'),
         variant: 'destructive'
       });
       return false;
     }
 
-    if (!restaurantId) { // ← USAR restaurantId DINÁMICO
-      toast({
-        title: 'Error',
-        description: 'No se encontró el ID del restaurante',
-        variant: 'destructive'
-      });
-      return false;
-    }
-
-    setGuardando(true);
     try {
-      console.log('💾 Guardando horarios para restaurante:', restaurantId);
-      
-      const response = await fetch(`/api/restaurants/${restaurantId}/business-hours`, { // ← USAR restaurantId DINÁMICO
+      setGuardando(true);
+      const token = localStorage.getItem('auth_token');
+
+      // Usar 'current' si no tenemos restaurantId (auto-detección en backend)
+      const restaurantId = user?.restaurantId || 'current';
+
+      const response = await fetch(`/api/restaurants/${restaurantId}/business-hours`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ horarios }),
+        body: JSON.stringify({ horarios })
       });
 
       if (!response.ok) {
@@ -223,50 +262,63 @@ export function useHorarios() {
         throw new Error(errorData.error || 'Error al guardar horarios');
       }
 
-      const data = await response.json();
-      
-      if (data.success) {
-        // Actualizar store de configuración
-        actualizarCampo('/config-restaurante/horario-comercial', 'horarios', true);
-        
-        console.log('✅ Horarios guardados exitosamente');
-        
-        return true;
-      }
-      
-    } catch (error) {
-      console.error('Error al guardar horarios:', error);
+      console.log('✅ Horarios guardados exitosamente');
+      return true;
+
+    } catch (error: any) {
+      console.error('❌ Error guardando horarios:', error);
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Error al guardar horarios',
+        title: 'Error al guardar',
+        description: error?.message || 'Error desconocido',
         variant: 'destructive'
       });
       return false;
     } finally {
       setGuardando(false);
     }
-  }, [horarios, validarHorarios, actualizarCampo, toast, restaurantId]); // ← AGREGAR restaurantId A DEPENDENCIAS
+  }, [user?.restaurantId, horarios, toast]);
 
-  // Verificar si hay horarios configurados
-  const tieneHorariosConfigurados = useCallback((): boolean => {
-    return DIAS_SEMANA.some(dia => horarios[dia].abierto && horarios[dia].turnos.length > 0);
+  // Verificar si tiene horarios configurados
+  const tieneHorariosConfigurados = useCallback(() => {
+    return DIAS_SEMANA.some(dia => {
+      const horarioDia = horarios[dia];
+      return horarioDia.abierto && horarioDia.turnos.length > 0;
+    });
   }, [horarios]);
 
+  // ✅ NUEVA: Verificar si un día tiene errores
+  const diaConErrores = useCallback((dia: DiaSemana) => {
+    const error = erroresValidacion[dia];
+    return !!(error && error.trim() !== '');
+  }, [erroresValidacion]);
+
   return {
+    // Estados
     horarios,
     diaSeleccionado,
-    setDiaSeleccionado,
     guardando,
     cargando,
+    erroresValidacion,
+
+    // Acciones básicas
+    setDiaSeleccionado,
     toggleDiaAbierto,
     actualizarTurno,
     agregarTurno,
     eliminarTurno,
     copiarHorarios,
     guardarHorarios,
-    validarHorarios,
+
+    // Utilidades
     tieneHorariosConfigurados,
-    cargarHorarios,
-    restaurantId // ← EXPONER PARA DEBUGGING
+    diaConErrores,
+
+    // ✅ NUEVAS: Funciones de validación
+    getOpcionesApertura,
+    getOpcionesCierre,
+    validarHorariosDia,
+
+    // Opciones completas (fallback)
+    todasLasOpciones
   };
 }

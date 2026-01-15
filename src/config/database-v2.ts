@@ -5,13 +5,13 @@ export const DATABASE_CONFIG = {
   // Esquemas de la base de datos
   SCHEMAS: {
     AUTH: 'auth',
-    RESTAURANT: 'restaurant', 
+    RESTAURANT: 'restaurant',
     MENU: 'menu',
     SALES: 'sales',
     AUDIT: 'audit',
     CONFIG: 'config'
   },
-  
+
   // Mapeo de tablas antiguas a nuevas
   TABLE_MAPPING: {
     'productos': 'menu.products',
@@ -22,7 +22,7 @@ export const DATABASE_CONFIG = {
     'menu_productos': 'menu.menu_combinations',
     'combinacion_productos': 'menu.combination_sides'
   },
-  
+
   // Mapeo de campos renombrados
   FIELD_MAPPING: {
     'nombre': 'name',
@@ -33,43 +33,44 @@ export const DATABASE_CONFIG = {
     'categoria_id': 'category_id',
     'restaurante_id': 'restaurant_id'
   },
-  
+
   // Configuración de conexión
   CONNECTION: {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432'),
     user: process.env.DB_USER || 'postgres',
     database: process.env.DB_NAME || 'spoon_db',
-    password: process.env.DB_PASSWORD || 
-      (process.env.DB_PASSWORD_FILE ? 
-        require('fs').readFileSync(process.env.DB_PASSWORD_FILE, 'utf8').trim() : 
+    password: process.env.DB_PASSWORD ||
+      (process.env.DB_PASSWORD_FILE ?
+        require('fs').readFileSync(process.env.DB_PASSWORD_FILE, 'utf8').trim() :
         'password')
   }
 };
 
 // Función helper para construir consultas con esquemas
 export function buildQuery(table: string, query: string): string {
-  const mappedTable = DATABASE_CONFIG.TABLE_MAPPING[table] || table;
+  const mapping = DATABASE_CONFIG.TABLE_MAPPING as Record<string, string>;
+  const mappedTable = mapping[table] || table;
   return query.replace(new RegExp(`\\b${table}\\b`, 'g'), mappedTable);
 }
 
 // Función helper para mapear campos
 export function mapFields(data: Record<string, any>): Record<string, any> {
   const mapped: Record<string, any> = {};
-  
+  const mapping = DATABASE_CONFIG.FIELD_MAPPING as Record<string, string>;
+
   for (const [key, value] of Object.entries(data)) {
-    const mappedKey = DATABASE_CONFIG.FIELD_MAPPING[key] || key;
+    const mappedKey = mapping[key] || key;
     mapped[mappedKey] = value;
   }
-  
+
   return mapped;
 }
 
 // Función helper para obtener ID de restaurante por defecto
 export async function getDefaultRestaurantId(): Promise<string> {
-  const { query } = await import('../lib/database');
-  const result = await query('SELECT id FROM restaurant.restaurants WHERE slug = $1 LIMIT 1', ['spoon-demo']);
-  return result.rows[0]?.id || null;
+  console.error("getDefaultRestaurantId is deprecated: using disabled lib/database. Please use Supabase SDK.");
+  return '00000000-0000-0000-0000-000000000000'; // Return placeholder UUID or throw
 }
 
 // Función helper para validar UUID

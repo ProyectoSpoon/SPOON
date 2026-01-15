@@ -29,9 +29,9 @@ export default function BuscadorConfiguracion() {
   const handleBusqueda = (e: React.ChangeEvent<HTMLInputElement>) => {
     const valor = e.target.value;
     setBusqueda(valor);
-    
+
     if (valor.length > 1) {
-      const filtrados = opcionesConfiguracion.filter(opcion => 
+      const filtrados = opcionesConfiguracion.filter(opcion =>
         opcion.nombre.toLowerCase().includes(valor.toLowerCase())
       );
       setResultados(filtrados);
@@ -68,7 +68,7 @@ export default function BuscadorConfiguracion() {
           <ul>
             {resultados.map((resultado) => (
               <li key={resultado.id}>
-                <button 
+                <button
                   onClick={() => handleSeleccionarResultado(resultado.ruta)}
                   className="block w-full text-left px-4 py-2 hover:bg-neutral-50 text-sm"
                 >
@@ -85,7 +85,7 @@ export default function BuscadorConfiguracion() {
 
       {mostrarResultados && resultados.length === 0 && busqueda.length > 1 && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border p-4 text-center text-sm text-neutral-500">
-          No se encontraron configuraciones que coincidan con "{busqueda}"
+          No se encontraron configuraciones que coincidan con &quot;{busqueda}&quot;
         </div>
       )}
     </div>

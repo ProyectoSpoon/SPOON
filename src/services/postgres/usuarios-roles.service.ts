@@ -1,5 +1,11 @@
 // src/services/postgres/usuarios-roles.service.ts
-import { query } from '@/config/database';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+// Cliente con service role para operaciones administrativas
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
 export interface Usuario {
   id: string;
@@ -16,54 +22,41 @@ export interface Rol {
   nombre: string;
   descripcion: string;
   permisos: string[];
-  usuariosAsignados?: number; // Conteo de usuarios con este rol
+  usuariosAsignados?: number;
 }
-
-// Interfaz simplificada - roles son solo del sistema
 
 export interface UsuariosRolesData {
   usuarios: Usuario[];
-  roles: Rol[]; // Roles del sistema (solo lectura)
+  roles: Rol[];
 }
 
 /**
- * Obtener todos los usuarios con sus roles desde auth.users
+ * Obtener todos los usuarios desde public.users
  */
 export async function obtenerUsuarios(): Promise<Usuario[]> {
   try {
-    const result = await query(`
-      SELECT 
-        id,
-        CONCAT(first_name, ' ', last_name) as nombre,
-        email,
-        role as rol,
-        CASE WHEN status = 'active' THEN true ELSE false END as activo,
-        created_at,
-        updated_at
-      FROM auth.users 
-      ORDER BY created_at DESC
-    `);
+    const { data, error } = await supabaseAdmin
+      .from('users')
+      .select('id, first_name, last_name, email, role, is_active, created_at, updated_at')
+      .order('created_at', { ascending: false });
 
-    return result.rows;
+    if (error) {
+      console.error('Error al obtener usuarios:', error);
+      throw new Error('Error al obtener usuarios de la base de datos');
+    }
+
+    return (data || []).map(user => ({
+      id: user.id,
+      nombre: `${user.first_name} ${user.last_name}`.trim(),
+      email: user.email,
+      rol: user.role || 'staff',
+      activo: user.is_active !== false,
+      created_at: user.created_at ? new Date(user.created_at) : undefined,
+      updated_at: user.updated_at ? new Date(user.updated_at) : undefined,
+    }));
   } catch (error) {
     console.error('Error al obtener usuarios:', error);
     throw new Error('Error al obtener usuarios de la base de datos');
-  }
-}
-
-/**
- * Obtener todos los roles del ENUM (disponibles en el sistema)
- */
-export async function obtenerTodosLosRolesEnum(): Promise<string[]> {
-  try {
-    const result = await query(`
-      SELECT unnest(enum_range(NULL::auth_role_enum)) as role_name
-    `);
-
-    return result.rows.map(row => row.role_name);
-  } catch (error) {
-    console.error('Error al obtener roles del ENUM:', error);
-    return ['super_admin', 'admin', 'owner', 'manager', 'staff', 'waiter', 'kitchen', 'cashier'];
   }
 }
 
@@ -74,6 +67,7 @@ function obtenerDescripcionRol(rol: string): string {
   const descripciones: Record<string, string> = {
     'super_admin': 'Administrador del sistema con acceso completo',
     'admin': 'Administrador con permisos de gestión avanzada',
+    'restaurant_owner': 'Propietario del restaurante',
     'owner': 'Propietario del restaurante',
     'manager': 'Gerente con permisos de supervisión',
     'staff': 'Personal con permisos básicos',
@@ -86,50 +80,13 @@ function obtenerDescripcionRol(rol: string): string {
 }
 
 /**
- * Obtener todos los roles disponibles del sistema (SOLO LECTURA)
- * Con conteo de usuarios asignados a cada rol
- */
-export async function obtenerRoles(): Promise<Rol[]> {
-  try {
-    const result = await query(`
-      SELECT 
-        role_name,
-        COUNT(u.id) as usuarios_asignados
-      FROM (
-        SELECT unnest(enum_range(NULL::auth_role_enum)) as role_name
-      ) all_roles
-      LEFT JOIN auth.users u ON u.role = all_roles.role_name AND u.status = 'active'
-      GROUP BY role_name
-      ORDER BY 
-        CASE role_name 
-          WHEN 'super_admin' THEN 1 
-          WHEN 'admin' THEN 2 
-          WHEN 'owner' THEN 3 
-          WHEN 'manager' THEN 4
-          ELSE 5 
-        END
-    `);
-
-    return result.rows.map(row => ({
-      id: row.role_name,
-      nombre: obtenerNombreAmigableRol(row.role_name),
-      descripcion: obtenerDescripcionRol(row.role_name),
-      permisos: [], // Los permisos son parte del sistema, no editables
-      usuariosAsignados: parseInt(row.usuarios_asignados)
-    }));
-  } catch (error) {
-    console.error('Error al obtener roles:', error);
-    throw new Error('Error al obtener roles del sistema');
-  }
-}
-
-/**
  * Obtener nombre amigable para mostrar en la interfaz
  */
 function obtenerNombreAmigableRol(rol: string): string {
   const nombres: Record<string, string> = {
     'super_admin': 'Super Administrador',
     'admin': 'Administrador',
+    'restaurant_owner': 'Propietario',
     'owner': 'Propietario',
     'manager': 'Gerente',
     'staff': 'Personal',
@@ -141,19 +98,50 @@ function obtenerNombreAmigableRol(rol: string): string {
   return nombres[rol] || rol.charAt(0).toUpperCase() + rol.slice(1).replace('_', ' ');
 }
 
-// Las siguientes funciones se eliminaron porque los roles son SOLO LECTURA:
-// - obtenerRolesDisponibles()
-// - asegurarSuperAdminRestaurante() 
-// - agregarRolRestaurante()
-// - eliminarRolRestaurante()
-
 /**
- * Los roles son SOLO LECTURA - no se pueden crear, editar o eliminar
- * Solo se pueden mostrar los roles disponibles del sistema
+ * Obtener todos los roles disponibles del sistema
  */
+export async function obtenerRoles(): Promise<Rol[]> {
+  try {
+    // Roles predefinidos del sistema
+    const rolesDisponibles = [
+      'super_admin',
+      'admin',
+      'restaurant_owner',
+      'manager',
+      'staff',
+      'waiter',
+      'kitchen',
+      'cashier'
+    ];
+
+    // Contar usuarios por rol
+    const { data: usuarios } = await supabaseAdmin
+      .from('users')
+      .select('role, is_active')
+      .eq('is_active', true);
+
+    const conteoRoles: Record<string, number> = {};
+    (usuarios || []).forEach(user => {
+      const rol = user.role || 'staff';
+      conteoRoles[rol] = (conteoRoles[rol] || 0) + 1;
+    });
+
+    return rolesDisponibles.map(rol => ({
+      id: rol,
+      nombre: obtenerNombreAmigableRol(rol),
+      descripcion: obtenerDescripcionRol(rol),
+      permisos: [],
+      usuariosAsignados: conteoRoles[rol] || 0
+    }));
+  } catch (error) {
+    console.error('Error al obtener roles:', error);
+    throw new Error('Error al obtener roles del sistema');
+  }
+}
 
 /**
- * Obtener datos completos de usuarios y roles (simplificado)
+ * Obtener datos completos de usuarios y roles
  */
 export async function obtenerUsuariosYRoles(): Promise<UsuariosRolesData> {
   try {
@@ -188,42 +176,42 @@ export async function crearUsuario(userData: {
     const firstName = nombrePartes[0];
     const lastName = nombrePartes.slice(1).join(' ') || '';
 
-    // Validar que el rol existe en el ENUM
-    const rolesEnum = await obtenerTodosLosRolesEnum();
-    if (!rolesEnum.includes(userData.rol)) {
-      throw new Error(`El rol "${userData.rol}" no es válido`);
+    const { data, error } = await supabaseAdmin
+      .from('users')
+      .insert({
+        first_name: firstName,
+        last_name: lastName,
+        email: userData.email,
+        role: userData.rol,
+        is_active: userData.activo !== false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select('id, first_name, last_name, email, role, is_active, created_at, updated_at')
+      .single();
+
+    if (error) {
+      console.error('Error al crear usuario:', error);
+
+      if (error.code === '23505') {
+        throw new Error('El email ya está registrado en el sistema');
+      }
+
+      throw new Error('Error al crear usuario en la base de datos');
     }
 
-    const result = await query(`
-      INSERT INTO auth.users 
-      (first_name, last_name, email, role, status, password_hash, email_verified)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING id, CONCAT(first_name, ' ', last_name) as nombre, email, role as rol, 
-                CASE WHEN status = 'active' THEN true ELSE false END as activo,
-                created_at, updated_at
-    `, [
-      firstName,
-      lastName,
-      userData.email,
-      userData.rol,
-      userData.activo !== false ? 'active' : 'inactive',
-      userData.password ? `hashed_${userData.password}` : 'temp_password_change_required',
-      false
-    ]);
-
-    return result.rows[0];
+    return {
+      id: data.id,
+      nombre: `${data.first_name} ${data.last_name}`.trim(),
+      email: data.email,
+      rol: data.role || 'staff',
+      activo: data.is_active !== false,
+      created_at: data.created_at ? new Date(data.created_at) : undefined,
+      updated_at: data.updated_at ? new Date(data.updated_at) : undefined,
+    };
   } catch (error: any) {
     console.error('Error al crear usuario:', error);
-    
-    if (error.code === '23505') {
-      throw new Error('El email ya está registrado en el sistema');
-    }
-    
-    if (error.code === '22P02') {
-      throw new Error('El rol especificado no es válido');
-    }
-    
-    throw new Error('Error al crear usuario en la base de datos');
+    throw error;
   }
 }
 
@@ -231,7 +219,7 @@ export async function crearUsuario(userData: {
  * Actualizar un usuario existente
  */
 export async function actualizarUsuario(
-  id: string, 
+  id: string,
   userData: Partial<{
     nombre: string;
     email: string;
@@ -240,68 +228,61 @@ export async function actualizarUsuario(
   }>
 ): Promise<Usuario> {
   try {
-    const updates: string[] = [];
-    const values: any[] = [];
-    let paramCount = 1;
+    const updateData: any = {
+      updated_at: new Date().toISOString()
+    };
 
     if (userData.nombre) {
       const nombrePartes = userData.nombre.trim().split(' ');
-      const firstName = nombrePartes[0];
-      const lastName = nombrePartes.slice(1).join(' ') || '';
-      
-      updates.push(`first_name = $${paramCount++}`, `last_name = $${paramCount++}`);
-      values.push(firstName, lastName);
+      updateData.first_name = nombrePartes[0];
+      updateData.last_name = nombrePartes.slice(1).join(' ') || '';
     }
 
     if (userData.email) {
-      updates.push(`email = $${paramCount++}`);
-      values.push(userData.email);
+      updateData.email = userData.email;
     }
 
     if (userData.rol) {
-      const rolesEnum = await obtenerTodosLosRolesEnum();
-      if (!rolesEnum.includes(userData.rol)) {
-        throw new Error(`El rol "${userData.rol}" no es válido`);
-      }
-      
-      updates.push(`role = $${paramCount++}`);
-      values.push(userData.rol);
+      updateData.role = userData.rol;
     }
 
     if (userData.activo !== undefined) {
-      updates.push(`status = $${paramCount++}`);
-      values.push(userData.activo ? 'active' : 'inactive');
+      updateData.is_active = userData.activo;
     }
 
-    updates.push(`updated_at = CURRENT_TIMESTAMP`);
-    values.push(id);
+    const { data, error } = await supabaseAdmin
+      .from('users')
+      .update(updateData)
+      .eq('id', id)
+      .select('id, first_name, last_name, email, role, is_active, created_at, updated_at')
+      .single();
 
-    const result = await query(`
-      UPDATE auth.users 
-      SET ${updates.join(', ')}
-      WHERE id = $${paramCount}
-      RETURNING id, CONCAT(first_name, ' ', last_name) as nombre, email, role as rol,
-                CASE WHEN status = 'active' THEN true ELSE false END as activo,
-                created_at, updated_at
-    `, values);
+    if (error) {
+      console.error('Error al actualizar usuario:', error);
 
-    if (result.rows.length === 0) {
+      if (error.code === '23505') {
+        throw new Error('El email ya está registrado en el sistema');
+      }
+
+      throw new Error('Error al actualizar usuario en la base de datos');
+    }
+
+    if (!data) {
       throw new Error('Usuario no encontrado');
     }
 
-    return result.rows[0];
+    return {
+      id: data.id,
+      nombre: `${data.first_name} ${data.last_name}`.trim(),
+      email: data.email,
+      rol: data.role || 'staff',
+      activo: data.is_active !== false,
+      created_at: data.created_at ? new Date(data.created_at) : undefined,
+      updated_at: data.updated_at ? new Date(data.updated_at) : undefined,
+    };
   } catch (error: any) {
     console.error('Error al actualizar usuario:', error);
-    
-    if (error.code === '23505') {
-      throw new Error('El email ya está registrado en el sistema');
-    }
-    
-    if (error.code === '22P02') {
-      throw new Error('El rol especificado no es válido');
-    }
-    
-    throw new Error('Error al actualizar usuario en la base de datos');
+    throw error;
   }
 }
 
@@ -310,13 +291,14 @@ export async function actualizarUsuario(
  */
 export async function eliminarUsuario(id: string): Promise<void> {
   try {
-    const result = await query(`
-      DELETE FROM auth.users 
-      WHERE id = $1
-    `, [id]);
+    const { error } = await supabaseAdmin
+      .from('users')
+      .delete()
+      .eq('id', id);
 
-    if (result.rowCount === 0) {
-      throw new Error('Usuario no encontrado');
+    if (error) {
+      console.error('Error al eliminar usuario:', error);
+      throw new Error('Error al eliminar usuario de la base de datos');
     }
   } catch (error) {
     console.error('Error al eliminar usuario:', error);
@@ -329,20 +311,34 @@ export async function eliminarUsuario(id: string): Promise<void> {
  */
 export async function cambiarEstadoUsuario(id: string, activo: boolean): Promise<Usuario> {
   try {
-    const result = await query(`
-      UPDATE auth.users 
-      SET status = $1, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $2
-      RETURNING id, CONCAT(first_name, ' ', last_name) as nombre, email, role as rol,
-                CASE WHEN status = 'active' THEN true ELSE false END as activo,
-                created_at, updated_at
-    `, [activo ? 'active' : 'inactive', id]);
+    const { data, error } = await supabaseAdmin
+      .from('users')
+      .update({
+        is_active: activo,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select('id, first_name, last_name, email, role, is_active, created_at, updated_at')
+      .single();
 
-    if (result.rows.length === 0) {
+    if (error) {
+      console.error('Error al cambiar estado del usuario:', error);
+      throw new Error('Error al cambiar estado del usuario');
+    }
+
+    if (!data) {
       throw new Error('Usuario no encontrado');
     }
 
-    return result.rows[0];
+    return {
+      id: data.id,
+      nombre: `${data.first_name} ${data.last_name}`.trim(),
+      email: data.email,
+      rol: data.role || 'staff',
+      activo: data.is_active !== false,
+      created_at: data.created_at ? new Date(data.created_at) : undefined,
+      updated_at: data.updated_at ? new Date(data.updated_at) : undefined,
+    };
   } catch (error) {
     console.error('Error al cambiar estado del usuario:', error);
     throw new Error('Error al cambiar estado del usuario');

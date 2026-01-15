@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
-import { VentaDiaria } from '../../types/dashboard.types';
+import { VentaDiaria } from '@/app/dashboard/types/dashboard.types';
 
 interface VentasChartWidgetProps {
   ventas?: VentaDiaria[];
@@ -20,9 +20,9 @@ const formatearMoneda = (valor: number): string => {
 
 const formatearFecha = (fecha: string): string => {
   const date = new Date(fecha);
-  return date.toLocaleDateString('es-CO', { 
-    month: 'short', 
-    day: 'numeric' 
+  return date.toLocaleDateString('es-CO', {
+    month: 'short',
+    day: 'numeric'
   });
 };
 
@@ -56,13 +56,13 @@ const VentasChartWidget: React.FC<VentasChartWidgetProps> = ({ ventas, loading }
         <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={datosGrafico}>
-              <XAxis 
-                dataKey="fecha" 
+              <XAxis
+                dataKey="fecha"
                 axisLine={false}
                 tickLine={false}
                 tick={{ fontSize: 12, fill: '#64748b' }}
               />
-              <YAxis 
+              <YAxis
                 axisLine={false}
                 tickLine={false}
                 tick={{ fontSize: 12, fill: '#64748b' }}

@@ -1,6 +1,15 @@
-// src/app/api/restaurants/[id]/location/route.ts - CORREGIDA
+// src/app/api/restaurants/[id]/location/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/database';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
+import { DateTime } from 'luxon';
+
+// Validación de coordenadas
+const isValidCoordinate = (lat: number | null, lng: number | null): boolean => {
+  if (lat === null || lng === null) return true; // Permitir null si se está borrando
+  if (typeof lat !== 'number' || typeof lng !== 'number') return false;
+  return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+};
 
 // GET - Obtener ubicación del restaurante
 export async function GET(
@@ -9,40 +18,62 @@ export async function GET(
 ) {
   try {
     const { id } = params;
-    console.log('📍 GET Location - Restaurant ID:', id);
 
-    const query = `
-      SELECT address, city, state, country
-      FROM restaurant.restaurants
-      WHERE id = $1
-    `;
+    // Inicializar cliente Supabase
+    const supabase = createRouteHandlerClient({ cookies });
 
-    const result = await pool.query(query, [id]);
+    // Verificar sesión
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
 
-    if (result.rows.length === 0) {
-      console.log('❌ Restaurante no encontrado');
+    // Si id es 'current', buscar el restaurante del usuario
+    let restaurantId = id;
+    if (id === 'current') {
+      const { data: userRestaurant } = await supabase
+        .schema('public')
+        .from('restaurants')
+        .select('id')
+        .eq('owner_id', session.user.id)
+        .single();
+
+      if (!userRestaurant) {
+        return NextResponse.json(
+          { error: 'Usuario no tiene restaurante' },
+          { status: 404 }
+        );
+      }
+
+      restaurantId = userRestaurant.id;
+    }
+
+    const { data: restaurant, error } = await supabase
+      .schema('public')
+      .from('restaurants')
+      .select('address, latitude, longitude, city_id, department_id, country_id')
+      .eq('id', restaurantId)
+      .single();
+
+    if (error || !restaurant) {
+      console.error('Error fetching location:', error);
       return NextResponse.json(
         { error: 'Restaurante no encontrado' },
         { status: 404 }
       );
     }
 
-    const restaurant = result.rows[0];
-    console.log('✅ Datos obtenidos:', restaurant);
-
     return NextResponse.json({
-      direccion: restaurant.address || '',
-      coordenadas: {
-        lat: 4.6097102, // Coordenadas por defecto (Bogotá)
-        lng: -74.081749
-      },
-      ciudad: restaurant.city || '',
-      estado: restaurant.state || '',
-      pais: restaurant.country || 'Colombia'
+      address: restaurant.address || '',
+      latitude: restaurant.latitude || null,
+      longitude: restaurant.longitude || null,
+      city_id: restaurant.city_id || null,
+      department_id: restaurant.department_id || null,
+      country_id: restaurant.country_id || null
     });
 
   } catch (error) {
-    console.error('❌ Error al obtener ubicación:', error);
+    console.error(`[LOCATION_API] Error fetching location:`, error);
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }
@@ -58,101 +89,108 @@ export async function PUT(
   try {
     const { id } = params;
     const body = await request.json();
-    console.log('📍 PUT Location - Data received:', body);
 
-    const { direccion, coordenadas, ciudad, estado } = body;
+    const { address, latitude, longitude, city_id, department_id, country_id } = body;
 
-    if (!direccion) {
+    // Validación de requeridos
+    if (!address) {
       return NextResponse.json(
         { error: 'Dirección es requerida' },
         { status: 400 }
       );
     }
 
-    // Usar los valores enviados desde el frontend
-    const ciudadFinal = ciudad || 'Bogotá';
-    const estadoFinal = estado || 'Cundinamarca';
+    // Validación de rangos geográficos
+    if (latitude !== null && longitude !== null) {
+      if (!isValidCoordinate(latitude, longitude)) {
+        console.warn(`[LOCATION_API] Invalid coordinates blocked: RestaurantID=${id} -> {${latitude}, ${longitude}}`);
+        return NextResponse.json(
+          { error: 'Coordenadas inválidas. Latitud debe estar entre -90 y 90, Longitud entre -180 y 180.' },
+          { status: 400 }
+        );
+      }
+    }
 
-    console.log('🔄 Actualizando con:', {
-      direccion,
-      ciudad: ciudadFinal,
-      estado: estadoFinal,
-      coordenadas
-    });
+    // Timestamp unificado con Luxon
+    const updatedAt = DateTime.now().setZone('America/Bogota').toISO();
 
-    const query = `
-      UPDATE restaurant.restaurants
-      SET
-        address = $1,
-        city = $2,
-        state = $3,
-        country = $4,
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = $5
-      RETURNING address, city, state, country, updated_at
-    `;
+    // Inicializar cliente Supabase
+    const supabase = createRouteHandlerClient({ cookies });
 
-    const result = await pool.query(query, [
-      direccion,
-      ciudadFinal,
-      estadoFinal,
-      'Colombia',
-      id
-    ]);
+    // Verificar sesión
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
 
-    if (result.rows.length === 0) {
-      console.log('❌ No se pudo actualizar - restaurante no encontrado');
+    // Si id es 'current', buscar el restaurante del usuario
+    let restaurantId = id;
+    if (id === 'current') {
+      const { data: userRestaurant } = await supabase
+        .schema('public')
+        .from('restaurants')
+        .select('id')
+        .eq('owner_id', session.user.id)
+        .single();
+
+      if (!userRestaurant) {
+        return NextResponse.json(
+          { error: 'Usuario no tiene restaurante' },
+          { status: 404 }
+        );
+      }
+
+      restaurantId = userRestaurant.id;
+    }
+
+    // Actualización con todos los campos
+    const { data: updated, error } = await supabase
+      .schema('public')
+      .from('restaurants')
+      .update({
+        address: address,
+        latitude: latitude,
+        longitude: longitude,
+        city_id: city_id || null,
+        department_id: department_id || null,
+        country_id: country_id || null,
+        updated_at: updatedAt
+      })
+      .eq('id', restaurantId)
+      .select('address, latitude, longitude, city_id, department_id, country_id, updated_at')
+      .single();
+
+    if (error || !updated) {
+      console.error('Error updating location:', error);
       return NextResponse.json(
         { error: 'Restaurante no encontrado' },
         { status: 404 }
       );
     }
 
-    console.log('✅ Ubicación actualizada:', result.rows[0]);
+    console.log(`[LOCATION_API] Update success: RestaurantID=${id} -> {${updated.latitude}, ${updated.longitude}}`);
 
     return NextResponse.json({
       success: true,
       message: 'Ubicación actualizada correctamente',
       data: {
-        direccion: result.rows[0].address,
-        ciudad: result.rows[0].city,
-        estado: result.rows[0].state,
-        pais: result.rows[0].country,
-        updated_at: result.rows[0].updated_at
+        address: updated.address,
+        latitude: updated.latitude,
+        longitude: updated.longitude,
+        city_id: updated.city_id,
+        department_id: updated.department_id,
+        country_id: updated.country_id,
+        updated_at: updated.updated_at
       }
     });
 
   } catch (error) {
-    console.error('❌ Error al actualizar ubicación:', error);
+    console.error(`[LOCATION_API] Update error:`, error);
     return NextResponse.json(
-      { error: 'Error interno del servidor' },
-      { status: 500 }
-    );
-  }
-}
-
-// PATCH - Actualizar solo coordenadas (mantener por compatibilidad)
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const { id } = params;
-    const body = await request.json();
-    console.log('📍 PATCH Location - Coordenadas recibidas:', body);
-
-    // Como no tenemos columnas de coordenadas en BD, 
-    // solo retornamos éxito sin hacer nada
-    return NextResponse.json({
-      success: true,
-      message: 'Coordenadas registradas (modo desarrollo)',
-      data: body.coordenadas
-    });
-
-  } catch (error) {
-    console.error('❌ Error en PATCH coordenadas:', error);
-    return NextResponse.json(
-      { error: 'Error interno del servidor' },
+      {
+        error: 'Error interno del servidor',
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     );
   }

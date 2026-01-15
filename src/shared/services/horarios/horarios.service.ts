@@ -3,7 +3,9 @@
  * @module HorariosService
  */
 
-import { HorariosSemanales } from '@/app/dashboard/horario-comercial/types/horarios.types';
+import { DiaSemana, HorariosDia } from '@/app/config-restaurante/horario-comercial/types/horarios.types';
+
+export type HorariosSemanales = Record<DiaSemana, HorariosDia>;
 
 /**
  * Interfaz para los datos de horarios completos
@@ -31,7 +33,7 @@ export const obtenerHorarios = async (idRestaurante: string): Promise<DatosHorar
         // Intentamos obtener los datos del localStorage
         const storageKey = `${STORAGE_PREFIX}${idRestaurante}`;
         const datosGuardados = localStorage.getItem(storageKey);
-        
+
         if (datosGuardados) {
           try {
             const datos = JSON.parse(datosGuardados) as DatosHorarios;
@@ -67,11 +69,11 @@ export const actualizarHorarios = async (
       setTimeout(() => {
         try {
           const storageKey = `${STORAGE_PREFIX}${idRestaurante}`;
-          
+
           // Intentamos obtener datos existentes
           const datosExistentesStr = localStorage.getItem(storageKey);
           let datosExistentes: DatosHorarios | null = null;
-          
+
           if (datosExistentesStr) {
             try {
               datosExistentes = JSON.parse(datosExistentesStr) as DatosHorarios;
@@ -79,16 +81,16 @@ export const actualizarHorarios = async (
               console.error('Error al parsear datos existentes:', error);
             }
           }
-          
+
           // Combinamos los datos existentes con los nuevos
           const datosActualizados: DatosHorarios = {
             horarioRegular: datos.horarioRegular || (datosExistentes?.horarioRegular || {} as any),
             fechaActualizacion: new Date().toISOString()
           };
-          
+
           // Guardamos en localStorage
           localStorage.setItem(storageKey, JSON.stringify(datosActualizados));
-          
+
           resolve(true);
         } catch (error) {
           console.error('Error al guardar en localStorage:', error);

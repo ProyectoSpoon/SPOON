@@ -11,7 +11,7 @@ import {
   DialogFooter,
 } from "@/shared/components/ui/Dialog";
 import { toast } from 'sonner';
-import { useCategorias } from '../../hooks/useCategorias';
+import { useCategorias } from '@/app/dashboard/carta/hooks/useCategorias';
 import { Categoria } from '@/utils/menuCache.utils';
 
 // Iconos para las subcategorías (actualizados para PostgreSQL)
@@ -53,9 +53,9 @@ export function ListaCategoriasRediseno({
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
   // Hook para cargar categorías desde PostgreSQL
-  const { 
-    categorias: categoriasPostgreSQL, 
-    loading: cargandoCategorias, 
+  const {
+    categorias: categoriasPostgreSQL,
+    loading: cargandoCategorias,
     error: errorCategorias,
     obtenerCategorias,
     obtenerCategoriasPrincipales,
@@ -78,19 +78,19 @@ export function ListaCategoriasRediseno({
   // Obtener el icono para una subcategoría basado en su nombre/tipo
   const getIconoCategoria = (categoria: Categoria): string => {
     const nombreLower = categoria.nombre.toLowerCase();
-    
+
     if (nombreLower.includes('entrada')) return ICONOS_SUBCATEGORIAS.entrada;
     if (nombreLower.includes('principio')) return ICONOS_SUBCATEGORIAS.principio;
     if (nombreLower.includes('proteina')) return ICONOS_SUBCATEGORIAS.proteina;
     if (nombreLower.includes('acompanamiento')) return ICONOS_SUBCATEGORIAS.acompanamiento;
     if (nombreLower.includes('bebida')) return ICONOS_SUBCATEGORIAS.bebida;
-    
+
     return '/iconos/sopa.png'; // Icono por defecto
   };
 
   // Filtrar categorías principales y subcategorías
   const categoriasPrincipales = categorias.filter(cat => cat.tipo === 'principal');
-  
+
   // Obtener subcategorías para una categoría principal
   const getSubcategoriasPorCategoria = (parentId: string): Categoria[] => {
     return categorias.filter(cat => cat.tipo === 'subcategoria' && cat.parentId === parentId);
@@ -121,10 +121,10 @@ export function ListaCategoriasRediseno({
   // Confirmar eliminación (pendiente de implementar)
   const confirmDelete = () => {
     if (!itemToDelete) return;
-    
+
     console.log('🚧 Eliminar categoría pendiente de implementar:', itemToDelete);
     toast.info('Función de eliminar pendiente de implementar');
-    
+
     setModalConfirmDelete(false);
     setItemToDelete(null);
   };
@@ -142,7 +142,7 @@ export function ListaCategoriasRediseno({
         <div className="text-red-500 text-sm p-3 bg-red-50 rounded-md">
           Error al cargar categorías: {errorCategorias}
         </div>
-        <Button 
+        <Button
           onClick={() => obtenerCategorias()}
           className="w-full bg-spoon-primary hover:bg-spoon-primary-dark text-white text-sm"
         >
@@ -166,10 +166,10 @@ export function ListaCategoriasRediseno({
       {categoriasPrincipales.map((categoria) => {
         const subcategorias = getSubcategoriasPorCategoria(categoria.id);
         const totalProductos = obtenerConteo(categoria);
-        
+
         return (
           <div key={categoria.id} className="border-b border-gray-200">
-            <div 
+            <div
               className="flex items-center justify-between py-3 px-4 cursor-pointer"
               onClick={() => toggleCategory(categoria.id)}
             >
@@ -180,7 +180,7 @@ export function ListaCategoriasRediseno({
                   <span className="text-xs text-gray-500">({subcategorias.length} subcategorías)</span>
                 )}
               </div>
-              
+
               <div className="flex items-center space-x-3">
                 <GripVertical className="h-4 w-4 text-gray-400" />
                 <span className="text-sm text-gray-500">{totalProductos}</span>
@@ -191,7 +191,7 @@ export function ListaCategoriasRediseno({
                 )}
               </div>
             </div>
-            
+
             {/* Subcategorías expandidas */}
             {expandedCategory === categoria.id && (
               <div className="px-4 py-3 bg-gray-50">
@@ -199,9 +199,9 @@ export function ListaCategoriasRediseno({
                   <div className="space-y-2">
                     <p className="text-xs font-medium text-gray-600 mb-3">Subcategorías:</p>
                     {subcategorias.map((subcategoria) => {
-                      const conteoSubcategoria: number = 'count' in subcategoria ? subcategoria.count || 0 : 0;
+                      const conteoSubcategoria = (subcategoria as CategoriaConConteo).count || 0;
                       return (
-                        <div 
+                        <div
                           key={subcategoria.id}
                           className="flex items-center justify-between p-2 bg-white rounded-md hover:bg-gray-50 cursor-pointer"
                           onClick={() => handleSelectCategoria(subcategoria.id)}
@@ -218,7 +218,7 @@ export function ListaCategoriasRediseno({
                             </div>
                             <span className="text-sm">{subcategoria.nombre}</span>
                           </div>
-                          
+
                           <div className="flex items-center space-x-2">
                             <span className="text-xs text-gray-500">
                               {conteoSubcategoria} productos
@@ -265,12 +265,12 @@ export function ListaCategoriasRediseno({
               Función pendiente de implementar
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="py-4 text-center text-gray-500">
             <p>La funcionalidad de agregar categorías será implementada próximamente.</p>
             <p className="text-xs mt-2">Las categorías se gestionan actualmente desde PostgreSQL.</p>
           </div>
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalCategoria(false)}>
               Cerrar
@@ -288,12 +288,12 @@ export function ListaCategoriasRediseno({
               Función pendiente de implementar
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="py-4 text-center text-gray-500">
             <p>La funcionalidad de eliminar será implementada próximamente.</p>
             <p className="text-xs mt-2">Las categorías se gestionan actualmente desde PostgreSQL.</p>
           </div>
-          
+
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setModalConfirmDelete(false)}>
               Cancelar

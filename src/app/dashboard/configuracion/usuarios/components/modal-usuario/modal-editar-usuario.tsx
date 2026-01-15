@@ -11,7 +11,7 @@ import {
   DialogFooter,
 } from '@/shared/components/ui/Dialog/dialog';
 import { Button } from '@/shared/components/ui/Button';
-import { Usuario } from '../../types/usuarios.types';
+import { Usuario } from '@/app/dashboard/configuracion/usuarios/types/usuarios.types';
 
 const formSchema = z.object({
   nombre: z.string().min(2, 'El nombre es requerido'),
@@ -31,18 +31,18 @@ interface ModalEditarUsuarioProps {
   onGuardar: (uid: string, data: Partial<Usuario>) => Promise<void>;
 }
 
-export default function ModalEditarUsuario({ 
+export default function ModalEditarUsuario({
   usuario,
-  abierto, 
+  abierto,
   onClose,
-  onGuardar 
+  onGuardar
 }: ModalEditarUsuarioProps) {
-  const { 
-    register, 
-    handleSubmit, 
+  const {
+    register,
+    handleSubmit,
     watch,
     setValue,
-    formState: { errors, isSubmitting } 
+    formState: { errors, isSubmitting }
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: usuario ? {
@@ -59,7 +59,7 @@ export default function ModalEditarUsuario({
 
   const onSubmit = async (data: FormData) => {
     if (!usuario) return;
-    
+
     try {
       await onGuardar(usuario.uid, data);
       onClose();

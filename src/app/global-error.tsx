@@ -16,12 +16,11 @@ export default function GlobalError({
           <div className="text-center max-w-lg mx-auto p-6 bg-white shadow-lg rounded-lg">
             <h1 className="text-4xl font-bold text-red-600 mb-4">Error Fatal</h1>
             <h2 className="text-2xl font-semibold mb-4">La aplicación no pudo cargar</h2>
-            
+
             <p className="mb-6 text-gray-600">
-              Ha ocurrido un error crítico al cargar la aplicación. Este problema puede estar relacionado
-              con la migración de Firebase a PostgreSQL.
+              Ha ocurrido un error crítico al cargar la aplicación.
             </p>
-            
+
             <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6 text-left overflow-hidden">
               <p className="text-sm text-red-800 truncate">
                 <strong>Error:</strong> {error.message || 'Error desconocido'}
@@ -32,7 +31,7 @@ export default function GlobalError({
                 </p>
               )}
             </div>
-            
+
             <div className="space-y-4">
               <button
                 onClick={() => reset()}
@@ -40,14 +39,14 @@ export default function GlobalError({
               >
                 Intentar cargar de nuevo
               </button>
-              
+
               <div className="flex items-center justify-center">
                 <div className="w-full h-px bg-gray-200"></div>
                 <span className="px-2 text-gray-500 text-sm">o</span>
                 <div className="w-full h-px bg-gray-200"></div>
               </div>
-              
-              <Link 
+
+              <Link
                 href="/"
                 className="block w-full px-4 py-2 text-center bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
               >
@@ -57,7 +56,7 @@ export default function GlobalError({
           </div>
         </div>
       </body>
-    </html>
+    </html >
   );
 }
 

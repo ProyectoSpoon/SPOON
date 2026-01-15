@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSetPageTitle } from '@/shared/Context/page-title-context';
 import { useSalesAnalytics } from '@/hooks/useSalesAnalytics';
-import { useAuthContext } from '@/hooks/useAuthContext';
+import { useAuth } from '@/context/postgres-authcontext';
 import { AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 
 // Tipos TypeScript
@@ -41,35 +41,37 @@ interface ConfigRestaurante {
 
 const RegistroVentasPage = () => {
 
-  // ✅ TÍTULO DINÁMICO DE LA PÁGINA
-  useSetPageTitle('Registro de Ventas', 'Control y registro de ventas diarias');
-  
+
+
   // ✅ OBTENER DATOS DE AUTENTICACIÓN
-  const { restaurantId, loading: authLoading } = useAuthContext();
-  
+  const { restaurantId, loading: authLoading } = useAuth();
+
   // ✅ OBTENER DATOS DINÁMICOS DE SALES ANALYTICS
-  const { 
-    data: salesData, 
-    loading: salesLoading, 
+  const {
+    data: salesData,
+    loading: salesLoading,
     error: salesError,
     formatCurrency,
     getEstadoColor,
     getEstadoTexto,
     refetch
-  } = useSalesAnalytics(restaurantId);
-  
+  } = useSalesAnalytics(restaurantId ?? null);
+
   // Estados
   const [mesaSeleccionada, setMesaSeleccionada] = useState<string | null>(null);
   const [categoriaActiva, setCategoriaActiva] = useState<CategoriaTipo>('entrada');
   const [carrito, setCarrito] = useState<ItemCarrito[]>([]);
   const [metodoPago, setMetodoPago] = useState<MetodoPago>('efectivo');
 
+  // ✅ TÍTULO DINÁMICO DE LA PÁGINA
+  useSetPageTitle('Registro de Ventas', 'Control y registro de ventas diarias');
+
   // ✅ KPIs DINÁMICOS DE OPERACIÓN
   const kpisOperacion = useMemo(() => {
     if (!salesData) return [];
-    
+
     const { kpisOperacion: kpisData } = salesData;
-    
+
     return [
       { titulo: "Mesas Libres", valor: kpisData.mesasLibres, subtitulo: "disponibles" },
       { titulo: "Órdenes Activas", valor: kpisData.ordenesActivas.toString(), subtitulo: "en proceso" },
@@ -148,7 +150,7 @@ const RegistroVentasPage = () => {
   const productosDisponibles = salesData?.metadata?.productosDisponibles || 0;
 
   const getEstadoColorLocal = (estado: EstadoMesa): string => {
-    return getEstadoColor(estado); 
+    return getEstadoColor(estado);
   };
 
   const getEstadoTextoLocal = (estado: EstadoMesa): string => {
@@ -156,14 +158,12 @@ const RegistroVentasPage = () => {
   };
 
   const agregarAlCarrito = (producto: Producto) => {
-    // ✅ TÍTULO DINÁMICO DE LA PÁGINA
-    useSetPageTitle('Registro de Ventas', 'Control y registro de ventas diarias');
-  useSetPageTitle('Registro de Ventas', 'Control y registro de ventas diarias');
+
     setCarrito(carritoActual => {
       const existente = carritoActual.find(item => item.producto.id === producto.id);
       if (existente) {
         return carritoActual.map(item =>
-          item.producto.id === producto.id 
+          item.producto.id === producto.id
             ? { ...item, cantidad: item.cantidad + 1 }
             : item
         );
@@ -173,17 +173,14 @@ const RegistroVentasPage = () => {
   };
 
   const actualizarCantidad = (productId: string, cantidad: number) => {
-
-  // ✅ TÍTULO DINÁMICO DE LA PÁGINA
-  useSetPageTitle('Registro de Ventas', 'Control y registro de ventas diarias');
     if (cantidad <= 0) {
-      setCarrito(carritoActual => 
+      setCarrito(carritoActual =>
         carritoActual.filter(item => item.producto.id !== productId)
       );
     } else {
       setCarrito(carritoActual =>
         carritoActual.map(item =>
-          item.producto.id === productId 
+          item.producto.id === productId
             ? { ...item, cantidad }
             : item
         )
@@ -192,7 +189,7 @@ const RegistroVentasPage = () => {
   };
 
   const calcularTotal = (): number => {
-    return carrito.reduce((total, item) => 
+    return carrito.reduce((total, item) =>
       total + (item.producto.precio * item.cantidad), 0
     );
   };
@@ -201,7 +198,7 @@ const RegistroVentasPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      
+
       {/* KPIs Horizontales - Parte Superior */}
       <div className="grid grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
         {kpisOperacion.map((kpi, index) => (
@@ -252,7 +249,7 @@ const RegistroVentasPage = () => {
         <div className="col-span-12 lg:col-span-5">
           <div className="bg-white p-5 border border-gray-100 rounded-lg shadow-sm">
             <h3 className="text-sm text-gray-500 mb-4">Seleccionar mesa ({configRestaurante?.totalMesas} mesas)</h3>
-            
+
             <div className="grid grid-cols-4 md:grid-cols-5 gap-2 max-h-64 overflow-y-auto">
               {configRestaurante?.layoutMesas.map((mesa) => (
                 <button
@@ -261,8 +258,8 @@ const RegistroVentasPage = () => {
                   disabled={mesa.estado !== 'libre'}
                   className={`
                     relative p-3 rounded-lg border-2 text-center transition-all
-                    ${mesaSeleccionada === mesa.id 
-                      ? 'border-blue-500 bg-blue-50' 
+                    ${mesaSeleccionada === mesa.id
+                      ? 'border-blue-500 bg-blue-50'
                       : mesa.estado === 'libre'
                         ? 'border-green-200 bg-green-50 hover:border-green-300'
                         : 'border-gray-200 bg-gray-100 cursor-not-allowed'
@@ -271,7 +268,7 @@ const RegistroVentasPage = () => {
                 >
                   <div className="text-sm font-bold text-gray-900">{mesa.numero}</div>
                   <div className="text-xs text-gray-500">{mesa.capacidad}p</div>
-                  <div 
+                  <div
                     className="absolute top-1 right-1 w-2 h-2 rounded-full"
                     style={{ backgroundColor: getEstadoColor(mesa.estado) }}
                   ></div>
@@ -286,7 +283,7 @@ const RegistroVentasPage = () => {
             <div className="flex gap-4 mt-4 text-xs">
               {(['libre', 'ocupada', 'reservada', 'limpieza'] as EstadoMesa[]).map(estado => (
                 <div key={estado} className="flex items-center gap-1">
-                  <div 
+                  <div
                     className="w-2 h-2 rounded-full"
                     style={{ backgroundColor: getEstadoColor(estado) }}
                   ></div>
@@ -301,18 +298,17 @@ const RegistroVentasPage = () => {
         <div className="col-span-12 lg:col-span-4">
           <div className="bg-white p-5 border border-gray-100 rounded-lg shadow-sm">
             <h3 className="text-sm text-gray-500 mb-4">Productos disponibles</h3>
-            
+
             {/* ✅ FILTROS DE CATEGORÍA DINÁMICOS */}
             <div className="flex gap-1 mb-4 flex-wrap">
               {categoriasDisponibles.map((categoria) => (
                 <button
                   key={categoria}
                   onClick={() => setCategoriaActiva(categoria)}
-                  className={`px-3 py-1 text-sm rounded border transition-colors ${
-                    categoriaActiva === categoria
-                      ? 'bg-gray-900 text-white border-gray-900'
-                      : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                  }`}
+                  className={`px-3 py-1 text-sm rounded border transition-colors ${categoriaActiva === categoria
+                    ? 'bg-gray-900 text-white border-gray-900'
+                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                    }`}
                 >
                   {categoria.charAt(0).toUpperCase() + categoria.slice(1)}
                 </button>
@@ -328,13 +324,12 @@ const RegistroVentasPage = () => {
                 </div>
               ) : (
                 (productosPorCategoria[categoriaActiva] || []).map((producto: any) => (
-                  <div 
-                    key={producto.id} 
-                    className={`p-3 border rounded-lg ${
-                      producto.disponible 
-                        ? 'border-gray-200 hover:border-gray-300 bg-white' 
-                        : 'border-gray-100 bg-gray-50'
-                    }`}
+                  <div
+                    key={producto.id}
+                    className={`p-3 border rounded-lg ${producto.disponible
+                      ? 'border-gray-200 hover:border-gray-300 bg-white'
+                      : 'border-gray-100 bg-gray-50'
+                      }`}
                   >
                     <div className="flex justify-between items-center">
                       <div className="flex-1">
@@ -354,11 +349,10 @@ const RegistroVentasPage = () => {
                           categoria: producto.categoria as CategoriaTipo
                         })}
                         disabled={!producto.disponible || !mesaSeleccionada}
-                        className={`px-3 py-1 text-sm rounded ${
-                          producto.disponible && mesaSeleccionada
-                            ? 'bg-blue-500 text-white hover:bg-blue-600'
-                            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                        }`}
+                        className={`px-3 py-1 text-sm rounded ${producto.disponible && mesaSeleccionada
+                          ? 'bg-blue-500 text-white hover:bg-blue-600'
+                          : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                          }`}
                       >
                         +
                       </button>
@@ -374,7 +368,7 @@ const RegistroVentasPage = () => {
         <div className="col-span-12 lg:col-span-3">
           <div className="bg-white p-5 border border-gray-100 rounded-lg shadow-sm sticky top-6">
             <h3 className="text-sm text-gray-500 mb-4">Orden actual ({totalItems} items)</h3>
-            
+
             {carrito.length === 0 ? (
               <div className="text-center text-gray-500 py-8">
                 <div className="text-sm">Carrito vacío</div>
@@ -412,7 +406,7 @@ const RegistroVentasPage = () => {
                 {/* Método de pago */}
                 <div className="space-y-2">
                   <div className="text-sm font-medium text-gray-700">Método de pago:</div>
-                  <select 
+                  <select
                     value={metodoPago}
                     onChange={(e) => setMetodoPago(e.target.value as MetodoPago)}
                     className="w-full p-2 text-sm border border-gray-200 rounded"
@@ -429,18 +423,17 @@ const RegistroVentasPage = () => {
                     <span>Total:</span>
                     <span className="text-green-600">{formatCurrency(calcularTotal())}</span>
                   </div>
-                  
+
                   <button
                     disabled={!mesaSeleccionada || carrito.length === 0}
-                    className={`w-full py-3 rounded-lg font-medium ${
-                      mesaSeleccionada && carrito.length > 0
-                        ? 'bg-green-600 text-white hover:bg-green-700'
-                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    }`}
+                    className={`w-full py-3 rounded-lg font-medium ${mesaSeleccionada && carrito.length > 0
+                      ? 'bg-green-600 text-white hover:bg-green-700'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      }`}
                   >
                     {!mesaSeleccionada ? 'Selecciona Mesa' : 'Crear Orden'}
                   </button>
-                  
+
                   {carrito.length > 0 && (
                     <button
                       onClick={() => setCarrito([])}

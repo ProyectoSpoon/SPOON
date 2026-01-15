@@ -2,7 +2,6 @@
 import React from 'react'
 import { Alert, AlertDescription } from '@/shared/components/ui/Alert'
 import { Button } from '@/shared/components/ui/Button'
-import { useError } from '@/shared/Hooks/useerror'
 
 interface Props {
   children: React.ReactNode
@@ -23,9 +22,9 @@ export class ErrorBoundary extends React.Component<Props, State> {
     return { hasError: true, error }
   }
 
-  componentDidCatch(error: Error): void {
-    const { handleError } = useError()
-    handleError(error)
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
+    // Log error to console for debugging
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
   }
 
   render(): React.ReactNode {
@@ -34,7 +33,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
         <div className="p-4">
           <Alert variant="destructive">
             <AlertDescription>
-              Ha ocurrido un error inesperado
+              Ha ocurrido un error inesperado al cargar el componente.
             </AlertDescription>
           </Alert>
           <Button

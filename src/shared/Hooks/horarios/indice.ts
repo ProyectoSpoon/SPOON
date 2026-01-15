@@ -1,3 +1,6 @@
-// /shared/hooks/horarios/indice.ts
-export * from './usar-gestor-horarios';
-export * from './usar-festivos';
+export * from './use-festivos';
+export * from './use-gestor-horarios';
+
+// Re-export explicit new names for clarity
+export { useFestivos } from './use-festivos';
+export { useGestorHorarios } from './use-gestor-horarios';

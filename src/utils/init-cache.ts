@@ -29,6 +29,13 @@ export function initializeCache(config: Partial<CacheConfig> = {}): void {
     return;
   }
 
+  // SINGLETON PREVENT DOUBLE INIT
+  if ((window as any).__CACHE_INITIALIZED__) {
+    console.log('🔒 initializeCache: Ya inicializado, omitiendo...');
+    return;
+  }
+  (window as any).__CACHE_INITIALIZED__ = true;
+
   try {
     const finalConfig = { ...DEFAULT_CONFIG, ...config };
     console.log('🚀 Inicializando sistema de caché...', finalConfig);
@@ -76,7 +83,7 @@ function cleanupExpiredCache(): void {
         const item = localStorage.getItem(key);
         if (item) {
           const parsed = JSON.parse(item);
-          
+
           // Verificar si tiene timestamp y TTL
           if (parsed.timestamp && parsed.ttl) {
             const isExpired = Date.now() - parsed.timestamp > (parsed.ttl * 60 * 1000);
@@ -113,14 +120,14 @@ function validateLocalStorageIntegrity(): void {
     // Test write/read
     const testKey = '__cache_test__';
     const testValue = JSON.stringify({ test: true, timestamp: Date.now() });
-    
+
     localStorage.setItem(testKey, testValue);
     const retrieved = localStorage.getItem(testKey);
-    
+
     if (retrieved !== testValue) {
       throw new Error('localStorage write/read mismatch');
     }
-    
+
     localStorage.removeItem(testKey);
     console.log('✅ localStorage integrity validated');
   } catch (error) {
@@ -160,7 +167,7 @@ function setupStorageEventListeners(): void {
   window.addEventListener('storage', (event) => {
     if (event.key && event.key.includes('menu_') || event.key?.includes('cache')) {
       console.log('📡 Storage change detected:', event.key);
-      
+
       // Opcional: Sincronizar con otros tabs o mostrar notificación
       if (event.newValue === null) {
         console.log('🗑️ Cache cleared in another tab:', event.key);
@@ -198,10 +205,10 @@ export const cacheInitUtils = {
     }
 
     try {
-      const keys = Object.keys(localStorage).filter(key => 
+      const keys = Object.keys(localStorage).filter(key =>
         key.includes('menu_') || key.includes('cache')
       );
-      
+
       let totalSize = 0;
       keys.forEach(key => {
         const item = localStorage.getItem(key);

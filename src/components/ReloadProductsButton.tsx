@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { forceInitializeCache } from '@/utils/init-cache';
+import { initializeCache } from '@/utils/init-cache';
 import { toast } from 'sonner';
 
 export function ReloadProductsButton() {
@@ -17,12 +17,12 @@ export function ReloadProductsButton() {
           console.log(`Caché '${key}' eliminado`);
         }
       });
-      
+
       // Forzar la inicialización del caché
-      await forceInitializeCache();
-      
+      initializeCache();
+
       toast.success('Caché limpiado y reinicializado correctamente. Recargando página...');
-      
+
       // Esperar un momento para que el usuario vea el mensaje
       setTimeout(() => {
         window.location.reload();

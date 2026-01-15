@@ -1,12 +1,14 @@
 // src/data/staticMenuData.ts
-import categoriasJson from '@/test-data/cargainicial/categorias.json';
-import subcategoriasJson from '@/test-data/cargainicial/subcategorias.json';
-import entradasJson from '@/test-data/cargainicial/productos/entradas.json';
-import principiosJson from '@/test-data/cargainicial/productos/principios.json';
-import proteinasJson from '@/test-data/cargainicial/productos/proteinas.json';
-import acompañamientosJson from '@/test-data/cargainicial/productos/acompañamientos.json';
-import bebidasJson from '@/test-data/cargainicial/productos/bebidas.json';
-import { Categoria, Producto, ProductoStock, ProductoMetadata } from '@/utils/menuCache.utils';
+import { Categoria, Producto } from '@/utils/menuCache.utils';
+
+// Mocks para datos eliminados/no encontrados
+const categoriasJson: any[] = [];
+const subcategoriasJson: any[] = [];
+const entradasJson: any[] = [];
+const principiosJson: any[] = [];
+const proteinasJson: any[] = [];
+const acompañamientosJson: any[] = [];
+const bebidasJson: any[] = [];
 
 /**
  * Transforma los datos de categorías del formato JSON al formato utilizado por la aplicación
@@ -39,7 +41,7 @@ const transformarProducto = (prod: any): Producto => {
   const stockActual = parseInt(String(prod.stock_actual), 10) || 0;
   const stockMinimo = parseInt(String(prod.stock_minimo), 10) || 0;
 
-  const stockStatusLogic = (): ProductoStock['status'] => {
+  const stockStatusLogic = (): NonNullable<Producto['stock']>['status'] => {
     if (!esDisponible) return 'out_of_stock';
     if (stockActual <= 0) return 'out_of_stock';
     if (stockActual <= stockMinimo) return 'low_stock';
@@ -63,12 +65,7 @@ const transformarProducto = (prod: any): Producto => {
       minQuantity: stockMinimo,
       maxQuantity: parseInt(String(prod.stock_maximo), 10) || 100,
       status: currentStockStatus,
-      lastUpdated: prod.fecha_actualizacion ? new Date(prod.fecha_actualizacion) : new Date(),
-      alerts: {
-        lowStock: currentStockStatus === 'low_stock',
-        overStock: false, 
-        thresholds: { low: stockMinimo, high: parseInt(String(prod.stock_maximo), 10) || 100 }
-      }
+      lastUpdated: prod.fecha_actualizacion ? new Date(prod.fecha_actualizacion) : new Date()
     },
     metadata: {
       createdAt: prod.fecha_creacion ? new Date(prod.fecha_creacion) : new Date(),

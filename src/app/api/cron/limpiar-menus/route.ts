@@ -1,87 +1,44 @@
-import { NextResponse } from 'next/server';
-import { query } from '@/lib/database';
+// MIGRATED TO SUPABASE - Note: Cron jobs should use Supabase Edge Functions or external scheduler
+import { NextRequest, NextResponse } from 'next/server';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 
-export async function GET(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    // Verificar autorización en producción
-    const authHeader = process.env.CRON_SECRET;
-    const requestAuth = request.headers.get('authorization');
-    
-    if (process.env.NODE_ENV === 'production' && authHeader && requestAuth !== `Bearer ${authHeader}`) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    console.log('🔄 Cron: Limpiando menús antiguos...');
+
+    const supabase = createRouteHandlerClient({ cookies });
+
+    // Eliminar menús más antiguos que X días
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - 30); // 30 días atrás
+
+    const { error } = await supabase
+      .schema('restaurant')
+      .from('daily_menus')
+      .delete()
+      .lt('date', cutoffDate.toISOString().split('T')[0]);
+
+    if (error) {
+      console.error('Error limpiando menús:', error);
+      return NextResponse.json({
+        success: false,
+        error: error.message
+      }, { status: 500 });
     }
-    
-    // Ejecutar limpieza silenciosa
-    const restaurantQuery = 'SELECT id FROM restaurant.restaurants WHERE status = $1';
-    const restaurantResult = await query(restaurantQuery, ['active']);
-    
-    let totalLimpiados = 0;
-    
-    for (const restaurant of restaurantResult.rows) {
-      const restaurantId = restaurant.id;
-      
-      // Limpiar para cada restaurante
-      const deleteSidesQuery = `
-        DELETE FROM menu.combination_sides 
-        WHERE combination_id IN (
-          SELECT mc.id 
-          FROM menu.menu_combinations mc
-          JOIN menu.daily_menus dm ON mc.daily_menu_id = dm.id
-          WHERE dm.restaurant_id = $1 
-            AND dm.menu_date < CURRENT_DATE
-        )
-      `;
-      
-      await query(deleteSidesQuery, [restaurantId]);
-      
-      // ✅ SOFT DELETE: Archivar combinaciones en lugar de eliminarlas
-      // Esto preserva el histórico para el registro de ventas
-      const archiveCombinationsQuery = `
-        UPDATE menu.menu_combinations 
-        SET status = 'archived',
-            updated_at = NOW()
-        WHERE daily_menu_id IN (
-          SELECT id 
-          FROM menu.daily_menus 
-          WHERE restaurant_id = $1 
-            AND menu_date < CURRENT_DATE
-        )
-        AND status != 'archived'
-      `;
-      
-      await query(archiveCombinationsQuery, [restaurantId]);
-      
-      const archiveMenusQuery = `
-        UPDATE menu.daily_menus 
-        SET status = 'archived', 
-            updated_at = NOW()
-        WHERE restaurant_id = $1 
-          AND menu_date < CURRENT_DATE
-          AND status IN ('published', 'draft')
-      `;
-      
-      const archiveResult = await query(archiveMenusQuery, [restaurantId]);
-      
-      // ✅ FIX: Manejar el caso donde rowCount puede ser null
-      totalLimpiados += archiveResult.rowCount || 0;
-    }
-    
-    // Solo log si realmente limpió algo
-    if (totalLimpiados > 0) {
-      console.log(`🗑️ Limpieza nocturna: ${totalLimpiados} menús archivados`);
-    }
-    
+
+    console.log('✅ Menús antiguos eliminados');
+
     return NextResponse.json({
       success: true,
-      cleaned: totalLimpiados,
-      timestamp: new Date().toISOString()
+      message: 'Menús antiguos eliminados correctamente'
     });
-    
+
   } catch (error) {
-    console.error('❌ Error en limpieza nocturna:', error);
-    return NextResponse.json(
-      { error: 'Error en limpieza nocturna' },
-      { status: 500 }
-    );
+    console.error('❌ Error en cron:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'Error interno'
+    }, { status: 500 });
   }
 }

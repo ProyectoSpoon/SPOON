@@ -2,7 +2,7 @@
 
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Categoria, TipoRestaurante } from '../../types/tipos';
+import { Categoria, TipoRestaurante } from '@/app/dashboard/configuracion/categorias/types/tipos';
 import { CategoriaItem } from '../CategoriaItem';
 import { Button } from '@/shared/components/ui/Button';
 import { PlusCircle, RefreshCw, Info } from 'lucide-react';
@@ -45,14 +45,14 @@ export function CategoriaView({
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-gray-800">Categorías de {tipoActual.nombre}</h2>
         <div className="flex space-x-2">
-          <Button 
+          <Button
             onClick={onNuevaCategoria}
             className="bg-spoon-primary hover:bg-spoon-primary-dark text-white"
           >
             <PlusCircle className="h-4 w-4 mr-2" />
             Nueva Categoría
           </Button>
-          <Button 
+          <Button
             onClick={onImportarPlantilla}
             variant="outline"
             className="border-spoon-primary text-spoon-primary hover:bg-orange-50"
@@ -62,7 +62,7 @@ export function CategoriaView({
           </Button>
         </div>
       </div>
-      
+
       <div className="bg-gray-50 p-4 rounded-lg mb-6 flex items-start">
         <Info className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
         <p className="text-sm text-gray-600">
@@ -70,7 +70,7 @@ export function CategoriaView({
           Puede arrastrar las categorías para reordenarlas. Haga clic en una categoría para ver sus subcategorías.
         </p>
       </div>
-      
+
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}

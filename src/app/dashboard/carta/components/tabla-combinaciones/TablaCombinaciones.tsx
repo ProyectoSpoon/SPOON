@@ -4,7 +4,7 @@ import { Star, Badge } from "lucide-react";
 import { Button } from "@/shared/components/ui/Button";
 import { Input } from "@/shared/components/ui/Input";
 import { Tooltip } from "@/shared/components/ui/Tooltip";
-import { MenuCombinacion } from '../../types/menu.types';
+import { MenuCombinacion } from '@/app/dashboard/carta/types/menu.types';
 import { Loader2 } from 'lucide-react';
 
 interface TablaCombinacionesProps {
@@ -15,8 +15,8 @@ interface TablaCombinacionesProps {
   onUpdateCantidad?: (id: string, cantidad: number) => void;
 }
 
-export function TablaCombinaciones({ 
-  combinaciones, 
+export function TablaCombinaciones({
+  combinaciones,
   isLoading,
   onToggleFavorito,
   onToggleEspecial,
@@ -63,8 +63,8 @@ export function TablaCombinaciones({
                 <td className="px-4 py-2 whitespace-nowrap">{combinacion.principio?.nombre || 'No disponible'}</td>
                 <td className="px-4 py-2 whitespace-nowrap">{combinacion.proteina?.nombre || 'No disponible'}</td>
                 <td className="px-4 py-2 whitespace-nowrap">
-                  {combinacion.acompanamiento?.length > 0 
-                    ? combinacion.acompanamiento.map(item => item?.nombre || 'No disponible').join(', ')
+                  {(combinacion.acompanamiento?.length ?? 0) > 0
+                    ? combinacion.acompanamiento!.map(item => item?.nombre || 'No disponible').join(', ')
                     : 'No disponible'}
                 </td>
                 <td className="px-4 py-2 whitespace-nowrap">{combinacion.bebida?.nombre || 'No disponible'}</td>
@@ -84,9 +84,8 @@ export function TablaCombinaciones({
                         variant="ghost"
                         size="sm"
                         onClick={() => onToggleFavorito?.(combinacion.id)}
-                        className={`p-1 hover:bg-[var(--spoon-primary-light)] ${
-                          combinacion.favorito ? 'text-[var(--spoon-primary)]' : 'text-gray-400'
-                        }`}
+                        className={`p-1 hover:bg-[var(--spoon-primary-light)] ${combinacion.favorito ? 'text-[var(--spoon-primary)]' : 'text-gray-400'
+                          }`}
                       >
                         <Star className={`h-5 w-5 ${combinacion.favorito ? 'fill-current' : ''}`} />
                       </Button>
@@ -96,9 +95,8 @@ export function TablaCombinaciones({
                         variant="ghost"
                         size="sm"
                         onClick={() => onToggleEspecial?.(combinacion.id)}
-                        className={`p-1 hover:bg-[var(--spoon-primary-light)] ${
-                          combinacion.especial ? 'text-[var(--spoon-primary)]' : 'text-gray-400'
-                        }`}
+                        className={`p-1 hover:bg-[var(--spoon-primary-light)] ${combinacion.especial ? 'text-[var(--spoon-primary)]' : 'text-gray-400'
+                          }`}
                       >
                         <Badge className="h-5 w-5" />
                       </Button>

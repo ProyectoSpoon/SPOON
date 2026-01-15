@@ -1,8 +1,8 @@
 'use client';
 
 import { Card } from '@/shared/components/ui/Card';
-import { formatearMoneda, formatearPorcentaje } from '../../utils/formatters';
-import { calcularCrecimiento } from '../../utils/calculosEstadisticos';
+import { formatearMoneda, formatearPorcentaje } from '@/app/dashboard/estadisticas/utils/formatters';
+import { calcularCrecimiento } from '@/app/dashboard/estadisticas/utils/calculosEstadisticos';
 
 // ✨ REEMPLAZADO: Iconos Spoon Refined en lugar de lucide-react
 import {
@@ -18,14 +18,14 @@ interface KPI {
   // Campos obligatorios (común en ambos sistemas)
   titulo: string;
   valor: number;
-  
+
   // Campos opcionales (compatibilidad con datos existentes)
   id?: string;                    // Solo en algunos datos
   tipo?: 'moneda' | 'porcentaje' | 'numero';  // Inferido si no existe
   icono?: 'revenue' | 'plates' | 'timer' | 'customers' | 'dollar' | 'bag' | 'clock' | 'users';  // Híbrido
   valorAnterior?: number;         // Usado para cálculos de tendencia
   descripcion?: string;
-  
+
   // Campos legacy (mantener compatibilidad)
   porcentajeCambio?: number;      // Del sistema existente
   color?: string;                 // Del sistema existente
@@ -39,11 +39,11 @@ interface KPIsCardsProps {
 }
 
 export const KPIsCards = ({ kpis, isLoading = false }: KPIsCardsProps) => {
-  
+
   // ✨ MAPEO HÍBRIDO: Lucide-react → Spoon Refined + fallbacks
   const renderizarIcono = (tipo: KPI['icono'], variant: 'default' | 'primary' | 'success' | 'error' = 'primary') => {
     const iconProps = { size: 24 as const, variant };
-    
+
     // Mapeo moderno (Spoon Refined)
     switch (tipo) {
       case 'revenue':
@@ -54,7 +54,7 @@ export const KPIsCards = ({ kpis, isLoading = false }: KPIsCardsProps) => {
         return <KitchenTimerIcon {...iconProps} />;
       case 'customers':
         return <CustomersIcon {...iconProps} />;
-      
+
       // Compatibilidad con iconos legacy (lucide-react)
       case 'dollar':
         return <RevenueIcon {...iconProps} />;        // dollar → RevenueIcon
@@ -64,7 +64,7 @@ export const KPIsCards = ({ kpis, isLoading = false }: KPIsCardsProps) => {
         return <KitchenTimerIcon {...iconProps} />;   // clock → KitchenTimerIcon
       case 'users':
         return <CustomersIcon {...iconProps} />;      // users → CustomersIcon
-      
+
       // Fallback por defecto
       default:
         return <SalesAnalyticsIcon {...iconProps} />;
@@ -83,7 +83,7 @@ export const KPIsCards = ({ kpis, isLoading = false }: KPIsCardsProps) => {
         tipo = 'numero';  // Default
       }
     }
-    
+
     switch (tipo) {
       case 'moneda':
         return formatearMoneda(valor);
@@ -120,9 +120,9 @@ export const KPIsCards = ({ kpis, isLoading = false }: KPIsCardsProps) => {
   // ✨ NUEVO: Icono de tendencia usando SalesAnalyticsIcon con rotación CSS
   const renderizarTendencia = (esPositivo: boolean) => (
     <div className={`transform ${esPositivo ? 'rotate-0' : 'rotate-180'}`}>
-      <SalesAnalyticsIcon 
-        size={16} 
-        variant={esPositivo ? 'success' : 'error'} 
+      <SalesAnalyticsIcon
+        size={16}
+        variant={esPositivo ? 'success' : 'error'}
       />
     </div>
   );
@@ -159,8 +159,8 @@ export const KPIsCards = ({ kpis, isLoading = false }: KPIsCardsProps) => {
         const varianteIcono = obtenerVarianteIcono(variacion);
 
         return (
-          <Card 
-            key={kpi.id || index} 
+          <Card
+            key={kpi.id || index}
             className="p-6 hover:shadow-spoon-lg transition-all duration-300 hover:scale-[1.02] border-l-4 border-l-spoon-primary"
           >
             <div className="flex items-start justify-between">
@@ -169,13 +169,13 @@ export const KPIsCards = ({ kpis, isLoading = false }: KPIsCardsProps) => {
                 <span className="text-sm font-medium text-spoon-neutral-600 block">
                   {kpi.titulo}
                 </span>
-                
+
                 <div className="space-y-2">
                   {/* ✨ HÍBRIDO: Valor principal con formateo inteligente */}
                   <p className="text-3xl font-bold text-spoon-neutral-800 leading-none">
                     {formatearValor(kpi.valor, kpi.tipo)}
                   </p>
-                  
+
                   {/* ✨ MODERNIZADO: Indicador de tendencia con iconos Spoon */}
                   {variacion && (
                     <div className="flex items-center gap-2">
@@ -188,7 +188,7 @@ export const KPIsCards = ({ kpis, isLoading = false }: KPIsCardsProps) => {
                       </span>
                     </div>
                   )}
-                  
+
                   {/* ✨ MEJORADO: Descripción con mejor espaciado */}
                   {kpi.descripcion && (
                     <p className="text-sm text-spoon-neutral-500 leading-relaxed">
@@ -197,7 +197,7 @@ export const KPIsCards = ({ kpis, isLoading = false }: KPIsCardsProps) => {
                   )}
                 </div>
               </div>
-              
+
               {/* ✨ MODERNIZADO: Contenedor de icono con gradiente sutil */}
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-br from-spoon-primary/10 to-spoon-primary/5 rounded-xl blur-sm"></div>

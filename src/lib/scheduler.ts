@@ -6,9 +6,9 @@ import cron from 'node-cron';
  */
 export class SchedulerService {
   private static instance: SchedulerService;
-  private tasks: Map<string, cron.ScheduledTask> = new Map();
+  private tasks: Map<string, any> = new Map();
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): SchedulerService {
     if (!SchedulerService.instance) {
@@ -23,7 +23,7 @@ export class SchedulerService {
   initializeTasks() {
     // Limpiar menús diarios a las 10:00 PM todos los días
     this.scheduleMenuCleanup();
-    
+
     console.log('🕐 Scheduler iniciado - Tareas programadas:');
     console.log('  - Limpieza de menús: Diario a las 10:00 PM');
   }
@@ -35,7 +35,7 @@ export class SchedulerService {
     const task = cron.schedule('0 22 * * *', async () => {
       try {
         console.log('🗑️ Iniciando limpieza automática de menús...');
-        
+
         const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/cron/limpiar-menus`, {
           method: 'GET',
           headers: {
@@ -56,7 +56,7 @@ export class SchedulerService {
     }, {
       scheduled: false, // No iniciar automáticamente
       timezone: "America/Bogota" // Zona horaria de Colombia
-    });
+    } as any);
 
     this.tasks.set('menu-cleanup', task);
   }
@@ -87,7 +87,7 @@ export class SchedulerService {
   async runMenuCleanupNow() {
     try {
       console.log('🔧 Ejecutando limpieza manual...');
-      
+
       const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/cron/limpiar-menus`, {
         method: 'GET',
         headers: {

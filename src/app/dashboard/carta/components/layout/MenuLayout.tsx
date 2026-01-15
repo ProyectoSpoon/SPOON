@@ -1,9 +1,9 @@
 // src/app/dashboard/carta/components/layout/MenuLayout.tsx
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  Loader2, 
-  VideoIcon, 
+import {
+  Loader2,
+  VideoIcon,
   FileQuestion,
   GitFork,
   Clock
@@ -53,16 +53,16 @@ interface MenuLayoutProps {
   onCategoriaCreated?: (newCategoria: any) => void;
 }
 
-export function MenuLayout({ 
-  isLoading: initialLoading, 
-  error: initialError, 
-  categorias: categoriasIniciales, 
+export function MenuLayout({
+  isLoading: initialLoading,
+  error: initialError,
+  categorias: categoriasIniciales,
   productos: productosIniciales,
   restauranteId,
   onCategoriaCreated
 }: MenuLayoutProps) {
   const router = useRouter();
-  
+
   // Usar el hook de caché del menú
   const {
     menuData,
@@ -93,13 +93,13 @@ export function MenuLayout({
     const updateRemainingTime = () => {
       setCacheRemainingTime(getCacheRemainingTime());
     };
-    
+
     // Actualizar inmediatamente
     updateRemainingTime();
-    
+
     // Configurar intervalo para actualizar cada minuto
     const interval = setInterval(updateRemainingTime, 60000);
-    
+
     return () => clearInterval(interval);
   }, [getCacheRemainingTime]);
 
@@ -168,17 +168,17 @@ export function MenuLayout({
 
     try {
       toast.success("Generando combinaciones...");
-      
+
       // Convertir productos al formato esperado por la página de combinaciones
       const productosConvertidos = menuData.productosSeleccionados.map(p => {
         // Obtener la categoría correspondiente según el ID de subcategoría
         const categoriaMenu = mapeoSubcategorias[p.categoriaId as keyof typeof mapeoSubcategorias];
-        
+
         if (!categoriaMenu) {
           console.error(`No se encontró categoría para el ID: ${p.categoriaId}`);
           return null;
         }
-        
+
         // Crear un nuevo producto con la categoría correcta
         return {
           id: p.id,
@@ -203,20 +203,20 @@ export function MenuLayout({
           opciones: []
         };
       }).filter(p => p !== null) as any[]; // Filtrar productos nulos
-      
+
       console.log('Productos convertidos para combinaciones:', productosConvertidos);
-      
+
       // Generar combinaciones directamente
       const combinaciones: any[] = [];
       let idCombinacion = 1;
-      
+
       // Filtrar productos por categoría
       const entradasConvertidas = productosConvertidos.filter(p => p.categoriaId === CategoriaMenu.ENTRADA);
       const principiosConvertidos = productosConvertidos.filter(p => p.categoriaId === CategoriaMenu.PRINCIPIO);
       const proteinasConvertidas = productosConvertidos.filter(p => p.categoriaId === CategoriaMenu.PROTEINA);
       const acompanamientosConvertidos = productosConvertidos.filter(p => p.categoriaId === CategoriaMenu.ACOMPANAMIENTO);
       const bebidasConvertidas = productosConvertidos.filter(p => p.categoriaId === CategoriaMenu.BEBIDA);
-      
+
       // Generar todas las combinaciones posibles
       entradasConvertidas.forEach(entrada => {
         principiosConvertidos.forEach(principio => {
@@ -224,7 +224,7 @@ export function MenuLayout({
             // Seleccionar un acompañamiento y una bebida únicos para cada combinación
             const acompIndex = (idCombinacion - 1) % acompanamientosConvertidos.length;
             const bebidaIndex = (idCombinacion - 1) % bebidasConvertidas.length;
-            
+
             combinaciones.push({
               id: `menu-${idCombinacion++}`,
               nombre: `${principio.nombre} con ${proteina.nombre}`,
@@ -241,13 +241,13 @@ export function MenuLayout({
           });
         });
       });
-      
+
       console.log(`Total de combinaciones generadas: ${combinaciones.length}`);
       console.log('Primera combinación generada:', combinaciones[0]);
-      
+
       // Guardar las combinaciones en el caché
       localStorage.setItem('combinacionesGeneradas', JSON.stringify(combinaciones));
-      
+
       // Navegar a la página de combinaciones
       router.push('/dashboard/carta/combinaciones');
     } catch (error) {
@@ -274,7 +274,7 @@ export function MenuLayout({
     // Eliminar la categoría y todas sus subcategorías
     const nuevasCategorias = menuData.categorias.filter(cat => cat.id !== id && cat.parentId !== id);
     updateCategorias(nuevasCategorias);
-    
+
     // Si la categoría eliminada era la seleccionada, deseleccionarla
     if (menuData.categoriaSeleccionada === id) {
       updateSeleccion(null, null);
@@ -285,7 +285,7 @@ export function MenuLayout({
     // Eliminar solo la subcategoría
     const nuevasCategorias = menuData.categorias.filter(cat => cat.id !== id);
     updateCategorias(nuevasCategorias);
-    
+
     // Si la subcategoría eliminada era la seleccionada, deseleccionarla
     if (menuData.subcategoriaSeleccionada === id) {
       updateSeleccion(menuData.categoriaSeleccionada, null);
@@ -323,7 +323,7 @@ export function MenuLayout({
   };
 
   const handleEditarProducto = (productoEditado: Producto) => {
-    const nuevosProductos = menuData.productosSeleccionados.map(p => 
+    const nuevosProductos = menuData.productosSeleccionados.map(p =>
       p.id === productoEditado.id ? productoEditado : p
     );
     updateProductosSeleccionados(nuevosProductos);
@@ -352,15 +352,27 @@ export function MenuLayout({
       descripcion: producto.descripcion,
       currentPrice: producto.precio,
       categoriaId: producto.categoriaId,
-      currentVersion: producto.currentVersion,
-      priceHistory: producto.priceHistory,
-      versions: producto.versions,
-      stock: {
+      currentVersion: producto.currentVersion || 1,
+      priceHistory: producto.priceHistory || [],
+      versions: producto.versions || [],
+      stock: producto.stock ? {
         ...producto.stock,
-        status: producto.stock.status as 'in_stock' | 'low_stock' | 'out_of_stock'
+        status: (producto.stock.status as 'in_stock' | 'low_stock' | 'out_of_stock') || 'in_stock'
+      } : {
+        currentQuantity: 0,
+        minQuantity: 0,
+        maxQuantity: 100,
+        location: 'main',
+        lastUpdated: new Date(),
+        status: 'in_stock'
       },
-      status: producto.status as 'active' | 'draft' | 'archived' | 'discontinued',
-      metadata: producto.metadata,
+      status: (producto.status as 'active' | 'draft' | 'archived' | 'discontinued') || 'active',
+      metadata: producto.metadata || {
+        createdAt: new Date(),
+        createdBy: 'system',
+        lastModified: new Date(),
+        lastModifiedBy: 'system'
+      },
       imagen: producto.imagen
     };
   };
@@ -390,20 +402,20 @@ export function MenuLayout({
     const yaExiste = menuData.productosSeleccionados.some(
       p => p.id === producto.id && p.categoriaId === producto.categoriaId
     );
-    
+
     if (!yaExiste) {
       console.log('Agregando producto a la lista de productos seleccionados:', productoParaAgregar);
-      
+
       // Crear una nueva lista con el producto agregado
       const nuevosProductos = [...menuData.productosSeleccionados, productoParaAgregar];
       console.log('Nueva lista de productos seleccionados:', nuevosProductos);
-      
+
       // Actualizar el estado y guardar en caché
       updateProductosSeleccionados(nuevosProductos);
       toast.success(`${producto.nombre} agregado a la lista de productos`);
-      
+
       // Forzar la actualización del caché
-      menuCacheUtils.updateProductosSeleccionados(nuevosProductos);
+      // menuCacheUtils.updateProductosSeleccionados(nuevosProductos); // REMOVED: Method does not exist
     } else {
       console.log('El producto ya existe en la lista de productos seleccionados');
       toast.error("Este producto ya está en la lista de productos");
@@ -442,13 +454,13 @@ export function MenuLayout({
       </div>
     );
   }
-  
+
   // Renderizado principal
   return (
     <ErrorBoundary>
       <div className="flex flex-col h-full bg-white">
         {error && <div>Error en el componente MenuLayout: {error}</div>}
-        
+
         <div className="flex flex-col h-full bg-white">
           {/* Header */}
           <div className="border-b bg-white shadow-sm">
@@ -474,7 +486,7 @@ export function MenuLayout({
                   <FileQuestion className="h-3 w-3 mr-1" />
                   Guía de recomendaciones
                 </Button>
-                <Button 
+                <Button
                   onClick={handleGenerarCombinaciones}
                   className="bg-spoon-primary hover:bg-spoon-primary-dark text-white transition-colors flex items-center gap-1 text-xs h-8"
                 >
@@ -510,7 +522,7 @@ export function MenuLayout({
                 )}
               </div>
             </div>
-            
+
             {/* Columna Productos */}
             <div className="border-r border-spoon-border bg-white">
               <div className="py-2 px-4 border-b border-spoon-border">
@@ -545,8 +557,8 @@ export function MenuLayout({
                 </div>
               </div>
               <div className="px-3 py-2">
-                <MenuDiario 
-                  productos={menuData.productosMenu.map(convertirProductoAVersioned)} 
+                <MenuDiario
+                  productos={menuData.productosMenu.map(convertirProductoAVersioned)}
                   onRemoveProduct={removeProductoFromMenu}
                 />
               </div>
@@ -564,8 +576,8 @@ export function MenuLayout({
           )}
 
           {/* Diálogo de Confirmación de Eliminación */}
-          <Dialog 
-            open={dialogoEliminar} 
+          <Dialog
+            open={dialogoEliminar}
             onOpenChange={setDialogoEliminar}
           >
             <DialogContent className="bg-white">

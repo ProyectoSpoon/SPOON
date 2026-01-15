@@ -3,10 +3,11 @@ import React from 'react';
 import { useConfigStore } from './store/config-store';
 
 export default function Encabezado() {
-  const { tarjetas, progreso } = useConfigStore();
+  const { tarjetas } = useConfigStore();
 
   const tarjetasCompletas = tarjetas.filter(t => t.estado === 'completo').length;
   const totalTarjetas = tarjetas.length;
+  const progreso = totalTarjetas > 0 ? Math.round((tarjetasCompletas / totalTarjetas) * 100) : 0;
 
   return (
     <div className="text-center space-y-4">
@@ -28,15 +29,15 @@ export default function Encabezado() {
             <span>Progreso general</span>
             <span className="font-semibold">{tarjetasCompletas}/{totalTarjetas} secciones</span>
           </div>
-          
+
           {/* Barra de progreso */}
           <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-            <div 
+            <div
               className="h-full bg-gradient-to-r from-[#F4821F] to-[#FF9933] transition-all duration-700 ease-out"
               style={{ width: `${progreso}%` }}
             />
           </div>
-          
+
           {/* Porcentaje */}
           <div className="text-center">
             <span className="text-2xl font-bold text-spoon-primary">{progreso}%</span>

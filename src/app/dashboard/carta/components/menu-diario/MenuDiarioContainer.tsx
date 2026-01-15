@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useMenuCache } from '@/hooks/useMenuCache';
 import { Producto } from '@/utils/menuCache.utils';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 import { VersionedProduct } from '@/app/dashboard/carta/types/product-versioning.types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/Tabs';
 
@@ -27,11 +27,20 @@ const convertToVersionedProduct = (producto: Producto): VersionedProduct => {
     priceHistory: [],
     versions: [],
     stock: {
-      ...producto.stock,
-      status: producto.stock.status as 'in_stock' | 'low_stock' | 'out_of_stock',
+      status: (producto.stock?.status as 'in_stock' | 'low_stock' | 'out_of_stock') ?? 'in_stock',
+      currentQuantity: producto.stock?.currentQuantity ?? 0,
+      minQuantity: producto.stock?.minQuantity ?? 0,
+      maxQuantity: producto.stock?.maxQuantity ?? 0,
+      lastUpdated: producto.stock?.lastUpdated ? new Date(producto.stock.lastUpdated) : new Date()
     },
     status: producto.status as 'active' | 'draft' | 'archived' | 'discontinued',
-    metadata: producto.metadata
+    metadata: producto.metadata ?? {
+      createdAt: new Date(),
+      createdBy: 'system',
+      lastModified: new Date(),
+      lastModifiedBy: 'system',
+      publishHistory: []
+    }
   };
 };
 
@@ -82,7 +91,7 @@ const MenuDiarioContainer = () => {
 
   // Estado para mostrar indicador de caché
   const [showCacheIndicator, setShowCacheIndicator] = useState(false);
-  
+
   // Estado local para el valor de la pestaña activa
   const [activeTab, setActiveTab] = useState<'menu-dia' | 'favoritos' | 'especiales'>(menuData.submenuActivo);
 
@@ -95,15 +104,15 @@ const MenuDiarioContainer = () => {
         { duration: 4000 }
       );
       setShowCacheIndicator(true);
-      
+
       // Ocultar el indicador después de 5 segundos
       const timer = setTimeout(() => {
         setShowCacheIndicator(false);
       }, 5000);
-      
+
       return () => clearTimeout(timer);
     }
-  }, [isLoaded]);
+  }, [isLoaded, hasCache, getCacheRemainingTime]);
 
   // Efecto para actualizar el estado local cuando cambia el submenu activo en menuData
   useEffect(() => {
@@ -113,7 +122,7 @@ const MenuDiarioContainer = () => {
   // Manejador para cuando se selecciona una categoría
   const handleCategoriaSeleccionada = (categoriaId: string, subcategoriaId: string | null = null) => {
     updateSeleccion(categoriaId, subcategoriaId);
-    
+
     // Aquí normalmente cargarías los productos de esta categoría desde la API
     // Pero para este ejemplo, simularemos que ya tenemos los datos
     console.log(`Categoría seleccionada: ${categoriaId}, Subcategoría: ${subcategoriaId || 'ninguna'}`);
@@ -128,7 +137,7 @@ const MenuDiarioContainer = () => {
   // Manejador para agregar un producto al menú activo
   const handleAgregarProducto = (versionedProduct: VersionedProduct) => {
     const producto = convertToProducto(versionedProduct);
-    
+
     switch (menuData.submenuActivo) {
       case 'menu-dia':
         addProductoToMenu(producto);
@@ -148,7 +157,7 @@ const MenuDiarioContainer = () => {
   // Manejador para eliminar un producto del menú activo
   const handleRemoveProducto = (productoId: string) => {
     let producto: Producto | undefined;
-    
+
     switch (menuData.submenuActivo) {
       case 'menu-dia':
         producto = menuData.productosMenu.find(p => p.id === productoId);
@@ -207,8 +216,8 @@ const MenuDiarioContainer = () => {
       )}
 
       {/* Tabs para seleccionar el submenú */}
-      <Tabs 
-        value={activeTab} 
+      <Tabs
+        value={activeTab}
         onValueChange={(value) => handleSubmenuChange(value as 'menu-dia' | 'favoritos' | 'especiales')}
         className="w-full"
       >
@@ -223,7 +232,7 @@ const MenuDiarioContainer = () => {
           <div className="grid grid-cols-12 gap-6">
             {/* Columna de Categorías */}
             <div className="col-span-2">
-              <ListaCategorias 
+              <ListaCategorias
                 categorias={menuData.categorias}
                 categoriaSeleccionada={menuData.categoriaSeleccionada}
                 subcategoriaSeleccionada={menuData.subcategoriaSeleccionada}
@@ -237,7 +246,7 @@ const MenuDiarioContainer = () => {
 
             {/* Columna de Productos */}
             <div className="col-span-4">
-              <ListaProductos 
+              <ListaProductos
                 restauranteId="default"
                 categoriaId={menuData.categoriaSeleccionada || undefined}
                 subcategoriaId={menuData.subcategoriaSeleccionada || undefined}
@@ -254,7 +263,7 @@ const MenuDiarioContainer = () => {
             <div className="col-span-6">
               <div className="bg-white p-4 rounded-lg shadow-sm">
                 <h2 className="text-xl font-semibold mb-4 text-spoon-primary">Menú del Día</h2>
-                <MenuDiario 
+                <MenuDiario
                   productos={versionedProductosActivos}
                   onRemoveProduct={handleRemoveProducto}
                 />
@@ -268,7 +277,7 @@ const MenuDiarioContainer = () => {
           <div className="grid grid-cols-12 gap-6">
             {/* Columna de Categorías */}
             <div className="col-span-2">
-              <ListaCategorias 
+              <ListaCategorias
                 categorias={menuData.categorias}
                 categoriaSeleccionada={menuData.categoriaSeleccionada}
                 subcategoriaSeleccionada={menuData.subcategoriaSeleccionada}
@@ -282,7 +291,7 @@ const MenuDiarioContainer = () => {
 
             {/* Columna de Productos */}
             <div className="col-span-4">
-              <ListaProductos 
+              <ListaProductos
                 restauranteId="default"
                 categoriaId={menuData.categoriaSeleccionada || undefined}
                 subcategoriaId={menuData.subcategoriaSeleccionada || undefined}
@@ -299,7 +308,7 @@ const MenuDiarioContainer = () => {
             <div className="col-span-6">
               <div className="bg-white p-4 rounded-lg shadow-sm">
                 <h2 className="text-xl font-semibold mb-4 text-spoon-primary">Platos Favoritos</h2>
-                <MenuDiario 
+                <MenuDiario
                   productos={versionedProductosActivos}
                   onRemoveProduct={handleRemoveProducto}
                 />
@@ -313,7 +322,7 @@ const MenuDiarioContainer = () => {
           <div className="grid grid-cols-12 gap-6">
             {/* Columna de Categorías */}
             <div className="col-span-2">
-              <ListaCategorias 
+              <ListaCategorias
                 categorias={menuData.categorias}
                 categoriaSeleccionada={menuData.categoriaSeleccionada}
                 subcategoriaSeleccionada={menuData.subcategoriaSeleccionada}
@@ -327,7 +336,7 @@ const MenuDiarioContainer = () => {
 
             {/* Columna de Productos */}
             <div className="col-span-4">
-              <ListaProductos 
+              <ListaProductos
                 restauranteId="default"
                 categoriaId={menuData.categoriaSeleccionada || undefined}
                 subcategoriaId={menuData.subcategoriaSeleccionada || undefined}
@@ -344,7 +353,7 @@ const MenuDiarioContainer = () => {
             <div className="col-span-6">
               <div className="bg-white p-4 rounded-lg shadow-sm">
                 <h2 className="text-xl font-semibold mb-4 text-spoon-primary">Platos Especiales</h2>
-                <MenuDiario 
+                <MenuDiario
                   productos={versionedProductosActivos}
                   onRemoveProduct={handleRemoveProducto}
                 />

@@ -1,6 +1,7 @@
 // src/app/config-restaurante/logo-portada/components/SubirPortada.tsx
 import React, { useRef } from 'react';
 import { Upload, CheckCircle, AlertCircle } from 'lucide-react';
+import Image from 'next/image';
 
 interface SubirPortadaProps {
   archivo: {
@@ -50,7 +51,7 @@ export default function SubirPortada({ archivo, onFileChange, estaEnviando }: Su
   return (
     <div className="space-y-4">
       <div className="text-lg font-semibold">Imagen de Portada</div>
-      
+
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-spoon-primary transition-colors">
         <input
           ref={inputRef}
@@ -64,10 +65,12 @@ export default function SubirPortada({ archivo, onFileChange, estaEnviando }: Su
         {archivo.previewUrl ? (
           <div className="space-y-4">
             <div className="relative w-full h-64 mx-auto">
-              <img
+              <Image
                 src={archivo.previewUrl}
                 alt="Portada preview"
-                className="w-full h-full object-cover rounded-lg"
+                fill
+                className="object-cover rounded-lg"
+                unoptimized
               />
             </div>
             <div className="flex items-center justify-center gap-2 text-green-600">

@@ -1,4 +1,4 @@
-// src/hooks/useAuthContext.ts
+// src/hooks/useAuth.ts
 import { useState, useEffect } from 'react';
 
 interface AuthContextData {
@@ -8,7 +8,7 @@ interface AuthContextData {
   error: string | null;
 }
 
-export function useAuthContext(): AuthContextData {
+export function useAuth(): AuthContextData {
   const [userId, setUserId] = useState<string>('11111111-2222-3333-4444-555555555555'); // Hardcoded por ahora
   const [restaurantId, setRestaurantId] = useState<string>('');
   const [loading, setLoading] = useState(true);

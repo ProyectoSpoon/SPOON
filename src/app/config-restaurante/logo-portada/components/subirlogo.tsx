@@ -1,6 +1,7 @@
 // src/app/config-restaurante/logo-portada/components/SubirLogo.tsx
 import React, { useRef } from 'react';
 import { Upload, CheckCircle, AlertCircle } from 'lucide-react';
+import Image from 'next/image';
 
 interface SubirLogoProps {
   archivo: {
@@ -50,7 +51,7 @@ export default function SubirLogo({ archivo, onFileChange, estaEnviando }: Subir
   return (
     <div className="space-y-4">
       <div className="text-lg font-semibold">Logo del Restaurante</div>
-      
+
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-spoon-primary transition-colors">
         <input
           ref={inputRef}
@@ -64,10 +65,12 @@ export default function SubirLogo({ archivo, onFileChange, estaEnviando }: Subir
         {archivo.previewUrl ? (
           <div className="space-y-4">
             <div className="relative w-48 h-48 mx-auto">
-              <img
+              <Image
                 src={archivo.previewUrl}
                 alt="Logo preview"
-                className="w-full h-full object-contain"
+                fill
+                className="object-contain"
+                unoptimized
               />
             </div>
             <div className="flex items-center justify-center gap-2 text-green-600">

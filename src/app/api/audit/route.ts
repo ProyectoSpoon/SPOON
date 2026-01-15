@@ -1,11 +1,13 @@
-// src/app/api/audit/route.ts - API de Auditoría
+// src/app/api/audit/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/config/database';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
   try {
     console.log("🔍 GET /api/audit - Obteniendo logs de auditoría...");
-    
+
+    const supabase = createRouteHandlerClient({ cookies });
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
     const userId = searchParams.get('user_id');
@@ -13,65 +15,56 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('end_date');
     const limit = parseInt(searchParams.get('limit') || '50');
 
-    let sql = `
-      SELECT 
-        al.id,
-        al.action,
-        al.entity_type,
-        al.entity_id,
-        al.details,
-        al.ip_address,
-        al.user_agent,
-        al.created_at,
-        u.first_name || ' ' || u.last_name as user_name,
-        u.email as user_email,
-        r.name as restaurant_name
-      FROM audit.activity_logs al
-      LEFT JOIN auth.users u ON al.user_id = u.id
-      LEFT JOIN restaurant.restaurants r ON al.restaurant_id = r.id
-      WHERE 1=1
-    `;
+    // Construir query
+    let query = supabase
+      .from('audit_log')
+      .select(`
+        id,
+        action,
+        entity_type,
+        entity_id,
+        details,
+        ip_address,
+        user_agent,
+        created_at,
+        user_id,
+        restaurant_id
+      `)
+      .order('created_at', { ascending: false })
+      .limit(limit);
 
-    const params: any[] = [];
-    let paramCount = 0;
-
+    // Filtros opcionales
     if (action) {
-      paramCount++;
-      sql += ` AND al.action = $${paramCount}`;
-      params.push(action);
+      query = query.eq('action', action);
     }
 
     if (userId) {
-      paramCount++;
-      sql += ` AND al.user_id = $${paramCount}`;
-      params.push(userId);
+      query = query.eq('user_id', userId);
     }
 
     if (startDate) {
-      paramCount++;
-      sql += ` AND al.created_at >= $${paramCount}`;
-      params.push(startDate);
+      query = query.gte('created_at', startDate);
     }
 
     if (endDate) {
-      paramCount++;
-      sql += ` AND al.created_at <= $${paramCount}`;
-      params.push(endDate);
+      query = query.lte('created_at', endDate);
     }
 
-    sql += ` ORDER BY al.created_at DESC LIMIT $${paramCount + 1}`;
-    params.push(limit);
+    const { data, error } = await query;
 
-    console.log("📊 Ejecutando consulta de auditoría:", sql);
-    console.log("📋 Parámetros:", params);
+    if (error) {
+      console.error('Error al obtener logs de auditoría:', error);
+      return NextResponse.json(
+        { error: 'Error al obtener logs de auditoría' },
+        { status: 500 }
+      );
+    }
 
-    const result = await query(sql, params);
-    
-    console.log(`✅ ${result.rows.length} registros de auditoría encontrados`);
+    console.log(`✅ ${data?.length || 0} registros de auditoría encontrados`);
 
     return NextResponse.json({
-      logs: result.rows,
-      total: result.rows.length
+      logs: data || [],
+      total: data?.length || 0
     });
   } catch (error: any) {
     console.error('❌ Error al obtener logs de auditoría:', error);
@@ -85,7 +78,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     console.log("📝 POST /api/audit - Creando registro de auditoría...");
-    
+
+    const supabase = createRouteHandlerClient({ cookies });
     const body = await request.json();
     const {
       action,
@@ -106,48 +100,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("📊 Datos de auditoría:", {
-      action,
-      entity_type,
-      entity_id,
-      user_id,
-      restaurant_id
-    });
-
-    // IDs por defecto si no se proporcionan
-    const defaultUserId = user_id || 'b40bff69-722e-4e49-ba56-ad85f82f6716';
-    const defaultRestaurantId = restaurant_id || '4073a4ad-b275-4e17-b197-844881f0319e';
-
-    // Insertar registro de auditoría
-    const auditSql = `
-      INSERT INTO audit.activity_logs (
+    const { data, error } = await supabase
+      .from('audit_log')
+      .insert({
         action,
         entity_type,
-        entity_id,
-        details,
-        user_id,
-        restaurant_id,
-        ip_address,
-        user_agent
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING *
-    `;
+        entity_id: entity_id || null,
+        details: details || {},
+        user_id: user_id || null,
+        restaurant_id: restaurant_id || null,
+        ip_address: ip_address || request.ip || 'unknown',
+        user_agent: user_agent || request.headers.get('user-agent') || 'unknown',
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
 
-    const auditResult = await query(auditSql, [
-      action,
-      entity_type,
-      entity_id || null,
-      JSON.stringify(details || {}),
-      defaultUserId,
-      defaultRestaurantId,
-      ip_address || request.ip || 'unknown',
-      user_agent || request.headers.get('user-agent') || 'unknown'
-    ]);
+    if (error) {
+      console.error('Error al crear registro de auditoría:', error);
+      return NextResponse.json(
+        { error: 'Error al crear registro de auditoría' },
+        { status: 500 }
+      );
+    }
 
-    console.log("✅ Registro de auditoría creado:", auditResult.rows[0].id);
+    console.log("✅ Registro de auditoría creado:", data.id);
 
-    return NextResponse.json(auditResult.rows[0], { status: 201 });
-    
+    return NextResponse.json(data, { status: 201 });
+
   } catch (error: any) {
     console.error('❌ Error al crear registro de auditoría:', error);
     return NextResponse.json(

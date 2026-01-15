@@ -1,9 +1,14 @@
-'use client';
-
-import pool, { query } from '@/config/database';
+// src/services/postgres/combinaciones.service.ts
+import { createClient } from '@supabase/supabase-js';
 import { MenuCombinacion } from "@/app/dashboard/carta/types/menu.types";
 
-// Estructura para almacenar combinaciones en PostgreSQL
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+// Cliente con service role para operaciones administrativas
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+// Estructura para almacenar combinaciones
 interface CombinacionDB {
   id: string;
   restaurante_id: string;
@@ -23,69 +28,9 @@ interface CombinacionDB {
 }
 
 /**
- * Servicio para manejar la persistencia de combinaciones y sus cantidades
- * en la base de datos PostgreSQL
+ * Servicio para manejar la persistencia de combinaciones usando Supabase SDK
  */
 export const combinacionesServicePostgres = {
-  /**
-   * Inicializa las tablas necesarias para las combinaciones
-   */
-  async initTables() {
-    try {
-      // Tabla para almacenar las combinaciones
-      await query(`
-        CREATE TABLE IF NOT EXISTS menu_combinaciones (
-          id SERIAL PRIMARY KEY,
-          restaurante_id VARCHAR(50) NOT NULL,
-          combinacion_id VARCHAR(50) NOT NULL,
-          cantidad INTEGER DEFAULT 0,
-          nombre VARCHAR(200) NOT NULL,
-          favorito BOOLEAN DEFAULT FALSE,
-          especial BOOLEAN DEFAULT FALSE,
-          precio_especial NUMERIC(10, 2),
-          disponibilidad_desde TIMESTAMP,
-          disponibilidad_hasta TIMESTAMP,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          UNIQUE(restaurante_id, combinacion_id)
-        )
-      `);
-
-      // Tabla para programaciones de combinaciones
-      await query(`
-        CREATE TABLE IF NOT EXISTS menu_programaciones (
-          id SERIAL PRIMARY KEY,
-          combinacion_id VARCHAR(50) NOT NULL,
-          restaurante_id VARCHAR(50) NOT NULL,
-          fecha TIMESTAMP NOT NULL,
-          cantidad_programada INTEGER NOT NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (restaurante_id, combinacion_id) REFERENCES menu_combinaciones(restaurante_id, combinacion_id) ON DELETE CASCADE
-        )
-      `);
-
-      // Tabla para ventas de combinaciones
-      await query(`
-        CREATE TABLE IF NOT EXISTS ventas_combinaciones (
-          id SERIAL PRIMARY KEY,
-          restaurante_id VARCHAR(50) NOT NULL,
-          combinacion_id VARCHAR(50) NOT NULL,
-          cantidad INTEGER NOT NULL,
-          fecha TIMESTAMP NOT NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (restaurante_id, combinacion_id) REFERENCES menu_combinaciones(restaurante_id, combinacion_id) ON DELETE CASCADE
-        )
-      `);
-
-      console.log('Tablas de combinaciones inicializadas correctamente');
-      return true;
-    } catch (error) {
-      console.error('Error al inicializar tablas de combinaciones:', error);
-      return false;
-    }
-  },
-
   /**
    * Guarda o actualiza una combinación en la base de datos
    * @param restauranteId ID del restaurante
@@ -93,90 +38,75 @@ export const combinacionesServicePostgres = {
    */
   async guardarCombinacion(restauranteId: string, combinacion: MenuCombinacion): Promise<void> {
     try {
-      // Iniciamos una transacción
-      const client = await pool.connect();
-      
-      try {
-        await client.query('BEGIN');
-        
-        // Intentamos actualizar primero
-        const updateResult = await client.query(
-          `UPDATE menu_combinaciones
-           SET cantidad = $1,
-               favorito = $2,
-               especial = $3,
-               precio_especial = $4,
-               disponibilidad_desde = $5,
-               disponibilidad_hasta = $6,
-               updated_at = CURRENT_TIMESTAMP
-           WHERE restaurante_id = $7 AND combinacion_id = $8
-           RETURNING id`,
-          [
-            combinacion.cantidad || 0,
-            combinacion.favorito || false,
-            combinacion.especial || false,
-            combinacion.precioEspecial,
-            combinacion.disponibilidadEspecial?.desde,
-            combinacion.disponibilidadEspecial?.hasta,
-            restauranteId,
-            combinacion.id
-          ]
-        );
-        
-        // Si no encontramos ningún registro, insertamos uno nuevo
-        if (updateResult.rowCount === 0) {
-          await client.query(
-            `INSERT INTO menu_combinaciones 
-             (restaurante_id, combinacion_id, cantidad, nombre, favorito, especial, 
-              precio_especial, disponibilidad_desde, disponibilidad_hasta)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-            [
-              restauranteId,
-              combinacion.id,
-              combinacion.cantidad || 0,
-              `${combinacion.principio.nombre} con ${combinacion.proteina.nombre}`,
-              combinacion.favorito || false,
-              combinacion.especial || false,
-              combinacion.precioEspecial,
-              combinacion.disponibilidadEspecial?.desde,
-              combinacion.disponibilidadEspecial?.hasta
-            ]
-          );
+      // Primero intentamos actualizar
+      const { data: existing } = await supabaseAdmin
+        .from('generated_combinations')
+        .select('id')
+        .eq('restaurant_id', restauranteId)
+        .eq('combination_id', combinacion.id)
+        .maybeSingle();
+
+      const combinacionData = {
+        restaurant_id: restauranteId,
+        combination_id: combinacion.id,
+        quantity: combinacion.cantidad || 0,
+        name: `${combinacion.principio?.nombre || 'Principio'} con ${combinacion.proteina?.nombre || 'Proteína'}`,
+        is_favorite: combinacion.favorito || false,
+        is_special: combinacion.especial || false,
+        special_price: combinacion.precioEspecial || null,
+        available_from: combinacion.disponibilidadEspecial?.desde || null,
+        available_until: combinacion.disponibilidadEspecial?.hasta || null,
+        updated_at: new Date().toISOString()
+      };
+
+      if (existing) {
+        // Actualizar existente
+        const { error } = await supabaseAdmin
+          .from('generated_combinations')
+          .update(combinacionData)
+          .eq('id', existing.id);
+
+        if (error) throw error;
+      } else {
+        // Insertar nuevo
+        const { error } = await supabaseAdmin
+          .from('generated_combinations')
+          .insert({
+            ...combinacionData,
+            created_at: new Date().toISOString()
+          });
+
+        if (error) throw error;
+      }
+
+      // Manejar programaciones si existen
+      if (combinacion.programacion && combinacion.programacion.length > 0) {
+        // Eliminar programaciones existentes
+        await supabaseAdmin
+          .from('combination_schedules')
+          .delete()
+          .eq('restaurant_id', restauranteId)
+          .eq('combination_id', combinacion.id);
+
+        // Insertar nuevas programaciones
+        const programaciones = combinacion.programacion.map(prog => ({
+          restaurant_id: restauranteId,
+          combination_id: combinacion.id,
+          scheduled_date: prog.fecha,
+          scheduled_quantity: prog.cantidadProgramada,
+          created_at: new Date().toISOString()
+        }));
+
+        const { error: schedError } = await supabaseAdmin
+          .from('combination_schedules')
+          .insert(programaciones);
+
+        if (schedError) {
+          console.error('Error al guardar programaciones:', schedError);
         }
-        
-        // Ahora manejamos las programaciones: primero eliminamos las existentes
-        await client.query(
-          `DELETE FROM menu_programaciones 
-           WHERE restaurante_id = $1 AND combinacion_id = $2`,
-          [restauranteId, combinacion.id]
-        );
-        
-        // Luego insertamos las nuevas programaciones
-        if (combinacion.programacion && combinacion.programacion.length > 0) {
-          for (const prog of combinacion.programacion) {
-            await client.query(
-              `INSERT INTO menu_programaciones 
-               (restaurante_id, combinacion_id, fecha, cantidad_programada)
-               VALUES ($1, $2, $3, $4)`,
-              [
-                restauranteId,
-                combinacion.id,
-                prog.fecha,
-                prog.cantidadProgramada
-              ]
-            );
-          }
-        }
-        
-        await client.query('COMMIT');
-      } catch (error) {
-        await client.query('ROLLBACK');
-        throw error;
-      } finally {
-        client.release();
       }
     } catch (error) {
-      console.error('Error al guardar combinación en PostgreSQL:', error);
+      console.error('Error al guardar combinación en Supabase:', error);
       throw error;
     }
   },
@@ -188,91 +118,11 @@ export const combinacionesServicePostgres = {
    */
   async guardarCombinaciones(restauranteId: string, combinaciones: MenuCombinacion[]): Promise<void> {
     try {
-      // Usamos una transacción para todas las operaciones
-      const client = await pool.connect();
-      
-      try {
-        await client.query('BEGIN');
-        
-        for (const combinacion of combinaciones) {
-          // Intentamos actualizar primero
-          const updateResult = await client.query(
-            `UPDATE menu_combinaciones
-             SET cantidad = $1,
-                 favorito = $2,
-                 especial = $3,
-                 precio_especial = $4,
-                 disponibilidad_desde = $5,
-                 disponibilidad_hasta = $6,
-                 updated_at = CURRENT_TIMESTAMP
-             WHERE restaurante_id = $7 AND combinacion_id = $8
-             RETURNING id`,
-            [
-              combinacion.cantidad || 0,
-              combinacion.favorito || false,
-              combinacion.especial || false,
-              combinacion.precioEspecial,
-              combinacion.disponibilidadEspecial?.desde,
-              combinacion.disponibilidadEspecial?.hasta,
-              restauranteId,
-              combinacion.id
-            ]
-          );
-          
-          // Si no encontramos ningún registro, insertamos uno nuevo
-          if (updateResult.rowCount === 0) {
-            await client.query(
-              `INSERT INTO menu_combinaciones 
-               (restaurante_id, combinacion_id, cantidad, nombre, favorito, especial, 
-                precio_especial, disponibilidad_desde, disponibilidad_hasta)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-              [
-                restauranteId,
-                combinacion.id,
-                combinacion.cantidad || 0,
-                `${combinacion.principio.nombre} con ${combinacion.proteina.nombre}`,
-                combinacion.favorito || false,
-                combinacion.especial || false,
-                combinacion.precioEspecial,
-                combinacion.disponibilidadEspecial?.desde,
-                combinacion.disponibilidadEspecial?.hasta
-              ]
-            );
-          }
-          
-          // Manejamos las programaciones para cada combinación
-          await client.query(
-            `DELETE FROM menu_programaciones 
-             WHERE restaurante_id = $1 AND combinacion_id = $2`,
-            [restauranteId, combinacion.id]
-          );
-          
-          if (combinacion.programacion && combinacion.programacion.length > 0) {
-            for (const prog of combinacion.programacion) {
-              await client.query(
-                `INSERT INTO menu_programaciones 
-                 (restaurante_id, combinacion_id, fecha, cantidad_programada)
-                 VALUES ($1, $2, $3, $4)`,
-                [
-                  restauranteId,
-                  combinacion.id,
-                  prog.fecha,
-                  prog.cantidadProgramada
-                ]
-              );
-            }
-          }
-        }
-        
-        await client.query('COMMIT');
-      } catch (error) {
-        await client.query('ROLLBACK');
-        throw error;
-      } finally {
-        client.release();
+      for (const combinacion of combinaciones) {
+        await this.guardarCombinacion(restauranteId, combinacion);
       }
     } catch (error) {
-      console.error('Error al guardar combinaciones en PostgreSQL:', error);
+      console.error('Error al guardar combinaciones en Supabase:', error);
       throw error;
     }
   },
@@ -283,64 +133,59 @@ export const combinacionesServicePostgres = {
    */
   async getCombinaciones(restauranteId: string): Promise<any[]> {
     try {
-      const client = await pool.connect();
-      
-      try {
-        // Obtenemos las combinaciones
-        const combinacionesResult = await client.query(
-          `SELECT * FROM menu_combinaciones 
-           WHERE restaurante_id = $1`,
-          [restauranteId]
-        );
-        
-        // Para cada combinación, obtenemos sus programaciones
-        const combinacionesConProgramacion = [];
-        
-        for (const combinacion of combinacionesResult.rows) {
-          const programacionesResult = await client.query(
-            `SELECT * FROM menu_programaciones 
-             WHERE restaurante_id = $1 AND combinacion_id = $2
-             ORDER BY fecha`,
-            [restauranteId, combinacion.combinacion_id]
-          );
-          
-          // Formateamos las programaciones
-          const programaciones = programacionesResult.rows.map(row => ({
-            fecha: row.fecha,
-            cantidadProgramada: row.cantidad_programada
-          }));
-          
-          // Añadimos la disponibilidad especial si existe
-          let disponibilidadEspecial = null;
-          if (combinacion.disponibilidad_desde && combinacion.disponibilidad_hasta) {
-            disponibilidadEspecial = {
-              desde: combinacion.disponibilidad_desde,
-              hasta: combinacion.disponibilidad_hasta
-            };
-          }
-          
-          combinacionesConProgramacion.push({
-            id: combinacion.id,
-            combinacionId: combinacion.combinacion_id,
-            restauranteId: combinacion.restaurante_id,
-            cantidad: combinacion.cantidad,
-            nombre: combinacion.nombre,
-            favorito: combinacion.favorito,
-            especial: combinacion.especial,
-            precioEspecial: combinacion.precio_especial,
-            disponibilidadEspecial,
-            programacion: programaciones,
-            createdAt: combinacion.created_at,
-            updatedAt: combinacion.updated_at
-          });
+      // Obtenemos las combinaciones
+      const { data: combinaciones, error } = await supabaseAdmin
+        .from('generated_combinations')
+        .select('*')
+        .eq('restaurant_id', restauranteId);
+
+      if (error) throw error;
+
+      // Para cada combinación, obtenemos sus programaciones
+      const combinacionesConProgramacion = [];
+
+      for (const combinacion of combinaciones || []) {
+        const { data: programaciones } = await supabaseAdmin
+          .from('combination_schedules')
+          .select('*')
+          .eq('restaurant_id', restauranteId)
+          .eq('combination_id', combinacion.combination_id)
+          .order('scheduled_date', { ascending: true });
+
+        // Formateamos las programaciones
+        const programacionesFormateadas = (programaciones || []).map(row => ({
+          fecha: row.scheduled_date,
+          cantidadProgramada: row.scheduled_quantity
+        }));
+
+        // Añadimos la disponibilidad especial si existe
+        let disponibilidadEspecial = null;
+        if (combinacion.available_from && combinacion.available_until) {
+          disponibilidadEspecial = {
+            desde: combinacion.available_from,
+            hasta: combinacion.available_until
+          };
         }
-        
-        return combinacionesConProgramacion;
-      } finally {
-        client.release();
+
+        combinacionesConProgramacion.push({
+          id: combinacion.id,
+          combinacionId: combinacion.combination_id,
+          restauranteId: combinacion.restaurant_id,
+          cantidad: combinacion.quantity,
+          nombre: combinacion.name,
+          favorito: combinacion.is_favorite,
+          especial: combinacion.is_special,
+          precioEspecial: combinacion.special_price,
+          disponibilidadEspecial,
+          programacion: programacionesFormateadas,
+          createdAt: combinacion.created_at,
+          updatedAt: combinacion.updated_at
+        });
       }
+
+      return combinacionesConProgramacion;
     } catch (error) {
-      console.error('Error al obtener combinaciones de PostgreSQL:', error);
+      console.error('Error al obtener combinaciones de Supabase:', error);
       throw error;
     }
   },
@@ -353,20 +198,25 @@ export const combinacionesServicePostgres = {
    * @param fecha Fecha de la venta (opcional, por defecto es la fecha actual)
    */
   async registrarVentaCombinacion(
-    restauranteId: string, 
-    combinacionId: string, 
+    restauranteId: string,
+    combinacionId: string,
     cantidad: number,
     fecha: Date = new Date()
   ): Promise<void> {
     try {
-      await query(
-        `INSERT INTO ventas_combinaciones 
-         (restaurante_id, combinacion_id, cantidad, fecha)
-         VALUES ($1, $2, $3, $4)`,
-        [restauranteId, combinacionId, cantidad, fecha]
-      );
+      const { error } = await supabaseAdmin
+        .from('combination_sales')
+        .insert({
+          restaurant_id: restauranteId,
+          combination_id: combinacionId,
+          quantity: cantidad,
+          sale_date: fecha.toISOString(),
+          created_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
     } catch (error) {
-      console.error('Error al registrar venta de combinación en PostgreSQL:', error);
+      console.error('Error al registrar venta de combinación en Supabase:', error);
       throw error;
     }
   },
@@ -383,20 +233,60 @@ export const combinacionesServicePostgres = {
     fechaFin: Date
   ): Promise<any[]> {
     try {
-      const result = await query(
-        `SELECT combinacion_id, SUM(cantidad) as total_vendido, 
-                fecha::date as dia, MIN(created_at) as primera_venta
-         FROM ventas_combinaciones 
-         WHERE restaurante_id = $1 
-           AND fecha BETWEEN $2 AND $3
-         GROUP BY combinacion_id, fecha::date
-         ORDER BY fecha::date, total_vendido DESC`,
-        [restauranteId, fechaInicio, fechaFin]
-      );
-      
-      return result.rows;
+      const { data, error } = await supabaseAdmin
+        .from('combination_sales')
+        .select('combination_id, quantity, sale_date, created_at')
+        .eq('restaurant_id', restauranteId)
+        .gte('sale_date', fechaInicio.toISOString())
+        .lte('sale_date', fechaFin.toISOString())
+        .order('sale_date', { ascending: true });
+
+      if (error) throw error;
+
+      // Agrupar por combinación y día
+      const estadisticas = new Map<string, any>();
+
+      (data || []).forEach(venta => {
+        const dia = new Date(venta.sale_date).toISOString().split('T')[0];
+        const key = `${venta.combination_id}_${dia}`;
+
+        if (!estadisticas.has(key)) {
+          estadisticas.set(key, {
+            combinacion_id: venta.combination_id,
+            dia,
+            total_vendido: 0,
+            primera_venta: venta.created_at
+          });
+        }
+
+        const stat = estadisticas.get(key);
+        stat.total_vendido += venta.quantity;
+      });
+
+      return Array.from(estadisticas.values());
     } catch (error) {
-      console.error('Error al obtener estadísticas de ventas de PostgreSQL:', error);
+      console.error('Error al obtener estadísticas de ventas de Supabase:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Elimina una combinación
+   * @param restauranteId ID del restaurante
+   * @param combinacionId ID de la combinación
+   */
+  async eliminarCombinacion(restauranteId: string, combinacionId: string): Promise<void> {
+    try {
+      // Las programaciones y ventas se eliminarán en cascada si hay FK configuradas
+      const { error } = await supabaseAdmin
+        .from('generated_combinations')
+        .delete()
+        .eq('restaurant_id', restauranteId)
+        .eq('combination_id', combinacionId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error al eliminar combinación:', error);
       throw error;
     }
   }

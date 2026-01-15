@@ -1,40 +1,37 @@
-import { NextResponse } from 'next/server';
-import { testConnection } from '@/lib/database';
+// MIGRATED TO SUPABASE - Simplified version
+import { NextRequest, NextResponse } from 'next/server';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Verificar conexión a la base de datos
-    const dbConnected = await testConnection();
-    
-    const healthStatus = {
-      success: true,
-      timestamp: new Date().toISOString(),
-      service: 'SPOON Dashboard API',
-      version: '1.0.0',
-      database: {
-        connected: dbConnected,
-        type: 'PostgreSQL'
-      },
-      environment: process.env.NODE_ENV || 'development'
-    };
+    const supabase = createRouteHandlerClient({ cookies });
 
-    return NextResponse.json(healthStatus);
+    // Health check básico
+    const { data, error } = await supabase
+      .schema('public')
+      .from('restaurants')
+      .select('count')
+      .limit(1);
+
+    if (error) {
+      return NextResponse.json({
+        status: 'unhealthy',
+        database: 'error',
+        error: error.message
+      }, { status: 503 });
+    }
+
+    return NextResponse.json({
+      status: 'healthy',
+      database: 'connected',
+      timestamp: new Date().toISOString()
+    });
+
   } catch (error) {
-    console.error('Health check failed:', error);
-    
-    const errorStatus = {
-      success: false,
-      timestamp: new Date().toISOString(),
-      service: 'SPOON Dashboard API',
-      version: '1.0.0',
-      database: {
-        connected: false,
-        type: 'PostgreSQL',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      },
-      environment: process.env.NODE_ENV || 'development'
-    };
-
-    return NextResponse.json(errorStatus, { status: 503 });
+    return NextResponse.json({
+      status: 'unhealthy',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 503 });
   }
 }

@@ -2,7 +2,7 @@
 'use client'
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/authcontext';
+import { useAuth } from '@/context/postgres-authcontext';
 
 export default function CompletarPerfil() {
   const router = useRouter();

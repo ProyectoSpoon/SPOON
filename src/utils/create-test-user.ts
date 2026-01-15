@@ -80,12 +80,7 @@ export function createTestUser() {
       minQuantity: 5,
       maxQuantity: 100,
       status: 'in_stock',
-      lastUpdated: new Date(),
-      alerts: {
-        lowStock: false,
-        overStock: false,
-        thresholds: { low: 10, high: 90 }
-      }
+      lastUpdated: new Date()
     },
     status: 'active',
     metadata: {

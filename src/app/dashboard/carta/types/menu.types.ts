@@ -153,11 +153,11 @@ export interface Producto {
   /** Nombre del producto */
   nombre: string;
   /** Descripción detallada del producto */
-  descripcion: string;
+  descripcion?: string;
   /** Precio base del producto */
   precio: number;
   /** Identificador de la categoría a la que pertenece */
-  categoriaId: CategoriaMenu;
+  categoriaId: string;
   /** URL de la imagen del producto */
   imagen?: string;
   /** Información nutricional detallada */
@@ -233,18 +233,28 @@ export interface MenuCombinacion {
   id: string;
   /** Nombre de la combinación */
   nombre?: string;
+  /** Descripción de la combinación */
+  descripcion?: string;
+  /** Categoría de la combinación */
+  categoria?: string;
+  /** Precio de la combinación */
+  precio?: number;
+  /** Disponibilidad de la combinación */
+  disponible?: boolean;
+  /** Imagen de la combinación */
+  imagen?: string;
   /** Lista de productos para compatibilidad */
   productos?: Producto[];
   /** Plato de entrada */
-  entrada: Producto;
+  entrada?: Producto;
   /** Plato principal */
-  principio: Producto;
+  principio?: Producto;
   /** Proteína del plato */
-  proteina: Producto;
+  proteina?: Producto;
   /** Lista de acompañamientos */
-  acompanamiento: Producto[];
+  acompanamiento?: Producto[];
   /** Bebida incluida */
-  bebida: Producto;
+  bebida?: Producto;
   /** Indica si es un plato especial */
   especial?: boolean;
   /** Indica si es un favorito */

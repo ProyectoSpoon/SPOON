@@ -3,9 +3,9 @@
 import type { 
   Producto, 
   ProductoFavorito, 
-  Categoria,
-  CATEGORIAS_MENU_CONFIG 
+  Categoria
 } from '../types/menu-dia.types';
+import { CATEGORIAS_MENU_CONFIG } from '../types/menu-dia.types';
 import { VersionedProduct } from '@/app/dashboard/carta/types/product-versioning.types';
 
 /**

@@ -1,7 +1,7 @@
 // src/app/config-restaurante/hooks/use-progreso.ts
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/postgres-authcontext';
 
 export interface ConfigProgress {
@@ -38,7 +38,7 @@ export const useProgreso = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadProgress = async () => {
+  const loadProgress = useCallback(async () => {
     if (!user?.restaurantId) {
       setLoading(false);
       return;
@@ -59,17 +59,17 @@ export const useProgreso = () => {
 
       // Para general-info, usar datos desde el contexto/store por ahora
       // hasta que se arregle la API
-      const restaurantResponse = { ok: false };
+      const restaurantResponse = { ok: false } as any;
 
       // Procesar información general
       let informacionGeneral: ConfigProgress['informacionGeneral'] = { completed: false, progress: 0 };
       if (restaurantResponse.ok) {
         const restaurantData = await restaurantResponse.json();
         const requiredFields = ['name', 'contactEmail', 'phone', 'cuisine'];
-        const completedFields = requiredFields.filter(field => 
+        const completedFields = requiredFields.filter(field =>
           restaurantData[field] && restaurantData[field].trim() !== ''
         );
-        
+
         informacionGeneral = {
           completed: completedFields.length === requiredFields.length,
           progress: Math.round((completedFields.length / requiredFields.length) * 100),
@@ -82,10 +82,10 @@ export const useProgreso = () => {
       if (restaurantResponse.ok) {
         const restaurantData = await restaurantResponse.json();
         const locationFields = ['address', 'city', 'state'];
-        const completedLocationFields = locationFields.filter(field => 
+        const completedLocationFields = locationFields.filter(field =>
           restaurantData[field] && restaurantData[field].trim() !== ''
         );
-        
+
         ubicacion = {
           completed: completedLocationFields.length === locationFields.length,
           progress: Math.round((completedLocationFields.length / locationFields.length) * 100),
@@ -99,7 +99,7 @@ export const useProgreso = () => {
         const horariosData = await businessHoursResponse.json();
         // Un restaurante necesita al menos 1 día con horarios configurados
         const hasBusinessHours = horariosData && horariosData.length > 0;
-        
+
         horarios = {
           completed: hasBusinessHours,
           progress: hasBusinessHours ? 100 : 0,
@@ -113,9 +113,9 @@ export const useProgreso = () => {
         const imagesData = await imagesResponse.json();
         const hasLogo = imagesData.logo_url && imagesData.logo_url.trim() !== '';
         const hasBanner = imagesData.banner_url && imagesData.banner_url.trim() !== '';
-        
+
         const imageProgress = (hasLogo ? 50 : 0) + (hasBanner ? 50 : 0);
-        
+
         logoPortada = {
           completed: hasLogo && hasBanner,
           progress: imageProgress,
@@ -136,12 +136,12 @@ export const useProgreso = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.restaurantId]);
 
   // Cargar progreso inicial
   useEffect(() => {
     loadProgress();
-  }, [user?.restaurantId]);
+  }, [loadProgress]);
 
   // Función para refrescar el progreso manualmente
   const refreshProgress = () => {
@@ -156,7 +156,7 @@ export const useProgreso = () => {
       progress.horarios.progress,
       progress.logoPortada.progress
     ];
-    
+
     return Math.round(progressValues.reduce((sum, val) => sum + val, 0) / 4);
   };
 
@@ -173,9 +173,9 @@ export const useProgreso = () => {
   // Verificar si toda la configuración está completa
   const isConfigurationComplete = () => {
     return progress.informacionGeneral.completed &&
-           progress.ubicacion.completed &&
-           progress.horarios.completed &&
-           progress.logoPortada.completed;
+      progress.ubicacion.completed &&
+      progress.horarios.completed &&
+      progress.logoPortada.completed;
   };
 
   // Obtener el siguiente paso pendiente

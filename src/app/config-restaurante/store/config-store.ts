@@ -23,11 +23,11 @@ interface ConfigStore {
   isLoading: boolean;
   error: string | null;
   lastSync: Date | null;
-  
+
   // Propiedades computadas
   tarjetas: TarjetaConfiguracion[];
   puedeAvanzar: boolean;
-  
+
   // Acciones
   cargarConfiguracion: (restaurantId: string) => Promise<void>;
   actualizarCampo: (ruta: string, campo: string, completado: boolean) => void;
@@ -98,68 +98,68 @@ const DEFINICIONES_TARJETAS = [
 // Funciones utilitarias para verificar completitud basándose en datos de BD
 const verificarInformacionGeneral = (data: any): SeccionConfiguracion => {
   return {
-    nombre: { 
-      completado: Boolean(data.nombreRestaurante?.trim()), 
-      ultimaActualizacion: new Date() 
+    nombre: {
+      completado: Boolean(data.nombreRestaurante?.trim()),
+      ultimaActualizacion: new Date()
     },
-    contacto: { 
-      completado: Boolean(data.telefono?.trim() && data.email?.trim()), 
-      ultimaActualizacion: new Date() 
+    contacto: {
+      completado: Boolean(data.telefono?.trim() && data.email?.trim()),
+      ultimaActualizacion: new Date()
     },
-    descripcion: { 
-      completado: Boolean(data.descripcion?.trim()), 
-      ultimaActualizacion: new Date() 
+    descripcion: {
+      completado: Boolean(data.descripcion?.trim()),
+      ultimaActualizacion: new Date()
     },
-    tipoComida: { 
-      completado: Boolean(data.tipoComida?.trim()), 
-      ultimaActualizacion: new Date() 
+    tipoComida: {
+      completado: Boolean(data.tipoComida?.trim()),
+      ultimaActualizacion: new Date()
     }
   };
 };
 
 const verificarUbicacion = (data: any): SeccionConfiguracion => {
   return {
-    direccion: { 
-      completado: Boolean(data.direccion?.trim()), 
-      ultimaActualizacion: new Date() 
+    direccion: {
+      completado: Boolean(data.address?.trim()),
+      ultimaActualizacion: new Date()
     },
-    coordenadas: { 
-      completado: Boolean(data.coordenadas?.lat && data.coordenadas?.lng), 
-      ultimaActualizacion: new Date() 
+    coordenadas: {
+      completado: Boolean(data.latitude && data.longitude),
+      ultimaActualizacion: new Date()
     },
-    zona: { 
-      completado: Boolean(data.ciudad?.trim()), 
-      ultimaActualizacion: new Date() 
+    zona: {
+      completado: Boolean(data.city_id),
+      ultimaActualizacion: new Date()
     }
   };
 };
 
 const verificarHorarios = (data: any): SeccionConfiguracion => {
-  const tieneHorarios = data.horarios && Object.values(data.horarios).some((dia: any) => 
+  const tieneHorarios = data.horarios && Object.values(data.horarios).some((dia: any) =>
     dia.abierto && dia.turnos && dia.turnos.length > 0
   );
-  
+
   return {
-    horarios: { 
-      completado: Boolean(tieneHorarios), 
-      ultimaActualizacion: new Date() 
+    horarios: {
+      completado: Boolean(tieneHorarios),
+      ultimaActualizacion: new Date()
     },
-    diasAtencion: { 
-      completado: Boolean(tieneHorarios), 
-      ultimaActualizacion: new Date() 
+    diasAtencion: {
+      completado: Boolean(tieneHorarios),
+      ultimaActualizacion: new Date()
     }
   };
 };
 
 const verificarImagenes = (data: any): SeccionConfiguracion => {
   return {
-    logo: { 
-      completado: Boolean(data.logoUrl?.trim()), 
-      ultimaActualizacion: new Date() 
+    logo: {
+      completado: Boolean(data.logoUrl?.trim()),
+      ultimaActualizacion: new Date()
     },
-    portada: { 
-      completado: Boolean(data.coverImageUrl?.trim()), 
-      ultimaActualizacion: new Date() 
+    portada: {
+      completado: Boolean(data.coverImageUrl?.trim()),
+      ultimaActualizacion: new Date()
     }
   };
 };
@@ -176,22 +176,22 @@ export const useConfigStore = create<ConfigStore>()(
       // Propiedades computadas (se recalculan automáticamente)
       get tarjetas(): TarjetaConfiguracion[] {
         const state = get();
-        
+
         return DEFINICIONES_TARJETAS.map(def => {
           const seccion = state.configuracion[def.ruta];
           const campos = seccion ? Object.entries(seccion) : [];
-          
+
           // Crear campos requeridos
           const camposRequeridos = campos.map(([id, campo]) => ({
             id,
             nombre: id.charAt(0).toUpperCase() + id.slice(1),
             completado: campo.completado
           }));
-          
+
           // Calcular estado
           const completados = camposRequeridos.filter(c => c.completado).length;
           const total = camposRequeridos.length;
-          
+
           let estado: 'no_iniciado' | 'incompleto' | 'completo';
           if (completados === 0) {
             estado = 'no_iniciado';
@@ -200,7 +200,7 @@ export const useConfigStore = create<ConfigStore>()(
           } else {
             estado = 'incompleto';
           }
-          
+
           return {
             id: def.id,
             titulo: def.titulo,
@@ -220,36 +220,50 @@ export const useConfigStore = create<ConfigStore>()(
       },
 
       // Cargar configuración desde PostgreSQL
-      cargarConfiguracion: async (restaurantId: string) => {
+      cargarConfiguracion: async (restaurantId?: string) => {
         try {
           set({ isLoading: true, error: null });
-          
+
           const token = localStorage.getItem('auth_token');
           if (!token) {
             throw new Error('Token de autenticación no encontrado');
           }
-          
+
           const headers = {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           };
-          
+
+          // Usar 'current' si no se proporciona restaurantId (auto-detect)
+          const idToUse = restaurantId || 'current';
+
           // Cargar información general
-          const generalResponse = await fetch(`/api/restaurants/${restaurantId}/general-info`, { headers });
+          const generalResponse = await fetch(`/api/restaurants/${idToUse}/general-info`, { headers });
           const generalData = generalResponse.ok ? await generalResponse.json() : {};
-          
+
+          // Si no encontró restaurante, dejar configuración vacía
+          if (generalResponse.status === 404) {
+            set({
+              configuracion: estadoInicial,
+              isLoading: false,
+              lastSync: new Date()
+            });
+            console.log('ℹ️ No se encontró restaurante, configuración vacía');
+            return;
+          }
+
           // Cargar ubicación
-          const locationResponse = await fetch(`/api/restaurants/${restaurantId}/location`, { headers });
+          const locationResponse = await fetch(`/api/restaurants/${idToUse}/location`, { headers });
           const locationData = locationResponse.ok ? await locationResponse.json() : {};
-          
+
           // Cargar horarios
-          const hoursResponse = await fetch(`/api/restaurants/${restaurantId}/business-hours`, { headers });
+          const hoursResponse = await fetch(`/api/restaurants/${idToUse}/business-hours`, { headers });
           const hoursData = hoursResponse.ok ? await hoursResponse.json() : {};
-          
+
           // Cargar imágenes
-          const imagesResponse = await fetch(`/api/restaurants/${restaurantId}/images`, { headers });
+          const imagesResponse = await fetch(`/api/restaurants/${idToUse}/images`, { headers });
           const imagesData = imagesResponse.ok ? await imagesResponse.json() : {};
-          
+
           // Actualizar configuración basándose en datos de BD
           const nuevaConfiguracion = {
             '/config-restaurante/informacion-general': verificarInformacionGeneral(generalData),
@@ -257,20 +271,20 @@ export const useConfigStore = create<ConfigStore>()(
             '/config-restaurante/horario-comercial': verificarHorarios(hoursData),
             '/config-restaurante/logo-portada': verificarImagenes(imagesData)
           };
-          
+
           set({
             configuracion: nuevaConfiguracion,
             isLoading: false,
             lastSync: new Date()
           });
-          
+
           console.log('✅ Configuración cargada desde PostgreSQL');
-          
+
         } catch (error) {
           console.error('❌ Error cargando configuración:', error);
-          set({ 
+          set({
             error: error instanceof Error ? error.message : 'Error desconocido',
-            isLoading: false 
+            isLoading: false
           });
         }
       },
@@ -278,7 +292,7 @@ export const useConfigStore = create<ConfigStore>()(
       // Sincronizar con base de datos
       sincronizarConBD: async (restaurantId: string) => {
         const state = get();
-        
+
         try {
           await state.cargarConfiguracion(restaurantId);
         } catch (error) {
@@ -290,18 +304,18 @@ export const useConfigStore = create<ConfigStore>()(
       actualizarCampo: (ruta: string, campo: string, completado: boolean) => {
         set((state) => {
           const nuevaConfiguracion = { ...state.configuracion };
-          
+
           // Inicializar la sección si no existe
           if (!nuevaConfiguracion[ruta]) {
             nuevaConfiguracion[ruta] = {};
           }
-          
+
           // Actualizar el campo
           nuevaConfiguracion[ruta][campo] = {
             completado,
             ultimaActualizacion: new Date()
           };
-          
+
           return { configuracion: nuevaConfiguracion };
         });
       },
@@ -316,16 +330,16 @@ export const useConfigStore = create<ConfigStore>()(
       obtenerProgresoSeccion: (ruta: string) => {
         const state = get();
         const seccion = state.configuracion[ruta];
-        
+
         if (!seccion) {
           return { completados: 0, total: 0, porcentaje: 0 };
         }
-        
+
         const campos = Object.values(seccion);
         const completados = campos.filter(campo => campo.completado).length;
         const total = campos.length;
         const porcentaje = total > 0 ? Math.round((completados / total) * 100) : 0;
-        
+
         return { completados, total, porcentaje };
       },
 
@@ -334,19 +348,19 @@ export const useConfigStore = create<ConfigStore>()(
         const state = get();
         let totalCompletados = 0;
         let totalCampos = 0;
-        
+
         Object.values(state.configuracion).forEach(seccion => {
           const campos = Object.values(seccion);
           totalCampos += campos.length;
           totalCompletados += campos.filter(campo => campo.completado).length;
         });
-        
+
         const porcentaje = totalCampos > 0 ? Math.round((totalCompletados / totalCampos) * 100) : 0;
-        
-        return { 
-          completados: totalCompletados, 
-          total: totalCampos, 
-          porcentaje 
+
+        return {
+          completados: totalCompletados,
+          total: totalCampos,
+          porcentaje
         };
       },
 
@@ -354,7 +368,7 @@ export const useConfigStore = create<ConfigStore>()(
       marcarSeccionCompleta: (ruta: string) => {
         set((state) => {
           const nuevaConfiguracion = { ...state.configuracion };
-          
+
           if (nuevaConfiguracion[ruta]) {
             Object.keys(nuevaConfiguracion[ruta]).forEach(campo => {
               nuevaConfiguracion[ruta][campo] = {
@@ -363,7 +377,7 @@ export const useConfigStore = create<ConfigStore>()(
               };
             });
           }
-          
+
           return { configuracion: nuevaConfiguracion };
         });
       },
@@ -377,7 +391,7 @@ export const useConfigStore = create<ConfigStore>()(
 
       // Reiniciar toda la configuración
       reiniciarConfiguracion: () => {
-        set({ 
+        set({
           configuracion: estadoInicial,
           error: null,
           lastSync: null
@@ -388,7 +402,7 @@ export const useConfigStore = create<ConfigStore>()(
       name: 'spoon-config-storage', // Clave para localStorage
       version: 4, // Incrementar versión para forzar reset con nueva estructura
       // Solo persistir configuración
-      partialize: (state) => ({ 
+      partialize: (state) => ({
         configuracion: state.configuracion,
         lastSync: state.lastSync
       }),
@@ -405,12 +419,12 @@ export const useConfigWithAuth = () => {
 
 // Hook auxiliar para obtener información específica de progreso
 export const useProgresoConfiguracion = () => {
-  const { 
-    obtenerProgresoGeneral, 
-    obtenerProgresoSeccion, 
-    esSeccionCompleta 
+  const {
+    obtenerProgresoGeneral,
+    obtenerProgresoSeccion,
+    esSeccionCompleta
   } = useConfigStore();
-  
+
   return {
     progresoGeneral: obtenerProgresoGeneral(),
     obtenerProgresoSeccion,

@@ -1,6 +1,6 @@
-// src/app/config-restaurante/logo-portada/components/VistaPrevia.tsx
 import React from 'react';
 import { CheckCircle } from 'lucide-react';
+import Image from 'next/image';
 
 interface VistaPreviaProps {
   logo: string | null;
@@ -16,11 +16,15 @@ export default function VistaPrevia({ logo, portada }: VistaPreviaProps) {
         {/* Simulación de cómo se verá en la app */}
         <div className="relative h-64 bg-gray-100">
           {portada ? (
-            <img
-              src={portada}
-              alt="Portada"
-              className="w-full h-full object-cover"
-            />
+            <div className="relative w-full h-full">
+              <Image
+                src={portada}
+                alt="Portada"
+                fill
+                style={{ objectFit: 'cover' }}
+                unoptimized={portada.startsWith('blob:')}
+              />
+            </div>
           ) : (
             <div className="w-full h-full flex items-center justify-center text-gray-400">
               Sin imagen de portada
@@ -28,12 +32,16 @@ export default function VistaPrevia({ logo, portada }: VistaPreviaProps) {
           )}
 
           {logo && (
-            <div className="absolute left-4 bottom-4 w-24 h-24 bg-white rounded-lg p-2 shadow-lg">
-              <img
-                src={logo}
-                alt="Logo"
-                className="w-full h-full object-contain"
-              />
+            <div className="absolute left-4 bottom-4 w-24 h-24 bg-white rounded-lg p-2 shadow-lg z-10">
+              <div className="relative w-full h-full">
+                <Image
+                  src={logo}
+                  alt="Logo"
+                  fill
+                  style={{ objectFit: 'contain' }}
+                  unoptimized={logo.startsWith('blob:')}
+                />
+              </div>
             </div>
           )}
         </div>

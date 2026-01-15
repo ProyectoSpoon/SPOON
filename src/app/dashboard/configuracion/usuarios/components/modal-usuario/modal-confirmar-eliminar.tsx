@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from '@/shared/components/ui/Dialog/dialog';
 import { Button } from '@/shared/components/ui/Button';
-import { Usuario } from '../../types/usuarios.types';
+import { Usuario } from '@/app/dashboard/configuracion/usuarios/types/usuarios.types';
 
 interface ModalConfirmarEliminarProps {
   usuario: Usuario | null;

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef, KeyboardEvent } from 'react';
+import React, { useState, useEffect, useRef, KeyboardEvent, useCallback } from 'react';
+import Image from 'next/image';
 import { Search, X, Tag, Clock, ChevronDown, ChevronUp, Filter } from 'lucide-react';
 import { Button } from '@/shared/components/ui/Button';
 import { VersionedProduct } from '@/app/dashboard/carta/types/product-versioning.types';
@@ -38,7 +39,7 @@ const HISTORIAL_BUSQUEDA_KEY = 'menu_historial_busqueda';
 // Función para obtener el historial de búsqueda del localStorage
 const obtenerHistorialBusqueda = (): string[] => {
   if (typeof window === 'undefined') return [];
-  
+
   try {
     const historial = localStorage.getItem(HISTORIAL_BUSQUEDA_KEY);
     return historial ? JSON.parse(historial) : [];
@@ -51,7 +52,7 @@ const obtenerHistorialBusqueda = (): string[] => {
 // Función para guardar el historial de búsqueda en localStorage
 const guardarHistorialBusqueda = (historial: string[]) => {
   if (typeof window === 'undefined') return;
-  
+
   try {
     // Limitar a las últimas 10 búsquedas
     const historialLimitado = historial.slice(0, 10);
@@ -77,41 +78,41 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({
   const [indiceSeleccionado, setIndiceSeleccionado] = useState(-1);
   const [historialBusqueda, setHistorialBusqueda] = useState<string[]>([]);
   const [mostrarHistorial, setMostrarHistorial] = useState(false);
-  
+
   // Estados para los filtros
   const [categoriasFiltradas, setCategoriasFiltradas] = useState<string[]>([]);
   const [subcategoriasFiltradas, setSubcategoriasFiltradas] = useState<string[]>([]);
   const [atributosFiltrados, setAtributosFiltrados] = useState<string[]>([]);
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
-  
+
   // Referencias para el manejo del foco
   const inputRef = useRef<HTMLInputElement>(null);
   const resultadosRef = useRef<HTMLDivElement>(null);
-  
+
   // Cargar historial de búsqueda al montar el componente
   useEffect(() => {
     setHistorialBusqueda(obtenerHistorialBusqueda());
   }, []);
-  
+
   // Función para realizar la búsqueda
-  const realizarBusqueda = (termino: string = terminoBusqueda) => {
-    if (!termino.trim() && categoriasFiltradas.length === 0 && 
-        subcategoriasFiltradas.length === 0 && atributosFiltrados.length === 0) {
+  const realizarBusqueda = useCallback((termino: string = terminoBusqueda) => {
+    if (!termino.trim() && categoriasFiltradas.length === 0 &&
+      subcategoriasFiltradas.length === 0 && atributosFiltrados.length === 0) {
       setResultados([]);
       setMostrarResultados(false);
       return;
     }
-    
+
     // Filtrar productos por término de búsqueda
     let productosFiltrados = [...productos];
-    
+
     if (termino.trim()) {
       const terminoLower = termino.toLowerCase();
-      productosFiltrados = productosFiltrados.filter(producto => 
-        producto.nombre.toLowerCase().includes(terminoLower) || 
+      productosFiltrados = productosFiltrados.filter(producto =>
+        producto.nombre.toLowerCase().includes(terminoLower) ||
         producto.descripcion.toLowerCase().includes(terminoLower)
       );
-      
+
       // Agregar al historial si es una búsqueda nueva
       if (termino.trim() && !historialBusqueda.includes(termino)) {
         const nuevoHistorial = [termino, ...historialBusqueda];
@@ -119,64 +120,64 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({
         guardarHistorialBusqueda(nuevoHistorial);
       }
     }
-    
+
     // Aplicar filtros de categorías
     if (categoriasFiltradas.length > 0) {
-      productosFiltrados = productosFiltrados.filter(producto => 
+      productosFiltrados = productosFiltrados.filter(producto =>
         categoriasFiltradas.includes(producto.categoriaId)
       );
     }
-    
+
     // Aplicar filtros de subcategorías (si aplica)
     if (subcategoriasFiltradas.length > 0) {
       // Verificar subcategoría en los metadatos (si existe)
-      productosFiltrados = productosFiltrados.filter(producto => 
+      productosFiltrados = productosFiltrados.filter(producto =>
         subcategoriasFiltradas.some(subId => {
           // Verificar si el producto tiene metadatos de subcategoría
           // Esto es solo un ejemplo, ajustar según la estructura real de datos
-          return producto.metadata && 
-                 (producto.metadata as any).subcategoriaId === subId;
+          return producto.metadata &&
+            (producto.metadata as any).subcategoriaId === subId;
         })
       );
     }
-    
+
     // Aplicar filtros de atributos (si aplica)
     if (atributosFiltrados.length > 0) {
-      productosFiltrados = productosFiltrados.filter(producto => 
+      productosFiltrados = productosFiltrados.filter(producto =>
         atributosFiltrados.every(atributo => {
           // Verificar si el producto tiene el atributo (por ejemplo, vegano, sin gluten, etc.)
           // Esto es solo un ejemplo, ajustar según la estructura real de datos
-          return producto.metadata && 
-                 (producto.metadata as any).atributos?.includes(atributo);
+          return producto.metadata &&
+            (producto.metadata as any).atributos?.includes(atributo);
         })
       );
     }
-    
+
     setResultados(productosFiltrados);
     setMostrarResultados(true);
     setIndiceSeleccionado(-1);
-    
+
     // Notificar al componente padre sobre los resultados
     onSearch(productosFiltrados);
-  };
-  
+  }, [terminoBusqueda, productos, categoriasFiltradas, subcategoriasFiltradas, atributosFiltrados, historialBusqueda, onSearch]);
+
   // Efecto para realizar la búsqueda cuando cambian los filtros
   useEffect(() => {
     realizarBusqueda();
-  }, [categoriasFiltradas, subcategoriasFiltradas, atributosFiltrados]);
-  
+  }, [categoriasFiltradas, subcategoriasFiltradas, atributosFiltrados, realizarBusqueda]);
+
   // Manejador para cambios en el input de búsqueda
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const valor = e.target.value;
     setTerminoBusqueda(valor);
-    
+
     if (valor.trim()) {
       realizarBusqueda(valor);
     } else {
       setMostrarResultados(false);
     }
   };
-  
+
   // Manejador para el foco en el input
   const handleInputFocus = () => {
     if (terminoBusqueda.trim()) {
@@ -185,15 +186,15 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({
       setMostrarHistorial(true);
     }
   };
-  
+
   // Manejador para teclas especiales (navegación con teclado)
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     // Si no hay resultados, no hacer nada
     if (!mostrarResultados && !mostrarHistorial) return;
-    
+
     const items = mostrarResultados ? resultados : historialBusqueda;
     const maxIndex = items.length - 1;
-    
+
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
@@ -231,21 +232,21 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({
         break;
     }
   };
-  
+
   // Manejador para seleccionar un resultado
   const handleSelectResult = (producto: VersionedProduct) => {
     setTerminoBusqueda(producto.nombre);
     setMostrarResultados(false);
     onSearch([producto]);
   };
-  
+
   // Manejador para seleccionar un elemento del historial
   const handleSelectHistorial = (termino: string) => {
     setTerminoBusqueda(termino);
     setMostrarHistorial(false);
     realizarBusqueda(termino);
   };
-  
+
   // Manejador para limpiar la búsqueda
   const handleClearSearch = () => {
     setTerminoBusqueda('');
@@ -253,7 +254,7 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({
     setMostrarHistorial(false);
     onSearch([]);
   };
-  
+
   // Manejador para eliminar un elemento del historial
   const handleRemoveHistorial = (termino: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -261,7 +262,7 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({
     setHistorialBusqueda(nuevoHistorial);
     guardarHistorialBusqueda(nuevoHistorial);
   };
-  
+
   // Manejador para alternar filtros de categoría
   const handleToggleCategoria = (categoriaId: string) => {
     setCategoriasFiltradas(prev => {
@@ -272,7 +273,7 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({
       }
     });
   };
-  
+
   // Manejador para alternar filtros de subcategoría
   const handleToggleSubcategoria = (subcategoriaId: string) => {
     setSubcategoriasFiltradas(prev => {
@@ -283,7 +284,7 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({
       }
     });
   };
-  
+
   // Manejador para alternar filtros de atributo
   const handleToggleAtributo = (atributoId: string) => {
     setAtributosFiltrados(prev => {
@@ -294,31 +295,31 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({
       }
     });
   };
-  
+
   // Manejador para aplicar un filtro rápido
   const handleFiltroRapido = (filtro: Record<string, any>) => {
     // Implementar lógica para aplicar filtros rápidos
     // Por ejemplo, si el filtro es { popularidad: "alta" }, filtrar productos populares
     console.log('Aplicando filtro rápido:', filtro);
-    
+
     // Ejemplo: filtrar por popularidad
     if (filtro.popularidad) {
       const productosFiltrados = productos.filter(producto => {
         // Asumiendo que hay un campo de popularidad en los metadatos
-        return producto.metadata && 
-               (producto.metadata as any).popularidad === filtro.popularidad;
+        return producto.metadata &&
+          (producto.metadata as any).popularidad === filtro.popularidad;
       });
       setResultados(productosFiltrados);
       setMostrarResultados(true);
       onSearch(productosFiltrados);
     }
-    
+
     // Ejemplo: filtrar por fecha de creación
     if (filtro.fechaCreacion) {
       const diasAtras = parseInt(filtro.fechaCreacion);
       const fechaLimite = new Date();
       fechaLimite.setDate(fechaLimite.getDate() - diasAtras);
-      
+
       const productosFiltrados = productos.filter(producto => {
         const fechaCreacion = new Date(producto.metadata?.createdAt);
         return fechaCreacion >= fechaLimite;
@@ -328,32 +329,32 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({
       onSearch(productosFiltrados);
     }
   };
-  
+
   // Cerrar resultados al hacer clic fuera del componente
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
-        inputRef.current && 
+        inputRef.current &&
         !inputRef.current.contains(e.target as Node) &&
-        resultadosRef.current && 
+        resultadosRef.current &&
         !resultadosRef.current.contains(e.target as Node)
       ) {
         setMostrarResultados(false);
         setMostrarHistorial(false);
       }
     };
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-  
+
   // Calcular si hay filtros activos
-  const hayFiltrosActivos = categoriasFiltradas.length > 0 || 
-                           subcategoriasFiltradas.length > 0 || 
-                           atributosFiltrados.length > 0;
-  
+  const hayFiltrosActivos = categoriasFiltradas.length > 0 ||
+    subcategoriasFiltradas.length > 0 ||
+    atributosFiltrados.length > 0;
+
   return (
     <div className="relative w-full">
       {/* Barra de búsqueda */}
@@ -373,14 +374,14 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({
             className="py-2 px-2 w-full focus:outline-none text-sm"
           />
           {terminoBusqueda && (
-            <button 
+            <button
               onClick={handleClearSearch}
               className="px-3 text-gray-400 hover:text-gray-600"
             >
               <X size={18} />
             </button>
           )}
-          <button 
+          <button
             onClick={() => setMostrarFiltros(!mostrarFiltros)}
             className={`px-3 py-2 border-l border-gray-200 ${hayFiltrosActivos ? 'text-spoon-primary' : 'text-gray-500'} hover:bg-gray-50`}
           >
@@ -390,7 +391,7 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({
             )}
           </button>
         </div>
-        
+
         {/* Filtros rápidos */}
         {filtrosRapidos.length > 0 && (
           <div className="flex mt-2 space-x-2 overflow-x-auto pb-1">
@@ -406,20 +407,20 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({
           </div>
         )}
       </div>
-      
+
       {/* Panel de filtros avanzados */}
       {mostrarFiltros && (
         <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg p-4">
           <div className="flex justify-between items-center mb-3">
             <h3 className="font-medium text-sm">Filtros avanzados</h3>
-            <button 
+            <button
               onClick={() => setMostrarFiltros(false)}
               className="text-gray-400 hover:text-gray-600"
             >
               <X size={16} />
             </button>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Filtros de categorías */}
             <div>
@@ -436,7 +437,7 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({
                       />
                       <span className="text-sm">{categoria.nombre}</span>
                     </label>
-                    
+
                     {/* Subcategorías */}
                     {categoria.subcategorias && categoria.subcategorias.length > 0 && (
                       <div className="ml-6 mt-1 space-y-1">
@@ -457,7 +458,7 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({
                 ))}
               </div>
             </div>
-            
+
             {/* Filtros de atributos */}
             {atributos.length > 0 && (
               <div>
@@ -478,7 +479,7 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({
               </div>
             )}
           </div>
-          
+
           <div className="flex justify-end mt-4 space-x-2">
             <Button
               variant="outline"
@@ -500,10 +501,10 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({
           </div>
         </div>
       )}
-      
+
       {/* Resultados de búsqueda */}
       {mostrarResultados && resultados.length > 0 && (
-        <div 
+        <div
           ref={resultadosRef}
           className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-80 overflow-auto"
         >
@@ -519,10 +520,13 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({
                 <div className="px-4 py-2 flex items-center">
                   {producto.imagen && (
                     <div className="w-10 h-10 mr-3 rounded overflow-hidden bg-gray-100 flex-shrink-0">
-                      <img 
-                        src={producto.imagen} 
-                        alt={producto.nombre} 
-                        className="w-full h-full object-cover"
+                      <Image
+                        src={producto.imagen}
+                        alt={producto.nombre}
+                        width={40}
+                        height={40}
+                        className="object-cover"
+                        unoptimized={producto.imagen.startsWith('blob:')}
                       />
                     </div>
                   )}
@@ -539,17 +543,17 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({
           ))}
         </div>
       )}
-      
+
       {/* Mensaje de no resultados */}
       {mostrarResultados && terminoBusqueda && resultados.length === 0 && (
         <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg p-4 text-center">
-          <p className="text-sm text-gray-500">No se encontraron resultados para "{terminoBusqueda}"</p>
+          <p className="text-sm text-gray-500">No se encontraron resultados para &quot;{terminoBusqueda}&quot;</p>
         </div>
       )}
-      
+
       {/* Historial de búsqueda */}
       {mostrarHistorial && historialBusqueda.length > 0 && !terminoBusqueda && (
-        <div 
+        <div
           ref={resultadosRef}
           className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto"
         >
@@ -562,9 +566,8 @@ export const BusquedaAvanzada: React.FC<BusquedaAvanzadaProps> = ({
           {historialBusqueda.map((termino, index) => (
             <div
               key={index}
-              className={`px-4 py-2 flex items-center justify-between cursor-pointer ${
-                indiceSeleccionado === index ? 'bg-gray-100' : 'hover:bg-gray-50'
-              }`}
+              className={`px-4 py-2 flex items-center justify-between cursor-pointer ${indiceSeleccionado === index ? 'bg-gray-100' : 'hover:bg-gray-50'
+                }`}
               onClick={() => handleSelectHistorial(termino)}
             >
               <div className="flex items-center">

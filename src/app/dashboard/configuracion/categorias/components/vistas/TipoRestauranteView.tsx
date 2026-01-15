@@ -2,7 +2,7 @@
 
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { TipoRestaurante } from '../../types/tipos';
+import { TipoRestaurante } from '@/app/dashboard/configuracion/categorias/types/tipos';
 import { TipoRestauranteItem } from '../TipoRestauranteItem';
 import { Button } from '@/shared/components/ui/Button';
 import { PlusCircle, Info } from 'lucide-react';
@@ -40,7 +40,7 @@ export function TipoRestauranteView({
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-gray-800">Tipos de Restaurante</h2>
-        <Button 
+        <Button
           onClick={onNuevoTipo}
           className="bg-spoon-primary hover:bg-spoon-primary-dark text-white"
         >
@@ -48,15 +48,15 @@ export function TipoRestauranteView({
           Nuevo Tipo
         </Button>
       </div>
-      
+
       <div className="bg-gray-50 p-4 rounded-lg mb-6 flex items-start">
         <Info className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
         <p className="text-sm text-gray-600">
-          Los tipos de restaurante definen las categorías y subcategorías disponibles para cada tipo de negocio. 
+          Los tipos de restaurante definen las categorías y subcategorías disponibles para cada tipo de negocio.
           Puede arrastrar los elementos para reordenarlos. Haga clic en un tipo para ver sus categorías.
         </p>
       </div>
-      
+
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}

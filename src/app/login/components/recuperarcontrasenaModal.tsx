@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { XIcon } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 interface Props {
   isOpen: boolean;

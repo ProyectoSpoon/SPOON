@@ -3,6 +3,7 @@
 
 import React, { useRef, useState } from 'react';
 import { FiUpload, FiX } from 'react-icons/fi';
+import Image from 'next/image';
 
 interface PropsTarjetaCargaImagen {
   titulo: string;
@@ -49,14 +50,16 @@ const TarjetaCargaImagen: React.FC<PropsTarjetaCargaImagen> = ({
     >
       <div className="space-y-4">
         <h3 className="font-bold text-lg text-neutral-900">{titulo}</h3>
-        
+
         {archivo?.previewUrl ? (
           // Vista previa de la imagen
-          <div className="relative">
-            <img
+          <div className="relative w-full h-[200px]">
+            <Image
               src={archivo.previewUrl}
               alt={titulo}
-              className="object-cover rounded-md max-h-[200px] w-full"
+              fill
+              className="object-cover rounded-md"
+              unoptimized
             />
             <button
               aria-label="Eliminar imagen"
@@ -79,8 +82,8 @@ const TarjetaCargaImagen: React.FC<PropsTarjetaCargaImagen> = ({
               {descripcion}
             </p>
             <p className="text-sm text-gray-400">
-              {tipo === 'logo' 
-                ? 'Tamaño recomendado: 400x400px' 
+              {tipo === 'logo'
+                ? 'Tamaño recomendado: 400x400px'
                 : 'Tamaño recomendado: 1200x400px'}
             </p>
           </div>

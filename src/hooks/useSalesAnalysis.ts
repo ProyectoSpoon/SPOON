@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAuthContext } from './useAuthContext';
+import { useAuth } from '@/context/postgres-authcontext';
 
 interface KPI {
   valor: number | string;
@@ -50,7 +50,7 @@ export function useSalesAnalysis(period: string = 'today') {
   const [data, setData] = useState<SalesAnalysisData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { restaurantId } = useAuthContext();
+  const { restaurantId } = useAuth();
 
   useEffect(() => {
     if (!restaurantId) return;

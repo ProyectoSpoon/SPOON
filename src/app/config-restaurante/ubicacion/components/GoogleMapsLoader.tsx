@@ -13,7 +13,7 @@ interface GoogleMapsLoaderProps {
 
 export function GoogleMapsLoader({ children }: GoogleMapsLoaderProps) {
   const { toast } = useToast();
-  
+
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
     libraries,
@@ -23,10 +23,12 @@ export function GoogleMapsLoader({ children }: GoogleMapsLoaderProps) {
   });
 
   if (loadError) {
+
+
     console.error('Error cargando Google Maps:', loadError);
     toast({
-      title: 'Error',
-      description: 'No se pudo cargar el mapa. Por favor, intenta más tarde.',
+      title: 'Error de Mapa',
+      description: 'No se pudo cargar Google Maps. Verifica tu API Key.',
       variant: 'destructive'
     });
     return null;

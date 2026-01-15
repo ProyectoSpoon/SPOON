@@ -1,53 +1,12 @@
 // app/api/configuracion/horarios/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/database';
-import jwt from 'jsonwebtoken';
-
-interface JWTPayload {
-  userId: string;
-  email: string;
-  restaurantId?: string;
-  restaurant?: {
-    id: string;
-    nombre?: string;
-  };
-}
-
-/**
- * Obtiene el ID del restaurante desde el token JWT o usa fallback
- */
-async function getRestaurantId(request: NextRequest): Promise<string | null> {
-  // Primero intentar obtener desde el token
-  try {
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      const JWT_SECRET = process.env.JWT_SECRET;
-      
-      if (JWT_SECRET) {
-        const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
-        const restaurantId = decoded.restaurantId || decoded.restaurant?.id;
-        
-        if (restaurantId) {
-          console.log('✅ RestaurantId extraído del token:', restaurantId);
-          return restaurantId;
-        }
-      }
-    }
-  } catch (error) {
-    console.log('⚠️ Error decodificando token, usando fallback:', error);
-  }
-
-  // Fallback: ID hardcodeado (temporal para desarrollo)
-  const FALLBACK_RESTAURANT_ID = "4073a4ad-b275-4e17-b197-844881f0319e";
-  console.log('⚠️ Usando restaurantId fallback:', FALLBACK_RESTAURANT_ID);
-  return FALLBACK_RESTAURANT_ID;
-}
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 
 // Mapeo de días de la semana
-const DAYS_MAP = {
+const DAYS_MAP: Record<number, string> = {
   0: 'domingo',
-  1: 'lunes', 
+  1: 'lunes',
   2: 'martes',
   3: 'miercoles',
   4: 'jueves',
@@ -55,10 +14,10 @@ const DAYS_MAP = {
   6: 'sabado'
 };
 
-const DAYS_REVERSE_MAP = {
+const DAYS_REVERSE_MAP: Record<string, number> = {
   'domingo': 0,
   'lunes': 1,
-  'martes': 2, 
+  'martes': 2,
   'miercoles': 3,
   'jueves': 4,
   'viernes': 5,
@@ -66,63 +25,61 @@ const DAYS_REVERSE_MAP = {
 };
 
 /**
- * GET: Obtener horarios comerciales
+ * GET: Obtener horarios comerciales del restaurante del usuario
  */
 export async function GET(request: NextRequest) {
-  let client;
-  
   try {
-    console.log('🕐 DEBUG: Obteniendo horarios comerciales...');
-    
-    // Obtener ID del restaurante
-    const restaurantId = await getRestaurantId(request);
-    if (!restaurantId) {
+    console.log('🕐 Obteniendo horarios comerciales...');
+
+    const supabase = createRouteHandlerClient({ cookies });
+
+    // Verificar sesión
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
       return NextResponse.json(
-        { error: 'No se pudo determinar el restaurante' },
-        { status: 400 }
+        { error: 'No autorizado' },
+        { status: 401 }
       );
     }
-    
-    client = await pool.connect();
-    console.log('✅ DEBUG: Conectado a PostgreSQL');
-    
-    // Obtener horarios regulares (usando solo columnas básicas)
-    const horariosQuery = `
-      SELECT 
-        day_of_week,
-        open_time,
-        close_time,
-        is_closed,
-        created_at,
-        updated_at
-      FROM restaurant.business_hours 
-      WHERE restaurant_id = $1
-      ORDER BY day_of_week
-    `;
-    
-    const horariosResult = await client.query(horariosQuery, [restaurantId]);
-    console.log('📊 DEBUG: Horarios encontrados:', horariosResult.rows.length);
-    
-    // Obtener días festivos/especiales
-    const especialesQuery = `
-      SELECT 
-        date,
-        open_time,
-        close_time,
-        is_closed,
-        reason,
-        notes
-      FROM restaurant.special_hours 
-      WHERE restaurant_id = $1
-      AND date >= CURRENT_DATE
-      ORDER BY date
-    `;
-    
-    const especialesResult = await client.query(especialesQuery, [restaurantId]);
-    console.log('🎉 DEBUG: Días especiales encontrados:', especialesResult.rows.length);
-    
-    // Crear estructura por defecto si no hay datos
-    const horarioRegular = {
+
+    // Obtener restaurante del usuario
+    const { data: restaurants } = await supabase
+      .schema('public')
+      .from('restaurants')
+      .select('id')
+      .eq('owner_id', session.user.id)
+      .eq('status', 'active')
+      .limit(1)
+      .single();
+
+    if (!restaurants) {
+      return NextResponse.json(
+        { error: 'Restaurante no encontrado' },
+        { status: 404 }
+      );
+    }
+
+    const restaurantId = restaurants.id;
+
+    // Obtener horarios regulares
+    const { data: horarios } = await supabase
+      .schema('restaurant')
+      .from('business_hours')
+      .select('day_of_week, open_time, close_time, is_closed')
+      .eq('restaurant_id', restaurantId)
+      .order('day_of_week');
+
+    // Obtener días especiales
+    const { data: especiales } = await supabase
+      .schema('restaurant')
+      .from('special_hours')
+      .select('date, open_time, close_time, is_closed, reason, notes')
+      .eq('restaurant_id', restaurantId)
+      .gte('date', new Date().toISOString().split('T')[0])
+      .order('date');
+
+    // Crear estructura por defecto
+    const horarioRegular: Record<string, any> = {
       lunes: { abierto: true, horaApertura: "09:00", horaCierre: "18:00" },
       martes: { abierto: true, horaApertura: "09:00", horaCierre: "18:00" },
       miercoles: { abierto: true, horaApertura: "09:00", horaCierre: "18:00" },
@@ -131,26 +88,26 @@ export async function GET(request: NextRequest) {
       sabado: { abierto: true, horaApertura: "10:00", horaCierre: "16:00" },
       domingo: { abierto: false, horaApertura: "10:00", horaCierre: "16:00" }
     };
-    
-    // Sobrescribir con datos de la BD si existen
-    horariosResult.rows.forEach(row => {
-      const dia = DAYS_MAP[row.day_of_week as keyof typeof DAYS_MAP];
+
+    // Sobrescribir con datos de la BD
+    horarios?.forEach(row => {
+      const dia = DAYS_MAP[row.day_of_week];
       if (dia) {
-        horarioRegular[dia as keyof typeof horarioRegular] = {
+        horarioRegular[dia] = {
           abierto: !row.is_closed,
           horaApertura: row.open_time || "09:00",
           horaCierre: row.close_time || "18:00"
         };
       }
     });
-    
+
     // Mapear días festivos
-    const diasFestivos = especialesResult.rows.map(row => ({
+    const diasFestivos = especiales?.map(row => ({
       fecha: row.date,
       nombre: row.reason || 'Día especial',
       tipo: row.reason || 'Personalizado'
-    }));
-    
+    })) || [];
+
     // Si no hay días festivos, agregar algunos por defecto
     if (diasFestivos.length === 0) {
       diasFestivos.push(
@@ -161,35 +118,20 @@ export async function GET(request: NextRequest) {
         { fecha: "2025-12-25", nombre: "Navidad", tipo: "Navidad" }
       );
     }
-    
-    const responseData = {
+
+    console.log('✅ Horarios obtenidos correctamente');
+
+    return NextResponse.json({
       horarioRegular,
-      diasFestivos,
-      _debug: {
-        horariosEnBD: horariosResult.rows.length,
-        especialesEnBD: especialesResult.rows.length,
-        restaurantId: restaurantId
-      }
-    };
-    
-    console.log('✅ DEBUG: Horarios obtenidos correctamente');
-    
-    return NextResponse.json(responseData);
-    
+      diasFestivos
+    });
+
   } catch (error) {
-    console.error('❌ DEBUG: Error al obtener horarios:', error);
+    console.error('❌ Error al obtener horarios:', error);
     return NextResponse.json(
-      { 
-        error: 'Error interno del servidor',
-        message: error instanceof Error ? error.message : 'Error desconocido',
-        debug: true
-      },
+      { error: 'Error interno del servidor' },
       { status: 500 }
     );
-  } finally {
-    if (client) {
-      client.release();
-    }
   }
 }
 
@@ -197,138 +139,129 @@ export async function GET(request: NextRequest) {
  * POST: Actualizar horarios comerciales
  */
 export async function POST(request: NextRequest) {
-  let client;
-  
   try {
-    console.log('💾 DEBUG: Actualizando horarios comerciales...');
-    
-    // Obtener ID del restaurante
-    const restaurantId = await getRestaurantId(request);
-    if (!restaurantId) {
+    console.log('💾 Actualizando horarios comerciales...');
+
+    const supabase = createRouteHandlerClient({ cookies });
+
+    // Verificar sesión
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
       return NextResponse.json(
-        { error: 'No se pudo determinar el restaurante' },
-        { status: 400 }
+        { error: 'No autorizado' },
+        { status: 401 }
       );
     }
-    
+
+    // Obtener restaurante
+    const { data: restaurants } = await supabase
+      .schema('public')
+      .from('restaurants')
+      .select('id')
+      .eq('owner_id', session.user.id)
+      .eq('status', 'active')
+      .limit(1)
+      .single();
+
+    if (!restaurants) {
+      return NextResponse.json(
+        { error: 'Restaurante no encontrado' },
+        { status: 404 }
+      );
+    }
+
+    const restaurantId = restaurants.id;
     const data = await request.json();
-    console.log('📝 DEBUG: Datos recibidos:', Object.keys(data));
-    console.log('🎯 DEBUG: Restaurant ID:', restaurantId);
-    
+
     if (!data.horarioRegular) {
       return NextResponse.json(
         { error: 'Falta el objeto horarioRegular' },
         { status: 400 }
       );
     }
-    
-    client = await pool.connect();
-    
-    try {
-      await client.query('BEGIN');
-      console.log('🔄 DEBUG: Iniciando transacción...');
-      
-      // Usar UPSERT en lugar de DELETE + INSERT para mejor rendimiento
-      console.log('🔄 DEBUG: Actualizando horarios con UPSERT...');
-      
-      for (const [dia, horario] of Object.entries(data.horarioRegular)) {
-        const dayOfWeek = DAYS_REVERSE_MAP[dia as keyof typeof DAYS_REVERSE_MAP];
-        
-        if (dayOfWeek !== undefined && horario && typeof horario === 'object') {
-          const horarioTyped = horario as { abierto: boolean; horaApertura: string; horaCierre: string };
-          
-          // UPSERT optimizado: INSERT con ON CONFLICT DO UPDATE
-          const upsertQuery = `
-            INSERT INTO restaurant.business_hours (
-              restaurant_id, 
-              day_of_week, 
-              open_time, 
-              close_time, 
-              is_closed,
-              created_at,
-              updated_at
-            ) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-            ON CONFLICT (restaurant_id, day_of_week) 
-            DO UPDATE SET 
-              open_time = EXCLUDED.open_time,
-              close_time = EXCLUDED.close_time,
-              is_closed = EXCLUDED.is_closed,
-              updated_at = CURRENT_TIMESTAMP
-          `;
-          
-          const values = [
-            restaurantId,
-            dayOfWeek,
-            horarioTyped.abierto ? horarioTyped.horaApertura : null,
-            horarioTyped.abierto ? horarioTyped.horaCierre : null,
-            !horarioTyped.abierto
-          ];
-          
-          await client.query(upsertQuery, values);
-          console.log(`✅ DEBUG: Horario ${dia} actualizado`);
-        }
+
+    // Eliminar horarios existentes
+    await supabase
+      .schema('restaurant')
+      .from('business_hours')
+      .delete()
+      .eq('restaurant_id', restaurantId);
+
+    // Insertar nuevos horarios
+    const horariosToInsert = [];
+    for (const [dia, horario] of Object.entries(data.horarioRegular)) {
+      const dayOfWeek = DAYS_REVERSE_MAP[dia];
+
+      if (dayOfWeek !== undefined && horario && typeof horario === 'object') {
+        const h = horario as { abierto: boolean; horaApertura: string; horaCierre: string };
+
+        horariosToInsert.push({
+          restaurant_id: restaurantId,
+          day_of_week: dayOfWeek,
+          open_time: h.abierto ? h.horaApertura : null,
+          close_time: h.abierto ? h.horaCierre : null,
+          is_closed: !h.abierto,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
       }
-      
-      // Si hay días festivos, procesarlos también
-      if (data.diasFestivos && Array.isArray(data.diasFestivos)) {
-        // Eliminar días especiales existentes
-        await client.query(
-          'DELETE FROM restaurant.special_hours WHERE restaurant_id = $1',
-          [restaurantId]
-        );
-        
-        // Insertar nuevos días especiales
-        for (const festivo of data.diasFestivos) {
-          if (festivo.fecha && festivo.nombre) {
-            const insertSpecialQuery = `
-              INSERT INTO restaurant.special_hours (
-                restaurant_id,
-                date,
-                is_closed,
-                reason,
-                created_at
-              ) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
-            `;
-            
-            await client.query(insertSpecialQuery, [
-              restaurantId,
-              festivo.fecha,
-              true, // Asumimos que los festivos están cerrados
-              festivo.nombre
-            ]);
-          }
-        }
-        console.log('🎉 DEBUG: Días festivos guardados');
-      }
-      
-      await client.query('COMMIT');
-      console.log('✅ DEBUG: Transacción completada');
-      
-      return NextResponse.json({ 
-        success: true,
-        message: 'Horarios actualizados correctamente',
-        debug: true
-      });
-      
-    } catch (error) {
-      await client.query('ROLLBACK');
-      console.error('❌ DEBUG: Error en transacción, rollback ejecutado');
-      throw error;
     }
-    
+
+    if (horariosToInsert.length > 0) {
+      const { error: insertError } = await supabase
+        .schema('restaurant')
+        .from('business_hours')
+        .insert(horariosToInsert);
+
+      if (insertError) {
+        console.error('Error insertando horarios:', insertError);
+        return NextResponse.json(
+          { error: 'Error al guardar horarios' },
+          { status: 500 }
+        );
+      }
+    }
+
+    // Procesar días festivos si existen
+    if (data.diasFestivos && Array.isArray(data.diasFestivos)) {
+      // Eliminar días especiales existentes
+      await supabase
+        .schema('restaurant')
+        .from('special_hours')
+        .delete()
+        .eq('restaurant_id', restaurantId);
+
+      // Insertar nuevos
+      const festivosToInsert = data.diasFestivos
+        .filter((f: any) => f.fecha && f.nombre)
+        .map((f: any) => ({
+          restaurant_id: restaurantId,
+          date: f.fecha,
+          is_closed: true,
+          reason: f.nombre,
+          created_at: new Date().toISOString()
+        }));
+
+      if (festivosToInsert.length > 0) {
+        await supabase
+          .schema('restaurant')
+          .from('special_hours')
+          .insert(festivosToInsert);
+      }
+    }
+
+    console.log('✅ Horarios actualizados correctamente');
+
+    return NextResponse.json({
+      success: true,
+      message: 'Horarios actualizados correctamente'
+    });
+
   } catch (error) {
-    console.error('❌ DEBUG: Error al actualizar horarios:', error);
+    console.error('❌ Error al actualizar horarios:', error);
     return NextResponse.json(
-      { 
-        error: 'Error interno del servidor',
-        message: error instanceof Error ? error.message : 'Error desconocido',
-        debug: true
-      },
+      { error: 'Error interno del servidor' },
       { status: 500 }
     );
-  } finally {
-    if (client) {
-      client.release();
-    }
   }
 }

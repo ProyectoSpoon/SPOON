@@ -14,8 +14,8 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { useState } from 'react';
-import { formatearMoneda, formatearFechaCorta } from '../../utils/formatters';
-import { calcularCrecimiento } from '../../utils/calculosEstadisticos';
+import { formatearMoneda, formatearFechaCorta } from '@/app/dashboard/estadisticas/utils/formatters';
+import { calcularCrecimiento } from '@/app/dashboard/estadisticas/utils/calculosEstadisticos';
 
 // Tipos para los datos del gráfico
 interface DatoVenta {
@@ -45,7 +45,7 @@ export const GraficoVentasPeriodo = ({
     if (active && payload && payload.length) {
       const ventasActuales = payload[0].value;
       const ventasAnteriores = payload[1]?.value;
-      const porcentajeCambio = ventasAnteriores 
+      const porcentajeCambio = ventasAnteriores
         ? calcularCrecimiento(ventasActuales, ventasAnteriores)
         : null;
 
@@ -76,27 +76,27 @@ export const GraficoVentasPeriodo = ({
       );
     }
     return null;
-};
+  };
 
   const renderGrafico = () => {
     const configuracionComun = {
       data: datos,
       children: [
         <CartesianGrid key="grid" strokeDasharray="3 3" stroke="#E5E7EB" />,
-        <XAxis 
+        <XAxis
           key="x"
-          dataKey="fecha" 
+          dataKey="fecha"
           stroke="#6B7280"
           fontSize={12}
         />,
-        <YAxis 
+        <YAxis
           key="y1"
           yAxisId="left"
           stroke="#6B7280"
           fontSize={12}
           tickFormatter={formatearMoneda}
         />,
-        <YAxis 
+        <YAxis
           key="y2"
           yAxisId="right"
           orientation="right"

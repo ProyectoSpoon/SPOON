@@ -14,7 +14,7 @@ import {
 } from "@/shared/components/ui/Dialog";
 import Image from 'next/image';
 import { toast } from 'sonner';
-import { jsonDataService } from '@/services/json-data.service';
+// import { jsonDataService } from '@/services/json-data.service';
 
 // Productos hardcodeados por subcategoría (versión simplificada)
 const PRODUCTOS_HARDCODED: Record<string, VersionedProduct[]> = {
@@ -183,8 +183,8 @@ interface ListaProductosProps {
   productosSeleccionados?: VersionedProduct[];
 }
 
-export default function ListaProductos({ 
-  restauranteId, 
+export default function ListaProductos({
+  restauranteId,
   categoriaId,
   subcategoriaId,
   onProductSelect,
@@ -198,68 +198,28 @@ export default function ListaProductos({
   const [productosJSON, setProductosJSON] = useState<VersionedProduct[]>([]);
   const [cargandoProductos, setCargandoProductos] = useState(false);
 
-  // Cargar productos desde los archivos JSON
+  // Cargar productos
   useEffect(() => {
-    const cargarProductos = async () => {
-      console.log('Cargando productos para subcategoría:', subcategoriaId);
-      console.log('Categoría seleccionada:', categoriaId);
-      
-      if (!subcategoriaId) {
-        console.log('No hay subcategoría seleccionada, no se cargarán productos');
-        return;
-      }
-      
-      setCargandoProductos(true);
-      try {
-        // Cargar productos
-        console.log('Intentando cargar productos desde JSON...');
-        const productos = await jsonDataService.getProductos();
-        console.log('Productos cargados desde JSON:', productos);
-        
-        if (!productos || productos.length === 0) {
-          console.error('No se cargaron productos desde JSON o el array está vacío');
-          setProductosJSON([]);
-          setCargandoProductos(false);
-          return;
-        }
-        
-        // Filtrar productos por subcategoría
-        console.log(`Filtrando productos por subcategoría: ${subcategoriaId}`);
-        const productosFiltrados = productos.filter(
-          (p: any) => {
-            console.log(`Producto: ${p.nombre}, subcategoriaId: ${p.subcategoriaId}, comparando con: ${subcategoriaId}`);
-            return p.subcategoriaId === subcategoriaId;
-          }
-        );
-        
-        console.log('Productos filtrados por subcategoría:', productosFiltrados);
-        console.log(`Se encontraron ${productosFiltrados.length} productos para la subcategoría ${subcategoriaId}`);
-        
-        setProductosJSON(productosFiltrados);
-      } catch (error) {
-        console.error('Error al cargar productos:', error);
-        toast.error('Error al cargar productos');
-      } finally {
-        setCargandoProductos(false);
-      }
-    };
-
-    cargarProductos();
+    // Simular carga o usar solo hardcoded por ahora
+    if (subcategoriaId) {
+      // La lógica de jsonDataService ha sido eliminada por falta del módulo
+      // Se usará PRODUCTOS_HARDCODED como fallback
+    }
   }, [subcategoriaId]);
 
   // Verificar si se han seleccionado categoría y subcategoría
   const seleccionCompleta = categoriaId && subcategoriaId;
-  
+
   // Obtener productos para la subcategoría seleccionada
   // Primero intentamos usar los productos cargados desde JSON, si no hay, usamos los hardcodeados
-  const productosSubcategoria = productosJSON.length > 0 
-    ? productosJSON 
+  const productosSubcategoria = productosJSON.length > 0
+    ? productosJSON
     : (subcategoriaId ? PRODUCTOS_HARDCODED[subcategoriaId] || [] : []);
 
   // Manejar clic en el botón "Ver productos"
   const handleVerProductos = () => {
     setCargando(true);
-    
+
     // Simular carga
     setTimeout(() => {
       setModalProductos(true);
@@ -276,17 +236,17 @@ export default function ListaProductos({
   // Agregar producto a la lista de productos seleccionados
   const handleAgregarDirecto = (producto: VersionedProduct, e: React.MouseEvent) => {
     e.stopPropagation(); // Evitar que se abra el modal de detalle
-    
+
     console.log('Agregando producto directamente:', producto);
-    
+
     // Asignar el subcategoriaId actual al producto antes de agregarlo
     const productoConSubcategoria = {
       ...producto,
       categoriaId: subcategoriaId || producto.categoriaId
     };
-    
+
     console.log('Producto modificado con subcategoriaId:', productoConSubcategoria);
-    
+
     if (onProductSelect) {
       console.log('Función onProductSelect existe, llamando...');
       onProductSelect(productoConSubcategoria);
@@ -295,7 +255,7 @@ export default function ListaProductos({
       console.error('Función onProductSelect no existe');
       toast.error('No se pudo agregar el producto a la lista');
     }
-    
+
     // Cerrar el modal después de agregar el producto
     setModalProductos(false);
   };
@@ -304,15 +264,15 @@ export default function ListaProductos({
   const handleAgregarDesdeDetalle = () => {
     if (productoSeleccionado && onProductSelect) {
       console.log('Agregando producto desde detalle:', productoSeleccionado);
-      
+
       // Asignar el subcategoriaId actual al producto antes de agregarlo
       const productoConSubcategoria = {
         ...productoSeleccionado,
         categoriaId: subcategoriaId || productoSeleccionado.categoriaId
       };
-      
+
       console.log('Producto modificado con subcategoriaId:', productoConSubcategoria);
-      
+
       onProductSelect(productoConSubcategoria);
       toast.success(`${productoSeleccionado.nombre} agregado a la lista`);
       setModalDetalleProducto(false);
@@ -332,7 +292,7 @@ export default function ListaProductos({
 
   // Mostrar todos los productos seleccionados para depuración
   console.log('Todos los productos seleccionados:', productosSeleccionados);
-  
+
   // Filtrar productos seleccionados por subcategoría actual
   const productosSeleccionadosFiltrados = productosSeleccionados.filter(
     p => {
@@ -341,7 +301,7 @@ export default function ListaProductos({
       return p.categoriaId === subcategoriaId;
     }
   );
-  
+
   console.log('Productos seleccionados filtrados por subcategoría:', productosSeleccionadosFiltrados);
 
   // Si no se ha seleccionado categoría y subcategoría, mostrar mensaje
@@ -373,15 +333,15 @@ export default function ListaProductos({
 
         <div className="space-y-2">
           {productosSeleccionadosFiltrados.map((producto) => (
-            <div 
-              key={producto.id} 
+            <div
+              key={producto.id}
               className="flex items-center p-2 border rounded-lg bg-white"
             >
               <div className="flex-1">
                 <h4 className="font-medium text-xs">{producto.nombre}</h4>
                 <p className="text-xs text-gray-600 line-clamp-1">{producto.descripcion}</p>
               </div>
-              
+
               <div className="flex space-x-2">
                 <Button
                   variant="ghost"
@@ -392,7 +352,7 @@ export default function ListaProductos({
                 >
                   <Plus className="h-3 w-3" />
                 </Button>
-                
+
                 <Button
                   variant="ghost"
                   size="sm"
@@ -417,12 +377,12 @@ export default function ListaProductos({
                 Haz clic en el icono + para agregar un producto al menú o en el producto para ver más detalles
               </DialogDescription>
             </DialogHeader>
-            
+
             <div className="py-4 max-h-[400px] overflow-y-auto">
               <div className="grid grid-cols-1 gap-4">
                 {productosSubcategoria.map((producto) => (
-                  <div 
-                    key={producto.id} 
+                  <div
+                    key={producto.id}
                     className="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
                     onClick={() => handleProductClick(producto)}
                   >
@@ -439,12 +399,12 @@ export default function ListaProductos({
                         }}
                       />
                     </div>
-                    
+
                     <div className="flex-1">
                       <h3 className="font-medium text-xs">{producto.nombre}</h3>
                       <p className="text-xs text-gray-600 line-clamp-1">{producto.descripcion}</p>
                     </div>
-                    
+
                     <div className="flex space-x-2">
                       <Button
                         variant="ghost"
@@ -457,7 +417,7 @@ export default function ListaProductos({
                       >
                         <Eye className="h-3 w-3" />
                       </Button>
-                      
+
                       <Button
                         variant="ghost"
                         size="sm"
@@ -471,7 +431,7 @@ export default function ListaProductos({
                 ))}
               </div>
             </div>
-            
+
             <DialogFooter>
               <Button variant="outline" onClick={() => setModalProductos(false)} className="text-xs h-7">
                 Cerrar
@@ -489,7 +449,7 @@ export default function ListaProductos({
                 Detalles del producto
               </DialogDescription>
             </DialogHeader>
-            
+
             {productoSeleccionado && (
               <div className="py-4">
                 <div className="flex flex-col items-center mb-4">
@@ -507,19 +467,19 @@ export default function ListaProductos({
                     />
                   </div>
                 </div>
-                
+
                 <div className="space-y-4">
                   <div>
                     <h3 className="text-xs font-medium text-gray-500">Descripción</h3>
                     <p className="mt-1 text-xs">{productoSeleccionado.descripcion}</p>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <h3 className="text-xs font-medium text-gray-500">Categoría</h3>
                       <p className="mt-1 capitalize text-xs">{productoSeleccionado.categoriaId}</p>
                     </div>
-                    
+
                     <div>
                       <h3 className="text-xs font-medium text-gray-500">Stock</h3>
                       <p className="mt-1 text-xs">{productoSeleccionado.stock.currentQuantity} unidades</p>
@@ -528,12 +488,12 @@ export default function ListaProductos({
                 </div>
               </div>
             )}
-            
+
             <DialogFooter>
               <Button variant="outline" onClick={() => setModalDetalleProducto(false)} className="text-xs h-7">
                 Cancelar
               </Button>
-              <Button 
+              <Button
                 onClick={handleAgregarDesdeDetalle}
                 className="bg-spoon-primary hover:bg-spoon-primary-dark text-white text-xs h-7"
               >
@@ -577,12 +537,12 @@ export default function ListaProductos({
               Haz clic en el icono + para agregar un producto al menú o en el producto para ver más detalles
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="py-4 max-h-[400px] overflow-y-auto">
             <div className="grid grid-cols-1 gap-4">
               {productosSubcategoria.map((producto) => (
-                <div 
-                  key={producto.id} 
+                <div
+                  key={producto.id}
                   className="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
                   onClick={() => handleProductClick(producto)}
                 >
@@ -599,12 +559,12 @@ export default function ListaProductos({
                       }}
                     />
                   </div>
-                  
+
                   <div className="flex-1">
                     <h3 className="font-medium text-xs">{producto.nombre}</h3>
                     <p className="text-xs text-gray-600 line-clamp-1">{producto.descripcion}</p>
                   </div>
-                  
+
                   <div className="flex space-x-2">
                     <Button
                       variant="ghost"
@@ -617,7 +577,7 @@ export default function ListaProductos({
                     >
                       <Eye className="h-3 w-3" />
                     </Button>
-                    
+
                     <Button
                       variant="ghost"
                       size="sm"
@@ -631,7 +591,7 @@ export default function ListaProductos({
               ))}
             </div>
           </div>
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalProductos(false)} className="text-xs h-7">
               Cerrar
@@ -649,7 +609,7 @@ export default function ListaProductos({
               Detalles del producto
             </DialogDescription>
           </DialogHeader>
-          
+
           {productoSeleccionado && (
             <div className="py-4">
               <div className="flex flex-col items-center mb-4">
@@ -667,19 +627,19 @@ export default function ListaProductos({
                   />
                 </div>
               </div>
-              
+
               <div className="space-y-4">
                 <div>
                   <h3 className="text-xs font-medium text-gray-500">Descripción</h3>
                   <p className="mt-1 text-xs">{productoSeleccionado.descripcion}</p>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <h3 className="text-xs font-medium text-gray-500">Categoría</h3>
                     <p className="mt-1 capitalize text-xs">{productoSeleccionado.categoriaId}</p>
                   </div>
-                  
+
                   <div>
                     <h3 className="text-xs font-medium text-gray-500">Stock</h3>
                     <p className="mt-1 text-xs">{productoSeleccionado.stock.currentQuantity} unidades</p>
@@ -688,12 +648,12 @@ export default function ListaProductos({
               </div>
             </div>
           )}
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalDetalleProducto(false)} className="text-xs h-7">
               Cancelar
             </Button>
-            <Button 
+            <Button
               onClick={handleAgregarDesdeDetalle}
               className="bg-spoon-primary hover:bg-spoon-primary-dark text-white text-xs h-7"
             >

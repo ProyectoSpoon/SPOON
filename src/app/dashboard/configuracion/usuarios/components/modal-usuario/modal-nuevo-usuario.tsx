@@ -17,7 +17,7 @@ import { Input } from '@/shared/components/ui/Input';
 import { Button } from '@/shared/components/ui/Button';
 import { Label } from '@/shared/components/ui/Label';
 import { RadioGroup, RadioGroupItem } from '@/shared/components/ui/RadioGroup';
-import { Usuario } from '../../types/usuarios.types';
+import { Usuario } from '@/app/dashboard/configuracion/usuarios/types/usuarios.types';
 
 const formSchema = z.object({
   nombre: z.string().min(2, 'El nombre es requerido'),
@@ -36,18 +36,18 @@ interface ModalNuevoUsuarioProps {
   onCrear: (data: FormData) => Promise<any>;
 }
 
-export default function ModalNuevoUsuario({ 
-  abierto, 
+export default function ModalNuevoUsuario({
+  abierto,
   onClose,
-  onCrear 
+  onCrear
 }: ModalNuevoUsuarioProps) {
-  const { 
-    register, 
-    handleSubmit, 
+  const {
+    register,
+    handleSubmit,
     reset,
     watch,
     setValue,
-    formState: { errors, isSubmitting } 
+    formState: { errors, isSubmitting }
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -59,7 +59,7 @@ export default function ModalNuevoUsuario({
     try {
       // Llamar al servicio de creación
       await onCrear(data);
-      
+
       // Limpiar el formulario y cerrar el modal
       reset();
       onClose();

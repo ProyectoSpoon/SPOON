@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useToast } from '@/shared/Hooks/use-toast';
-import { useConfigStore } from '../../store/config-store';
+import { useConfigStore } from '@/app/config-restaurante/store/config-store';
 
 // Obtener ID del restaurante actual
 const RESTAURANT_ID = '4073a4ad-b275-4e17-b197-844881f0319e';
@@ -12,7 +12,7 @@ export function useImages() {
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
-  
+
   const { toast } = useToast();
   const { actualizarCampo } = useConfigStore();
 
@@ -23,12 +23,12 @@ export function useImages() {
     try {
       setLoading(true);
       const response = await fetch(`/api/restaurants/${RESTAURANT_ID}/images`);
-      
+
       if (response.ok) {
         const data = await response.json();
         setLogoUrl(data.logoUrl);
         setCoverImageUrl(data.coverImageUrl);
-        
+
         // Actualizar store si hay imágenes
         if (data.logoUrl) {
           actualizarCampo('/config-restaurante/logo-portada', 'logo', true);
@@ -62,7 +62,7 @@ export function useImages() {
 
     try {
       setUploading(true);
-      
+
       const formData = new FormData();
       formData.append('file', file);
       formData.append('type', type);
@@ -78,7 +78,7 @@ export function useImages() {
       }
 
       const data = await response.json();
-      
+
       if (data.success) {
         // Actualizar estado local
         if (type === 'logo') {
@@ -88,15 +88,15 @@ export function useImages() {
           setCoverImageUrl(data.url);
           actualizarCampo('/config-restaurante/logo-portada', 'portada', true);
         }
-        
+
         toast({
           title: 'Éxito',
           description: data.message
         });
-        
+
         return data.url;
       }
-      
+
     } catch (error) {
       console.error(`Error al subir ${type}:`, error);
       toast({
@@ -123,7 +123,7 @@ export function useImages() {
 
     try {
       setUploading(true);
-      
+
       const response = await fetch(`/api/restaurants/${RESTAURANT_ID}/images`, {
         method: 'PUT',
         headers: {
@@ -141,7 +141,7 @@ export function useImages() {
       }
 
       const data = await response.json();
-      
+
       if (data.success) {
         // Actualizar estado local
         if (logoUrl !== undefined) {
@@ -152,15 +152,15 @@ export function useImages() {
           setCoverImageUrl(coverImageUrl);
           actualizarCampo('/config-restaurante/logo-portada', 'portada', !!coverImageUrl);
         }
-        
+
         toast({
           title: 'Éxito',
           description: 'Imágenes actualizadas correctamente'
         });
-        
+
         return true;
       }
-      
+
     } catch (error) {
       console.error('Error al actualizar URLs:', error);
       toast({

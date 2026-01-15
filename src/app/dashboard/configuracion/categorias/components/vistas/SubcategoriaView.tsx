@@ -2,7 +2,7 @@
 
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Categoria, Subcategoria } from '../../types/tipos';
+import { Categoria, Subcategoria } from '@/app/dashboard/configuracion/categorias/types/tipos';
 import { SubcategoriaItem } from '../SubcategoriaItem';
 import { Button } from '@/shared/components/ui/Button';
 import { PlusCircle, Info } from 'lucide-react';
@@ -38,7 +38,7 @@ export function SubcategoriaView({
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-gray-800">Subcategorías de {categoriaActual.nombre}</h2>
-        <Button 
+        <Button
           onClick={onNuevaSubcategoria}
           className="bg-spoon-primary hover:bg-spoon-primary-dark text-white"
         >
@@ -46,15 +46,15 @@ export function SubcategoriaView({
           Nueva Subcategoría
         </Button>
       </div>
-      
+
       <div className="bg-gray-50 p-4 rounded-lg mb-6 flex items-start">
         <Info className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
         <p className="text-sm text-gray-600">
-          Las subcategorías permiten organizar los productos dentro de una categoría. 
+          Las subcategorías permiten organizar los productos dentro de una categoría.
           Puede arrastrar las subcategorías para reordenarlas.
         </p>
       </div>
-      
+
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}

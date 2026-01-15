@@ -12,12 +12,6 @@ networks:
     ipam:
       config:
         - subnet: 172.21.0.0/24
-  monitoring:
-    driver: bridge
-    name: spoon_monitoring
-    ipam:
-      config:
-        - subnet: 172.22.0.0/24
 
 # ===== SECRETS MANAGEMENT =====
 secrets:
@@ -25,8 +19,6 @@ secrets:
     file: ./secrets/db_password.txt
   jwt_secret:
     file: ./secrets/jwt_secret.txt
-  grafana_admin_password:
-    file: ./secrets/grafana_admin_password.txt
 
 # ===== SERVICIOS =====
 services:
@@ -53,7 +45,7 @@ services:
         condition: service_started
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health" ]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -90,7 +82,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -112,7 +104,7 @@ services:
       - DB_HOST=${DB_HOST:-postgres}
       - DB_NAME=${DB_NAME}
       - DB_PORT=${DB_PORT:-5432}
-      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - DB_PORT=${DB_PORT:-5432}
     secrets:
       - db_password
     volumes:
@@ -126,7 +118,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -161,7 +153,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3003/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3003/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -196,7 +188,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3005/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3005/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -204,10 +196,10 @@ services:
 
   # Base de datos PostgreSQL
   postgres:
-    image: postgres:14-alpine
+    image: postgis/postgis:14-3.4
     container_name: spoon_postgres
     ports:
-       - "${DB_PORT:-5432}:5432"
+      - "${DB_PORT:-5433}:5432"
     environment:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_DB=${DB_NAME}
@@ -221,7 +213,7 @@ services:
       - backend
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -249,7 +241,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/misc/ping"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/misc/ping" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -267,139 +259,11 @@ services:
       - backend
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
-
-  # Prometheus - Monitoreo de métricas
-  prometheus:
-    image: prom/prometheus:v2.42.0
-    container_name: spoon_prometheus
-    ports:
-      - "${PROMETHEUS_PORT:-9090}:9090"
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./prometheus/alert.rules:/etc/prometheus/alert.rules:ro
-      - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--web.enable-lifecycle'
-      - '--storage.tsdb.retention.time=30d'
-    networks:
-      - monitoring
-      - backend
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
-
-  # Grafana - Visualización de métricas
-  grafana:
-    image: grafana/grafana:9.5.2
-    container_name: spoon_grafana
-    ports:
-      - "${GRAFANA_PORT:-3100}:3000"
-    volumes:
-      - grafana_data:/var/lib/grafana
-    environment:
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD__FILE=/run/secrets/grafana_admin_password
-      - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_INSTALL_PLUGINS=grafana-piechart-panel
-    secrets:
-      - grafana_admin_password
-    networks:
-      - monitoring
-    depends_on:
-      prometheus:
-        condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 60s
-
-  # Node Exporter - Métricas del sistema
-  node-exporter:
-    image: prom/node-exporter:v1.5.0
-    container_name: spoon_node_exporter
-    expose:
-      - "9100"
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-    command:
-      - '--path.procfs=/host/proc'
-      - '--path.rootfs=/rootfs'
-      - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-    networks:
-      - monitoring
-    restart: unless-stopped
-
-  # PostgreSQL Exporter - Métricas de PostgreSQL
-  postgres-exporter:
-    image: prometheuscommunity/postgres-exporter
-    container_name: spoon_postgres_exporter
-    expose:
-      - "9187"
-    environment:
-      - DATA_SOURCE_NAME=postgresql://${DB_USER}:$(cat /run/secrets/db_password)@postgres:5432/${DB_NAME}?sslmode=disable
-    secrets:
-      - db_password
-    networks:
-      - monitoring
-      - backend
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: unless-stopped
-
-  # Redis Exporter - Métricas de Redis
-  redis-exporter:
-    image: oliver006/redis_exporter:v1.45.0
-    container_name: spoon_redis_exporter
-    expose:
-      - "9121"
-    environment:
-      - REDIS_ADDR=redis://redis:6379
-    networks:
-      - monitoring
-      - backend
-    depends_on:
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
-
-  # cAdvisor - Métricas de contenedores
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.45.0
-    container_name: spoon_cadvisor
-    expose:
-      - "8080"
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
-    networks:
-      - monitoring
-    depends_on:
-      - redis
-      - postgres
-    restart: unless-stopped
 
 # ===== VOLÚMENES =====
 volumes:
@@ -407,10 +271,7 @@ volumes:
     name: spoon_postgres_data
   redis_data:
     name: spoon_redis_data
-  prometheus_data:
-    name: spoon_prometheus_data
-  grafana_data:
-    name: spoon_grafana_data
+
   pgadmin_data:
     name: spoon_pgadmin_data
   nextjs_node_modules:

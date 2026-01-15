@@ -40,7 +40,7 @@ export class OrdersService {
   static async getActiveOrders(): Promise<Order[]> {
     try {
       const response = await fetch(`${this.BASE_URL}?status=pending,preparing,ready`);
-      
+
       if (!response.ok) {
         throw new Error('Error al obtener órdenes activas');
       }
@@ -58,7 +58,7 @@ export class OrdersService {
   static async getOrdersByStatus(status: OrderStatus): Promise<Order[]> {
     try {
       const response = await fetch(`${this.BASE_URL}?status=${status}`);
-      
+
       if (!response.ok) {
         throw new Error(`Error al obtener órdenes ${status}`);
       }
@@ -76,12 +76,11 @@ export class OrdersService {
   static async updateOrderStatus(orderId: string, status: OrderStatus): Promise<Order> {
     try {
       const updateData: any = { status };
-      
+
       // Agregar timestamps según el estado
       if (status === 'delivered') {
         updateData.served_at = new Date().toISOString();
-      } else if (status === 'completed') {
-        updateData.completed_at = new Date().toISOString();
+
       } else if (status === 'cancelled') {
         updateData.cancelled_at = new Date().toISOString();
       }
@@ -171,7 +170,7 @@ export class OrdersService {
   static async getOrderItems(orderId: string): Promise<OrderItem[]> {
     try {
       const response = await fetch(`${this.BASE_URL}/${orderId}/items`);
-      
+
       if (!response.ok) {
         throw new Error('Error al obtener items de orden');
       }

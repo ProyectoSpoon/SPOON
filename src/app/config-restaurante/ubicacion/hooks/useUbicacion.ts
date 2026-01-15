@@ -16,7 +16,7 @@ export function useUbicacion() {
   const [direccion, setDireccion] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [cargando, setCargando] = useState(false);
-  
+
   const { toast } = useToast();
   const { actualizarCampo } = useConfigStore();
 
@@ -29,20 +29,20 @@ export function useUbicacion() {
         direccion: "Carrera 15 #85-32, Chapinero",
         coordenadas: { lat: 4.6097102, lng: -74.081749 }
       };
-      
+
       setCoordenadas(ubicacionMock.coordenadas);
       setDireccion(ubicacionMock.direccion);
-      
+
       // Actualizar store - COINCIDIR con campos definidos
       actualizarCampo('/config-restaurante/ubicacion', 'direccion', true);
       actualizarCampo('/config-restaurante/ubicacion', 'ciudad', true);
-      
+
     } catch (error) {
       console.error('Error:', error);
     } finally {
       setCargando(false);
     }
-  }, [toast, actualizarCampo]);
+  }, [actualizarCampo]);
 
   const guardarUbicacion = async (nuevaDireccion: string, nuevasCoordenadas: Location) => {
     if (!nuevaDireccion.trim()) {
@@ -56,13 +56,13 @@ export function useUbicacion() {
 
     try {
       setGuardando(true);
-      
+
       // Simular guardado exitoso
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       setDireccion(nuevaDireccion);
       setCoordenadas(nuevasCoordenadas);
-      
+
       // Actualizar store como completado
       actualizarCampo('/config-restaurante/ubicacion', 'direccion', true);
       actualizarCampo('/config-restaurante/ubicacion', 'ciudad', true);
@@ -71,7 +71,7 @@ export function useUbicacion() {
         title: 'Éxito',
         description: 'Ubicación guardada correctamente'
       });
-      
+
     } catch (error) {
       console.error('Error:', error);
       toast({

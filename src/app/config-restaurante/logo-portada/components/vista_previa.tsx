@@ -4,6 +4,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { FiSmartphone } from 'react-icons/fi';
+import Image from 'next/image';
 
 interface PropsVistaPrevia {
   logo: string | null;
@@ -43,24 +44,29 @@ const VistaPrevia: React.FC<PropsVistaPrevia> = ({ logo, portada }) => {
                 {/* Imagen de portada */}
                 <div className="relative w-full h-40">
                   {portada ? (
-                    <img
+                    <Image
                       src={portada}
                       alt="Portada del restaurante"
-                      className="object-cover w-full h-full"
+                      fill
+                      sizes="(max-width: 320px) 100vw, 320px"
+                      className="object-cover"
                     />
                   ) : (
                     <div className="h-full w-full bg-gray-200 animate-pulse" />
                   )}
-                  
+
                   {/* Logo superpuesto */}
                   {logo && (
-                    <div className="absolute -bottom-8 left-5 bg-white rounded-full p-2 shadow-lg">
-                      <img
-                        src={logo}
-                        alt="Logo del restaurante"
-                        className="w-15 h-15 rounded-full object-cover"
-                        style={{ width: '60px', height: '60px' }}
-                      />
+                    <div className="absolute -bottom-8 left-5 bg-white rounded-full p-2 shadow-lg w-[60px] h-[60px] flex items-center justify-center overflow-hidden">
+                      <div className="relative w-full h-full rounded-full overflow-hidden">
+                        <Image
+                          src={logo}
+                          alt="Logo del restaurante"
+                          fill
+                          sizes="60px"
+                          className="object-cover"
+                        />
+                      </div>
                     </div>
                   )}
                 </div>

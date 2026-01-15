@@ -34,6 +34,14 @@ const nextConfig = {
   // Aseguramos compatibilidad con versiones más nuevas de React
   images: {
     unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'lwwmmufsdtbetgieoefo.supabase.co',
+        port: '',
+        pathname: '/storage/v1/object/public/**',
+      },
+    ],
   },
   // 🗺️ CONFIGURACIÓN GOOGLE MAPS API
   env: {

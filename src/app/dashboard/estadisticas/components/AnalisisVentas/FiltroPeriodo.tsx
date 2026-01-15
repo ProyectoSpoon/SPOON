@@ -1,13 +1,13 @@
 'use client';
 
-import { PeriodoTiempo } from '../../types/estadisticas.types';
+import { PeriodoTiempo } from '@/app/dashboard/estadisticas/types/estadisticas.types';
 
 interface FiltroPeriodoProps {
   periodoSeleccionado: PeriodoTiempo;
   onPeriodoChange: (periodo: PeriodoTiempo) => void;
 }
 
-const periodos: Array<{valor: PeriodoTiempo; etiqueta: string}> = [
+const periodos: Array<{ valor: PeriodoTiempo; etiqueta: string }> = [
   { valor: 'hoy', etiqueta: 'Hoy' },
   { valor: 'semana', etiqueta: 'Semana' },
   { valor: 'mes', etiqueta: 'Mes' },
